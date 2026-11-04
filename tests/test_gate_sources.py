@@ -164,6 +164,10 @@ class TestSources(unittest.TestCase):
                     mock.patch.object(workspace.Path, method, side_effect=PermissionError(13, "Access is denied")):
                 with self.assertRaisesRegex(gitdiff.GitError, r"маркер редакции .+\.done: .*Access is denied"):
                     workspace.materialize(r, sha, ".", self.tmp / "trees")
+        denied = PermissionError(13, "Access is denied", str(self.tmp / "trees" / "x.done"))
+        with mock.patch.object(workspace.Path, "is_file", side_effect=denied):   # проверка готового дерева
+            with self.assertRaisesRegex(gitdiff.GitError, r"готовая редакция .+x\.done: .*Access is denied"):
+                workspace.materialize(r, sha, ".", self.tmp / "trees")
 
     def test_run_dir_inside_worktree_warning(self):
         r = self._repo()
