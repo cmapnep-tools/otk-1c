@@ -28,8 +28,7 @@ def run_dir(cfg, repo):
     base = Path(configured) if configured else Path(tempfile.gettempdir()) / "otk"
     path = Path(repo).resolve()
     key = hashlib.sha1(str(path).lower().encode("utf-8"), usedforsecurity=False).hexdigest()[:6]
-    if configured:
-        _warn_inside(Path(configured), path)
+    _warn_inside(base, path)
     return base / f"{path.name}-{key}"
 
 
@@ -46,12 +45,15 @@ def _warn_inside(base, repo):
 
 
 def materialize(repo, sha, src, trees_dir):
-    """Выгрузка в редакции sha (git archive) в каталоге прогона; повторно не извлекается. Готовность — маркер
-    <начало sha>.done рядом с деревом: остаток неудачного извлечения (не удалился целиком) не принимается."""
+    """Источник src в редакции sha (git archive) в общем дереве редакции trees/<начало sha>: источник плана и
+    расширения сценариев извлекаются в одно дерево, каждый — один раз. Готовность — маркер на пару редакция +
+    src рядом с деревом (done_marker): остаток неудачного извлечения (не удалился целиком) не принимается,
+    очищается только поддерево этого src."""
     target = Path(trees_dir) / sha[:TREE_SHA]
-    done = target.with_name(f"{target.name}.done")
+    sub = target / src
+    done = done_marker(target, src)
     try:                                            # is_file() до Python 3.12 пропускает PermissionError
-        ready = done.is_file() and layout.detect(target / src)
+        ready = done.is_file() and layout.detect(sub)
     except OSError as e:
         raise _env_error("готовая редакция", Path(e.filename or target), e) from e
     if ready:
@@ -60,7 +62,7 @@ def materialize(repo, sha, src, trees_dir):
         done.unlink(missing_ok=True)                # до очистки: оборвётся — остаток без маркера
     except OSError as e:
         raise _env_error("маркер редакции", done, e) from e
-    shutil.rmtree(target, ignore_errors=True)       # остаток прошлого извлечения — заново
+    shutil.rmtree(sub, ignore_errors=True)          # остаток прошлого извлечения этого src — заново
     try:
         target.mkdir(parents=True, exist_ok=True)
     except OSError as e:
@@ -94,7 +96,7 @@ def materialize(repo, sha, src, trees_dir):
         err.seek(0)
         stderr = err.read().decode("utf-8", "replace").strip()
     if rc or extract_error or tar_error:
-        shutil.rmtree(target, ignore_errors=True)   # маркера нет — остаток следующий прогон извлечёт заново
+        shutil.rmtree(sub, ignore_errors=True)      # маркера нет — остаток следующий прогон извлечёт заново
     if extract_error:
         raise gitdiff.GitError(f"извлечение редакции {sha[:TREE_SHA]} в {target}: {extract_error}"
                                + _long_path_hint(extract_error, target))
@@ -107,6 +109,12 @@ def materialize(repo, sha, src, trees_dir):
     except OSError as e:                      # дерево готово, но без маркера следующий прогон извлечёт заново
         raise _env_error("маркер редакции", done, e) from e
     return target
+
+
+def done_marker(target, src):
+    """Маркер готовности источника src в дереве редакции target: <начало sha>-<хеш src>.done рядом с деревом."""
+    key = hashlib.sha1(Path(src).as_posix().encode("utf-8"), usedforsecurity=False).hexdigest()[:8]
+    return target.with_name(f"{target.name}-{key}.done")
 
 
 def _env_error(what, path, e):
