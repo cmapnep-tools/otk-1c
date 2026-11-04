@@ -142,11 +142,12 @@ class PlatformTest(unittest.TestCase):
                  "open(sys.argv[1], 'w').write(str(c.pid)); time.sleep(float(sys.argv[2]))")
 
         def alive(pid):
-            try:
+            try:  # процесс может уйти между kill и чтением /proc
                 os.kill(pid, 0)
-            except ProcessLookupError:
+                stat = Path(f"/proc/{pid}/stat").read_text()
+            except (ProcessLookupError, FileNotFoundError):
                 return False
-            return not Path(f"/proc/{pid}/stat").read_text().split(")")[-1].split()[0] == "Z"
+            return not stat.split(")")[-1].split()[0] == "Z"
 
         def child_ended(parent_wait, kill):
             pid_file = self.tmp / f"pid-{parent_wait}-{kill}"
