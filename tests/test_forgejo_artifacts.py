@@ -77,6 +77,7 @@ class UploadTest(unittest.TestCase):
             self.assertEqual(forgejo_artifacts.upload("x", [tmp / "summary.md"], {}, log=lambda m: None), 0)
         finally:
             srv.shutdown()
+            srv.server_close()
             rmtree_force(tmp)
 
 
