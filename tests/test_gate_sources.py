@@ -146,6 +146,28 @@ class TestSources(unittest.TestCase):
         self.assertFalse((target / "ext/ТестыБ").exists())
         self.assertTrue((target / "ext/ТестыА/Configuration.xml").is_file())
         self.assertTrue((target / "CommonModules/М/Ext/Module.bsl").is_file())
+        self.assertTrue(workspace.done_marker(target, "ext/ТестыА").is_file())
+        # источник «.» содержит расширение: сбой расширения задел дерево «.» — его маркер снят
+        workspace.materialize(r, sha, ".", trees)
+        with mock.patch.object(workspace.tarfile.TarFile, "extractall", side_effect=OSError(errno.EIO, "I/O")):
+            with self.assertRaises(gitdiff.GitError):
+                workspace.materialize(r, sha, "ext/ТестыБ", trees)
+        self.assertFalse(workspace.done_marker(target, ".").exists())
+        self.assertFalse(workspace.done_marker(target, "ext/ТестыА").exists())     # очистка «.» задела и его
+        workspace.materialize(r, sha, ".", trees)
+        self.assertTrue((target / "ext/ТестыБ/Configuration.xml").is_file())
+
+    def test_source_outside_tree_rejected(self):
+        """Источник плана — абсолютный путь или с «..»: отказ до очистки, вне дерева редакции ничего не удаляется."""
+        r = self._repo()
+        sha = gitdiff.rev(r, "HEAD")
+        keep = self.tmp / "чужое"
+        keep.mkdir()
+        for src in (str(keep), "../чужое", "ext/../../чужое"):
+            with self.subTest(src=src):
+                with self.assertRaisesRegex(gitdiff.GitError, "относительный путь внутри репозитория"):
+                    workspace.materialize(r, sha, src, self.tmp / "trees" / "x")
+        self.assertTrue(keep.is_dir())
 
     def test_extract_long_path_error(self):
         """Файл редакции не записался — GitError с длиной пути и советом, неполное дерево удалено."""
@@ -183,11 +205,16 @@ class TestSources(unittest.TestCase):
         с путём, а не трассировка."""
         r = self._repo()
         sha = gitdiff.rev(r, "HEAD")
-        for method in ("unlink", "touch"):
-            with self.subTest(method=method), \
-                    mock.patch.object(workspace.Path, method, side_effect=PermissionError(13, "Access is denied")):
-                with self.assertRaisesRegex(gitdiff.GitError, r"маркер редакции .+\.done: .*Access is denied"):
-                    workspace.materialize(r, sha, ".", self.tmp / "trees")
+        trees = self.tmp / "trees"
+        denied13 = PermissionError(13, "Access is denied")
+        with mock.patch.object(workspace.Path, "write_text", side_effect=denied13):     # запись маркера
+            with self.assertRaisesRegex(gitdiff.GitError, r"маркер редакции .+\.done: .*Access is denied"):
+                workspace.materialize(r, sha, ".", trees)
+        target = workspace.materialize(r, sha, ".", trees)
+        (target / "Configuration.xml").unlink()                     # дерево не готово, маркер есть — снимается
+        with mock.patch.object(workspace.Path, "unlink", side_effect=denied13):
+            with self.assertRaisesRegex(gitdiff.GitError, r"маркер редакции .+\.done: .*Access is denied"):
+                workspace.materialize(r, sha, ".", trees)
         denied = PermissionError(13, "Access is denied", str(self.tmp / "trees" / "x.done"))
         with mock.patch.object(workspace.Path, "is_file", side_effect=denied):   # проверка готового дерева
             with self.assertRaisesRegex(gitdiff.GitError, r"готовая редакция .+x\.done: .*Access is denied"):
@@ -215,6 +242,9 @@ class TestSources(unittest.TestCase):
                                                                 return_value=str(r / "tmp")):
             workspace.run_dir({"environment": {}}, r)
         self.assertEqual(out.getvalue().count("внутри рабочего дерева"), 2)
+        # цикл символических ссылок в runDir (RuntimeError до Python 3.13) — без предупреждения и трассировки
+        with mock.patch.object(workspace.Path, "resolve", side_effect=RuntimeError("Symlink loop")):
+            workspace._warn_inside(self.tmp / "петля", r)
 
     def test_bslls_from_vscode(self):
         storage = self.tmp / "globalStorage"
