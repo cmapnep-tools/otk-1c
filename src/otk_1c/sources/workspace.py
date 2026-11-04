@@ -71,7 +71,11 @@ def materialize(repo, sha, src, trees_dir):
              if Path(src).name == "src"
              and gitdiff.git(repo, "rev-parse", "--verify", "-q", f"{sha}:{p}", check=False).strip()]
     extract_error = tar_error = None
-    with tempfile.TemporaryFile() as err:     # stderr — в файл: канал мог бы заполниться, пока читаем stdout
+    try:
+        err = tempfile.TemporaryFile()        # stderr — в файл: канал мог бы заполниться, пока читаем stdout
+    except OSError as e:
+        raise _env_error("временный файл в", Path(tempfile.gettempdir()), e) from e
+    with err:
         proc = subprocess.Popen(["git", "-C", str(repo), "archive", "--format=tar", sha, "--", src, *extra],
                                 stdout=subprocess.PIPE, stderr=err, stdin=subprocess.DEVNULL)
         try:
