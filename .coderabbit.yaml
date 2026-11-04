@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# Ревью PR CodeRabbit — на пробу: замечания советуют, решение по PR — за сопровождающим.
+language: ru-RU
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  in_progress_fortune: false
+  sequence_diagrams: false
+  auto_review:
+    enabled: true
+    drafts: false
+  path_filters:
+    - "!docs/img/**"
+  path_instructions:
+    - path: "src/**/*.py"
+      instructions: >-
+        Только стандартная библиотека Python 3.11+, без зависимостей. Код работает на Windows и Linux: пути,
+        кодировки (вывод программ 1С на Windows — cp1251/CRLF), запуск процессов. Ошибка окружения — понятное
+        сообщение пользователю, а не трассировка.
+    - path: "tests/**/*.py"
+      instructions: >-
+        Фикстуры — синтетические мини-выгрузки в самих тестах, без кода заказчиков. Тесты на внешних программах
+        и платформе 1С — только по переменным OTK_TEST_*, без них пропуск.
+    - path: "openspec/**"
+      instructions: Требования OpenSpec — сценарии вида WHEN/THEN; поведение в коде должно им соответствовать.
+chat:
+  auto_reply: true

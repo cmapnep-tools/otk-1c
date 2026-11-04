@@ -1,0 +1,195 @@
+{
+  "scriptVariant": "English",
+  "complete": true,
+  "keywords": {
+    "procedure": [
+      "Procedure"
+    ],
+    "function": [
+      "Function"
+    ],
+    "endProcedure": [
+      "EndProcedure"
+    ],
+    "endFunction": [
+      "EndFunction"
+    ],
+    "export": [
+      "Export"
+    ],
+    "val": [
+      "Val"
+    ],
+    "async": [
+      "Async"
+    ]
+  },
+  "preprocessor": {
+    "if": [
+      "If"
+    ],
+    "elseIf": [
+      "ElsIf"
+    ],
+    "else": [
+      "Else"
+    ],
+    "endIf": [
+      "EndIf"
+    ],
+    "then": [
+      "Then"
+    ],
+    "not": [
+      "NOT"
+    ]
+  },
+  "preprocessorSymbols": {
+    "Server": "Server",
+    "AtServer": "Server",
+    "Client": "Client",
+    "AtClient": "Client",
+    "ThinClient": "ThinClient",
+    "WebClient": "WebClient",
+    "ThickClientOrdinaryApplication": "OrdinaryClient",
+    "ThickClientManagedApplication": "ThickClientManaged",
+    "ExternalConnection": "ExternalConnection",
+    "MobileAppClient": "MobileClient",
+    "MobileAppServer": "MobileServer",
+    "MobileClient": "MobileClient",
+    "MobileStandaloneServer": "MobileServer"
+  },
+  "directives": {
+    "AtServer": "Server",
+    "AtClient": "Client",
+    "AtServerNoContext": "ServerNoContext",
+    "AtClientAtServerNoContext": "ClientServerNoContext",
+    "AtClientAtServer": "ClientServer"
+  },
+  "queryStart": [
+    "SELECT"
+  ],
+  "queryWords": [
+    "FROM",
+    "AS",
+    "INTO"
+  ],
+  "metadataTypes": {
+    "Catalogs": {
+      "single": "Catalog",
+      "manager": "Catalogs",
+      "create": "CreateItem"
+    },
+    "Documents": {
+      "single": "Document",
+      "manager": "Documents",
+      "create": "CreateDocument"
+    },
+    "DataProcessors": {
+      "single": "DataProcessor",
+      "manager": "DataProcessors",
+      "create": "Create"
+    },
+    "Reports": {
+      "single": "Report",
+      "manager": "Reports",
+      "create": "Create"
+    },
+    "InformationRegisters": {
+      "single": "InformationRegister",
+      "manager": "InformationRegisters",
+      "recordSet": "CreateRecordSet"
+    },
+    "AccumulationRegisters": {
+      "single": "AccumulationRegister",
+      "manager": "AccumulationRegisters",
+      "recordSet": "CreateRecordSet"
+    },
+    "AccountingRegisters": {
+      "single": "AccountingRegister",
+      "manager": "AccountingRegisters",
+      "recordSet": "CreateRecordSet"
+    },
+    "CalculationRegisters": {
+      "single": "CalculationRegister",
+      "manager": "CalculationRegisters",
+      "recordSet": "CreateRecordSet"
+    },
+    "ChartsOfCharacteristicTypes": {
+      "single": "ChartOfCharacteristicTypes",
+      "manager": "ChartsOfCharacteristicTypes",
+      "create": "CreateItem"
+    },
+    "ChartsOfAccounts": {
+      "single": "ChartOfAccounts",
+      "manager": "ChartsOfAccounts",
+      "create": "CreateAccount"
+    },
+    "ChartsOfCalculationTypes": {
+      "single": "ChartOfCalculationTypes",
+      "manager": "ChartsOfCalculationTypes",
+      "create": "CreateCalculationType"
+    },
+    "BusinessProcesses": {
+      "single": "BusinessProcess",
+      "manager": "BusinessProcesses",
+      "create": "CreateBusinessProcess"
+    },
+    "Tasks": {
+      "single": "Task",
+      "manager": "Tasks",
+      "create": "CreateTask"
+    },
+    "ExchangePlans": {
+      "single": "ExchangePlan",
+      "manager": "ExchangePlans",
+      "create": "CreateNode"
+    },
+    "Constants": {
+      "single": "Constant",
+      "manager": "Constants",
+      "valueManager": "CreateValueManager"
+    },
+    "DocumentJournals": {
+      "single": "DocumentJournal",
+      "manager": "DocumentJournals"
+    },
+    "Enums": {
+      "single": "Enum",
+      "manager": "Enums"
+    },
+    "FilterCriteria": {
+      "single": "FilterCriterion",
+      "manager": "FilterCriteria"
+    },
+    "SettingsStorages": {
+      "single": "SettingsStorage",
+      "manager": "SettingsStorages"
+    },
+    "Sequences": {
+      "single": "Sequence",
+      "manager": "Sequences"
+    },
+    "CommonModules": {
+      "single": "CommonModule"
+    },
+    "CommonForms": {
+      "single": "CommonForm"
+    },
+    "CommonCommands": {
+      "single": "CommonCommand"
+    },
+    "HTTPServices": {
+      "single": "HTTPService"
+    },
+    "WebServices": {
+      "single": "WebService"
+    }
+  },
+  "words": {
+    "form": "Form",
+    "command": "Command",
+    "bodyPseudoMethod": "<тело модуля>",
+    "getForm": "GetForm"
+  }
+}

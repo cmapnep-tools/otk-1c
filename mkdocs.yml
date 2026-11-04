@@ -1,0 +1,101 @@
+# Сайт документации: MkDocs Material, страницы — docs/, главная — README.md (хук docs/.site/hooks.py).
+# Локально: pip install -r docs/.site/requirements.txt && mkdocs serve
+site_name: ОТК для 1С
+site_description: Технический контроль изменений кода 1С
+site_url: https://cmapnep-tools.github.io/otk-1c/
+repo_url: https://github.com/cmapnep-tools/otk-1c
+repo_name: cmapnep-tools/otk-1c
+edit_uri: edit/master/docs/
+docs_dir: docs
+exclude_docs: |
+  en/
+  img/README.md
+  img/*.py
+  img/*.html
+  img/preview.png
+
+hooks:
+  - docs/.site/hooks.py
+
+theme:
+  name: material
+  language: ru
+  logo: img/logo-flat.svg
+  favicon: img/logo-flat.svg
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: white
+      accent: red
+      toggle:
+        icon: material/weather-night
+        name: Тёмная тема
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: red
+      toggle:
+        icon: material/weather-sunny
+        name: Светлая тема
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+    - toc.follow
+
+plugins:
+  - search:
+      lang: ru
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.superfences
+
+validation:
+  links:
+    anchors: warn
+
+nav:
+  - Обзор: index.md
+  - Работа с ОТК:
+      - commands.md
+      - configuration.md
+      - checks.md
+      - report.md
+      - findings.md
+      - troubleshooting.md
+  - Интеграции:
+      - integrations.md
+      - ci.md
+      - agents.md
+      - tools.md
+      - edt.md
+      - linux.md
+  - Сравнение:
+      - comparison.md
+      - vs-designer.md
+      - vs-analyzers.md
+      - pilot.md
+      - limits.md
+  - Справка:
+      - contract.md
+      - licensing.md
+      - third-party.md
+  - Разработка:
+      - development.md
+      - adding-a-check.md

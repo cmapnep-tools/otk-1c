@@ -1,0 +1,95 @@
+{
+  "scriptVariant": "Russian",
+  "complete": true,
+  "keywords": {
+    "procedure": ["Процедура"],
+    "function": ["Функция"],
+    "endProcedure": ["КонецПроцедуры"],
+    "endFunction": ["КонецФункции"],
+    "export": ["Экспорт"],
+    "val": ["Знач"],
+    "async": ["Асинх"]
+  },
+  "preprocessor": {
+    "if": ["Если"],
+    "elseIf": ["ИначеЕсли"],
+    "else": ["Иначе"],
+    "endIf": ["КонецЕсли"],
+    "then": ["Тогда"],
+    "not": ["НЕ"]
+  },
+  "preprocessorSymbols": {
+    "Сервер": "Server",
+    "НаСервере": "Server",
+    "Клиент": "Client",
+    "НаКлиенте": "Client",
+    "ТонкийКлиент": "ThinClient",
+    "ВебКлиент": "WebClient",
+    "ТолстыйКлиентОбычноеПриложение": "OrdinaryClient",
+    "ТолстыйКлиентУправляемоеПриложение": "ThickClientManaged",
+    "ВнешнееСоединение": "ExternalConnection",
+    "МобильноеПриложениеКлиент": "MobileClient",
+    "МобильноеПриложениеСервер": "MobileServer",
+    "МобильныйКлиент": "MobileClient",
+    "МобильныйАвтономныйСервер": "MobileServer"
+  },
+  "directives": {
+    "НаСервере": "Server",
+    "НаКлиенте": "Client",
+    "НаСервереБезКонтекста": "ServerNoContext",
+    "НаКлиентеНаСервереБезКонтекста": "ClientServerNoContext",
+    "НаКлиентеНаСервере": "ClientServer"
+  },
+  "queryStart": ["ВЫБРАТЬ"],
+  "queryWords": ["ИЗ", "КАК", "ПОМЕСТИТЬ"],
+  "metadataTypes": {
+    "Catalogs": {"single": "Справочник", "manager": "Справочники", "create": "СоздатьЭлемент"},
+    "Documents": {"single": "Документ", "manager": "Документы", "create": "СоздатьДокумент"},
+    "DataProcessors": {"single": "Обработка", "manager": "Обработки", "create": "Создать"},
+    "Reports": {"single": "Отчет", "manager": "Отчеты", "create": "Создать"},
+    "InformationRegisters": {"single": "РегистрСведений", "manager": "РегистрыСведений", "recordSet": "СоздатьНаборЗаписей"},
+    "AccumulationRegisters": {"single": "РегистрНакопления", "manager": "РегистрыНакопления", "recordSet": "СоздатьНаборЗаписей"},
+    "AccountingRegisters": {"single": "РегистрБухгалтерии", "manager": "РегистрыБухгалтерии", "recordSet": "СоздатьНаборЗаписей"},
+    "CalculationRegisters": {"single": "РегистрРасчета", "manager": "РегистрыРасчета", "recordSet": "СоздатьНаборЗаписей"},
+    "ChartsOfCharacteristicTypes": {"single": "ПланВидовХарактеристик", "manager": "ПланыВидовХарактеристик", "create": "СоздатьЭлемент"},
+    "ChartsOfAccounts": {"single": "ПланСчетов", "manager": "ПланыСчетов", "create": "СоздатьСчет"},
+    "ChartsOfCalculationTypes": {"single": "ПланВидовРасчета", "manager": "ПланыВидовРасчета", "create": "СоздатьВидРасчета"},
+    "BusinessProcesses": {"single": "БизнесПроцесс", "manager": "БизнесПроцессы", "create": "СоздатьБизнесПроцесс"},
+    "Tasks": {"single": "Задача", "manager": "Задачи", "create": "СоздатьЗадачу"},
+    "ExchangePlans": {"single": "ПланОбмена", "manager": "ПланыОбмена", "create": "СоздатьУзел"},
+    "Constants": {"single": "Константа", "manager": "Константы", "valueManager": "СоздатьМенеджерЗначения"},
+    "DocumentJournals": {"single": "ЖурналДокументов", "manager": "ЖурналыДокументов"},
+    "Enums": {"single": "Перечисление", "manager": "Перечисления"},
+    "FilterCriteria": {"single": "КритерийОтбора", "manager": "КритерииОтбора"},
+    "SettingsStorages": {"single": "ХранилищеНастроек", "manager": "ХранилищаНастроек"},
+    "Sequences": {"single": "Последовательность", "manager": "Последовательности"},
+    "CommonModules": {"single": "ОбщийМодуль"},
+    "CommonForms": {"single": "ОбщаяФорма"},
+    "CommonCommands": {"single": "ОбщаяКоманда"},
+    "HTTPServices": {"single": "HTTPСервис"},
+    "WebServices": {"single": "WebСервис"}
+  },
+  "words": {
+    "form": "Форма",
+    "command": "Команда",
+    "bodyPseudoMethod": "<тело модуля>",
+    "getForm": "ПолучитьФорму"
+  },
+  "platform": {
+    "modules": {
+      "Модуль": "Module",
+      "МодульОбъекта": "ObjectModule",
+      "МодульМенеджера": "ManagerModule",
+      "МодульНабораЗаписей": "RecordSetModule",
+      "МодульМенеджераЗначения": "ValueManagerModule",
+      "МодульКоманды": "CommandModule",
+      "Форма": "FormModule",
+      "МодульСеанса": "SessionModule",
+      "МодульУправляемогоПриложения": "ManagedApplicationModule",
+      "МодульОбычногоПриложения": "OrdinaryApplicationModule",
+      "МодульВнешнегоСоединения": "ExternalConnectionModule"
+    },
+    "compileInText": ["компиляц", "инициализации модуля"],
+    "compileInMessage": ["Ожидается", "не определен", "уже определена"]
+  }
+}

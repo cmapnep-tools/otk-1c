@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Запросы к СУБД дольше 0,1 с и запросы платформы, с контекстом: otk tj queries|sdbl (mode: sql | sql+context | context) -->
+<config xmlns="http://v8.1c.ru/v8/tech-log">
+	<log location="C:\1c_logs\queries" history="24">
+		<event>
+			<eq property="name" value="DBMSSQL"/>
+			<ge property="Duration" value="100000"/>
+		</event>
+		<event>
+			<eq property="name" value="DBPOSTGRS"/>
+			<ge property="Duration" value="100000"/>
+		</event>
+		<event>
+			<eq property="name" value="SDBL"/>
+			<ge property="Duration" value="100000"/>
+		</event>
+		<property name="all"/>
+	</log>
+</config>

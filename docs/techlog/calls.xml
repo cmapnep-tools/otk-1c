@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Серверные вызовы дольше 1 с с контекстом и памятью: otk tj calls (value: duration | memory | …) -->
+<config xmlns="http://v8.1c.ru/v8/tech-log">
+	<log location="C:\1c_logs\calls" history="24">
+		<event>
+			<eq property="name" value="CALL"/>
+			<ge property="Duration" value="1000000"/>
+		</event>
+		<property name="Usr"/>
+		<property name="Context"/>
+		<property name="SessionID"/>
+		<property name="Memory"/>
+		<property name="MemoryPeak"/>
+		<property name="InBytes"/>
+		<property name="OutBytes"/>
+		<property name="CpuTime"/>
+	</log>
+</config>

@@ -1,0 +1,93 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "otk-1c"
+version = "1.0.0"
+description = "ОТК: быстрая проверка изменений кода конфигурации 1С перед push/MR"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{name = "Ilya Malikov"}]
+requires-python = ">=3.11"
+dependencies = []
+keywords = ["1c", "1c-enterprise", "bsl", "code-review", "pre-push", "ci"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Natural Language :: Russian",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing",
+]
+
+[project.optional-dependencies]
+# внешнее соединение (COM) для проб на сервере, разбора запросов и консоли ИБ; без него серверные пробы — через YAxUnit
+com = ["pywin32>=306; sys_platform == 'win32'"]
+
+[project.urls]
+Homepage = "https://cmapnep-tools.github.io/otk-1c/"
+Documentation = "https://cmapnep-tools.github.io/otk-1c/"
+Source = "https://github.com/cmapnep-tools/otk-1c"
+Issues = "https://github.com/cmapnep-tools/otk-1c/issues"
+Changelog = "https://github.com/cmapnep-tools/otk-1c/blob/master/CHANGELOG.md"
+
+[project.scripts]
+otk = "otk_1c.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+otk_1c = ["lang/*.json", "schema/*.json", "onec/*.bsl", "availability/*.json", "availability/*.toml", "availability/webclient/*.json"]
+
+[tool.ruff]
+line-length = 120
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "BLE", "I", "C90", "S"]
+ignore = [
+    # ОТК по назначению запускает внешние программы (платформа 1С, git, анализаторы BSL, 1cedtcli):
+    # всегда списком аргументов, без shell; пути — из настроек пользователя или PATH
+    "S603", "S607",
+    # разбирается XML выгрузки самого проекта; expat в Python 3.7.1+ не раскрывает внешние сущности
+    "S314",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# тесты: git и платформа в подпроцессах, учётные данные тестовых баз, XML фикстур
+"tests/**" = ["S", "C90"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 20
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src/otk_1c"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+
+[[tool.mypy.overrides]]
+# pywin32 без заглушек типов; ставится необязательной зависимостью otk-1c[com]
+module = ["pythoncom", "win32com", "win32com.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# границы пакета: общая модель и настройки, реестр проверок, интерфейс исполнителей, адаптер анализаторов,
+# сценарий проверки — аннотированы полностью; остальное проверяется там, где аннотации есть
+module = ["otk_1c.model", "otk_1c.config", "otk_1c.checks", "otk_1c.errors", "otk_1c.paths",
+          "otk_1c.probes.executors.base", "otk_1c.analyzers", "otk_1c.gate.pipeline"]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true

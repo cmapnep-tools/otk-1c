@@ -1,0 +1,41 @@
+name: Пропуск ошибки
+description: В изменённом коде есть ошибка, а ОТК её не нашёл
+labels: ["kind/false-negative"]
+body:
+  - type: textarea
+    id: error
+    attributes:
+      label: Какая ошибка и где она проявилась
+      description: Например, Конфигуратор `/CheckModules` нашёл, а ОТК нет; или ошибка у пользователя. Текст ошибки платформы.
+    validations:
+      required: true
+  - type: textarea
+    id: fragment
+    attributes:
+      label: Минимальный фрагмент кода 1С
+      description: Метод или модуль с ошибкой; без кода и данных заказчика.
+      render: bsl
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Что ОТК написал в сводке
+      description: Модуль проверен, «не проверено» с причиной или «не покрыто этим прогоном»? Фрагмент summary.md или summary.json.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Вывод `otk doctor` с теми же ключами
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Окружение
+      placeholder: "версия ОТК (otk --version), платформа и режим совместимости, выгрузка / EDT, environment.ibTool"
+    validations:
+      required: true

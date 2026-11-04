@@ -1,0 +1,63 @@
+# Шаблон: проверка всех модулей Конфигуратором (otk designer-check) — все режимы и
+# -ExtendedModulesCheck, перед ней отрицательный контроль (сломанный модуль обязан найтись, иначе
+# задание падает: «проверка Конфигуратором не работает»). Долгая (≈ 12 тыс. файлов — около
+# 10 мин, ERP — часы), поэтому не на каждый PR: по метке PR otk-designer-check, по расписанию и вручную.
+# Скопировать в .forgejo/workflows/ проекта 1С, env — как в otk-gate.yml.
+# Артефакт otk-designer-check: designer-check.md, designer-check.json, junit-designer-check.xml, вывод Конфигуратора.
+name: otk-designer-check
+
+on:
+  pull_request:
+    types: [labeled, synchronize]
+  schedule:
+    - cron: "0 2 * * *"                          # ночью, ветка по умолчанию
+  workflow_dispatch:
+
+env:
+  GIT_PREFIX: "forgejo:"                         # откуда клонировать: SSH-хост раннера («host:») или «https://сервер/»
+  OTK_REPO: pet/otk-1c
+  OTK_REF: master
+  OTK_HOME: C:/otk-ci                       # стенд раннера — как в otk-gate.yml
+  OTK_USER: ""
+  OTK_PLATFORM: ""                          # пусто — самая новая установленная платформа
+
+jobs:
+  designer-check:
+    if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'otk-designer-check') }}
+    runs-on: windows-1c
+    timeout-minutes: 360
+    steps:
+      - name: checkout (проект + ОТК)
+        shell: python
+        env:
+          SELF: ${{ github.repository }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+        run: |
+          import os, shutil, subprocess, sys
+          ws, env = os.environ["GITHUB_WORKSPACE"], os.environ
+          def git(*a, cwd=None):
+              r = subprocess.run(["git", *a], cwd=cwd, capture_output=True, text=True)
+              if r.returncode:
+                  sys.exit(f"git {' '.join(a)}: {r.stderr.strip()}")
+              return r.stdout.strip()
+          d = os.path.join(ws, env["SELF"].split("/")[1])
+          k = os.path.join(ws, "_otk")
+          for p in (d, k):
+              shutil.rmtree(p, ignore_errors=True)
+          git("clone", "-q", "--no-checkout", f"{env['GIT_PREFIX']}{env['SELF']}.git", d)
+          git("fetch", "-q", "origin", env["REF"], cwd=d)
+          ok = subprocess.run(["git", "cat-file", "-e", env["SHA"]], cwd=d).returncode == 0
+          git("checkout", "-q", "--detach", env["SHA"] if ok else "FETCH_HEAD", cwd=d)
+          git("clone", "-q", "--depth", "1", "--branch", env["OTK_REF"],
+              f"{env['GIT_PREFIX']}{env['OTK_REPO']}.git", k)
+          print("проект:", git("log", "--oneline", "-1", cwd=d))
+          print("ОТК:", git("log", "--oneline", "-1", cwd=k))
+
+      - name: otk designer-check
+        env:
+          PYTHONPATH: ${{ github.workspace }}/_otk/src
+          OTK_PASSWORD: ${{ secrets.OTK_PASSWORD }}
+          OTK_IB: ${{ env.OTK_HOME }}/ib/ПРОЕКТ
+          OTK_RUN_DIR: ${{ env.OTK_HOME }}/runs
+        run: python -m otk_1c ci designer-check

@@ -1,0 +1,104 @@
+# Настройки ОТК для проекта 1С. Скопируйте в корень репозитория как otk.toml;
+# машинно-зависимое (пути к базе, платформе, YAxUnit) — в otk.local.toml (вне git).
+# Файл необязателен: всё задаётся и аргументами (--ib, --yaxunit, --parent, --set раздел.ключ=значение, …),
+# аргумент важнее файла — docs/commands.md, «Только командная строка».
+
+[project]
+source = "src/cf"            # каталог выгрузки относительно корня репозитория (не задан — src/cf или корень)
+# parent = "../Конфигурация/src/cf"   # для расширения: выгрузка основной конфигурации
+# extension = "ИмяРасширения"         # имя расширения в ИБ; по умолчанию — из Configuration.xml выгрузки
+
+[environment]
+contexts = ["Server", "ThinClient", "ExternalConnection"]   # контексты, доступные для проб локально
+ordinaryApplication = false  # конфигурация запускается и в обычном приложении: пробы и полная проверка в этом режиме
+webClient = false            # конфигурация работает в веб-клиенте: недоступное в нём — ошибка, а не предупреждение
+# minPlatform = "8.3.24"     # минимальная платформа проекта: предупреждать о методах и конструкторах только новее неё
+# compatWarnings = false     # без предупреждений «новее режима совместимости» своей линейки (ошибки новой линейки — да)
+runDir = ""                  # каталог прогонов (по умолчанию %TEMP%/otk или OTK_RUN_DIR)
+# ib = "C:/otk/ib/проект"                        # СВОЯ файловая копия ИБ (ОТК её меняет)
+#                                                     # (нет каталога или он пуст — ОТК создаст пустую ИБ)
+# connection = "/FC:/1C/Рабочая"                      # ИЛИ рабочая база: после проверки возвращается как была
+# keepTools = false                                   # (рабочая база) оставить YAxUnit и расширение проб
+# loadProject = false                                 # (рабочая база) загружать основную конфигурацию проекта
+# user = "Администратор"                              # пароль — password, пустой не передаётся
+# platform = "C:/Program Files/1cv8/8.3.27.2342/bin"  # по умолчанию — самая новая установленная
+# ibTool = "designer"                                # операции с копией ИБ: designer (Конфигуратор) |
+#                                                     # ibcmd; полная загрузка — ibcmd, если он есть
+# helpDir = "C:/otk/help"     # копия .hbk справки (каталог <версия> или его родитель) — для сервера без клиента
+# helpAuto = true                  # индекс справки строить и обновлять самому; false — только предупреждать
+#                                  # «otk platform-help build» (воспроизводимый CI)
+# yaxunit = "C:/otk/YAxUnit.cfe"                 # расширение YAxUnit (.cfe) для проб в клиенте
+# comConnector = "V83.COMConnector"                   # по умолчанию — по версии платформы
+# bslls = "C:/tools/bsl-language-server/bsl-language-server.exe"   # по умолчанию — OTK_BSLLS, PATH или расширение VS Code
+# bsllsTimeout = 600                                 # секунд на пакет BSL LS; по умолчанию max(600, 0,5 с × файлов
+#                                                    # «до» и «после»), со своей .bsl-language-server.json — 1,2 с
+# bsllsBatchMB = 200                                 # МБ текста на запуск BSL LS (больше — пакетами); при
+#                                                    # OutOfMemoryError пакет делится пополам сам
+# analyzer = "bslls"                                 # анализатор BSL проверки bslls: bslls (BSL LS), bsl-analyzer, both;
+#                                                    # по формату выгрузки — analyzer = { designer-xml = "both", edt = "bslls" }
+# bslAnalyzer = "C:/tools/bsl-analyzer/bsl-analyzer.exe"   # по умолчанию — OTK_BSL_ANALYZER или PATH
+# bslAnalyzerTimeout = 1800                          # секунд на прогон bsl-analyzer (каждая редакция)
+# edtcli = "C:/1C/EDT/1cedtcli.exe"                 # исходники EDT: экспорт для проб в ИБ; по умолчанию
+#                                                    # OTK_EDTCLI, установка 1C:EDT или PATH
+# edtTimeout = 1800                                  # секунд на экспорт проекта EDT
+# hiddenDesktop = true                                # Windows: клиент 1С на скрытом рабочем столе (окно не
+#                                                     # всплывает); false или OTK_HIDDEN_DESKTOP=0 — видеть окно
+# [environment.executors]
+# server = "auto"                                     # auto (COM, иначе YAxUnit) | yaxunit
+
+[scenarios]                  # сценарные тесты YAxUnit (тестовые расширения, раскладка Platform Tools)
+path = "tests/cfe"           # каталог с выгрузками тестовых расширений
+
+[checks]                     # проверки: "on" — обязательна (нет зависимости — сбой, код 2), "auto" — если
+                             # есть зависимости, иначе «не проверено» с причиной, "off" — выключена; otk doctor
+# metadata = "auto"          # ссылки на метаданные, формы, обработчики, экспортные методы
+# analyzers = "auto"         # новые замечания анализатора BSL (environment.analyzer)
+# platform-api = "auto"      # методы и типы платформы (справка платформы)
+# probes-server = "auto"     # компиляция на сервере и во внешнем соединении (COM или YAxUnit)
+# probes-client = "auto"     # компиляция в тонком клиенте (YAxUnit)
+# queries = "auto"           # разбор запросов (COM или YAxUnit)
+# extcheck = "auto"          # расширенная проверка изменённых модулей
+# scenarios = "auto"         # сценарные тесты (YAxUnit)
+# smoke = "auto"             # открытие изменённых форм (YAxUnit)
+
+# [platformNames]            # дополнение словаря имён платформы (docs/configuration.md, «Словарь имён платформы»):
+# globals = ["ИмяПеречисления"]   # ложная находка platform-api на имени, которого нет в справке; ещё ключи
+#                                 # methods, constructors, forms, managerMethods; объединяются со встроенными
+
+# [analyzerSeverity]         # какие правила анализаторов BSL — ошибки (docs/configuration.md, «Уровень находок
+#                            # анализаторов»): fail — добавить к встроенным, warn — снять до предупреждения
+# bslls = { error = ["UsingModalWindows"] }
+# bsl-analyzer = { error = ["UnresolvedMethodCall"], warning = ["ThisObjectAssign"] }
+
+[smoke]                      # дымовой тест: открыть и закрыть изменённые формы (модуль или Form.xml)
+exclude = []                 # шаблоны полных имён форм, например ["Обработка.*", "*.ФормаНастроек"]
+timeout = 60                 # секунд на форму: дольше — модальное окно или вопрос пользователю, ошибка
+severity = "error"           # ошибка при открытии: "error" или "warning"
+
+# Внешние восстановители собранных запросов (выключены: без этого раздела код модулей никуда не уходит).
+# Запрос, который встроенная подстановка не восстановила (имя таблицы из функции другого модуля и т.п.), получает
+# команда: stdin — JSON с запросами и текстами модулей, stdout — {"queries": [{"id", "text", "rationale"}]}.
+# Ошибка разбора восстановленного текста — предупреждение. Лучше в otk.local.toml (у каждого свой помощник).
+# [[queries.resolvers]]
+# name = "ИИ"
+# command = ["python", "tools/resolve_queries.py"]
+# timeout = 300              # секунд на вызов; сбой или тайм-аут — запросы «не проверено», прогон не падает
+
+[scaffold]                   # otk scaffold: заготовки тестов для изменённых методов без теста
+# extension = "проект_тесты" # тестовое расширение, если их несколько (иначе — единственное или новое «Тесты»)
+# draft = "python docs/scaffold/draft-claude.py"   # черновик теста внешней командой (лучше в otk.local.toml)
+
+[hook]                       # git-хук pre-push (otk hook install)
+base = "origin/master"       # для новой ветки проверка идёт от merge-base с этой веткой
+mode = "full"                # "full" — полная проверка; "static" — только статика (полная — в CI)
+fast = false                 # не запускать пробы, если статика нашла ошибки
+infraFail = "block"          # код 2 (сбой инфраструктуры): "block" — отменить push, "warning" — пропустить
+
+[report]                     # сводка прогона (summary.md, summary.html, summary.json, junit.xml)
+# open = "html"              # открыть после gate/report: "html" — в браузере, "md" — в VS Code; хук — только
+#                            # если push отменён; разово — otk gate --open [html|md]
+
+[designerCheck]             # проверка всех модулей Конфигуратором (otk designer-check, задание CI)
+# modes = [...]   # по умолчанию все режимы с -ExtendedModulesCheck; обычное приложение — если основной режим
+#                 # запуска конфигурации — обычное приложение или environment.ordinaryApplication = true
+# baseline = "otk-designer-check.baseline.json"   # принятые ошибки (otk designer-check --update-baseline)

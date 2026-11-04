@@ -1,0 +1,3410 @@
+{
+ "com-all": {
+  "results": [
+   {
+    "executor": "com",
+    "kind": "probe",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "com",
+    "kind": "probe",
+    "module": "Плоский/Module.bsl",
+    "owner": "ОбщийМодуль.Плоский",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "com",
+    "kind": "probe",
+    "module": "Объект/Module.bsl",
+    "owner": "ОбщийМодуль.Объект",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "com",
+    "kind": "probe",
+    "module": "Плохой/Module.bsl",
+    "owner": "ОбщийМодуль.Плохой",
+    "context": "Server",
+    "outcome": "compile-error",
+    "message": "ошибка",
+    "line": 5
+   },
+   {
+    "executor": "com",
+    "kind": "query",
+    "module": "Сервер/Module.bsl",
+    "owner": "q1",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null,
+    "query": "q1"
+   },
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Плоский/Module.bsl",
+    "owner": "ОбщийМодуль.Плоский",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "ThinClient",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Форма/Module.bsl",
+    "owner": "ОбщийМодуль.Форма",
+    "context": "ThinClient",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "smoke",
+    "kind": "smoke",
+    "module": "Форма/Form.xml",
+    "owner": "Документ.Д.Форма.Ф",
+    "context": "ThinClient",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Плоский/Module.bsl",
+    "owner": "ОбщийМодуль.Плоский",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Плохой/Module.bsl",
+    "owner": "ОбщийМодуль.Плохой",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "scenarios",
+    "kind": "scenario",
+    "module": null,
+    "owner": null,
+    "context": "ThinClient",
+    "outcome": "failed",
+    "message": "тест упал",
+    "line": null
+   },
+   {
+    "executor": "plan",
+    "kind": "uncovered",
+    "module": "Объект/Module.bsl",
+    "owner": "ОбщийМодуль.Объект",
+    "context": "WebClient",
+    "needs": "designer:WebClient",
+    "outcome": "skipped",
+    "message": "только в CI",
+    "line": null
+   }
+  ],
+  "notes": [
+   "примечание COM",
+   "примечание YAxUnit"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "com.available",
+    "V85.COMConnector"
+   ],
+   [
+    "com.run",
+    [
+     "Сервер/Module.bsl",
+     "Плоский/Module.bsl",
+     "Объект/Module.bsl",
+     "Плохой/Module.bsl"
+    ],
+    [
+     "q1"
+    ]
+   ],
+   [
+    "install_tools",
+    [],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Плоский|Server",
+     "1|ОбщийМодуль.Клиент|ThinClient",
+     "2|ОбщийМодуль.Форма|ThinClient"
+    ]
+   ],
+   [
+    "yax.run_smoke",
+    [
+     "0|Документ.Д.Форма.Ф|smoke"
+    ],
+    60,
+    "error"
+   ],
+   [
+    "extcheck.run",
+    [
+     "Сервер/Module.bsl",
+     "Плоский/Module.bsl",
+     "Клиент/Module.bsl",
+     "Плохой/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Сервер",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.Плоский",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.Клиент",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.Плохой",
+      "<xml/>"
+     ]
+    ]
+   ],
+   [
+    "materialize",
+    "tests/Тесты"
+   ],
+   [
+    "scen.install",
+    [
+     "Тесты"
+    ],
+    "tree"
+   ],
+   [
+    "scen.run",
+    [
+     "s1"
+    ],
+    false
+   ]
+  ],
+  "timings": [
+   "build",
+   "com",
+   "extcheck",
+   "scenarios",
+   "smoke",
+   "tools",
+   "yaxunit"
+  ]
+ },
+ "com-missing": {
+  "results": [
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Плоский/Module.bsl",
+    "owner": "ОбщийМодуль.Плоский",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "ThinClient",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "yaxunit",
+    "kind": "query",
+    "module": "Сервер/Module.bsl",
+    "owner": "q1",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Плоский/Module.bsl",
+    "owner": "ОбщийМодуль.Плоский",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [
+   "COM недоступен (тест) — серверные пробы и запросы через YAxUnit",
+   "примечание YAxUnit"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "com.available",
+    "V85.COMConnector"
+   ],
+   [
+    "install_tools",
+    [],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Сервер|Server",
+     "1|ОбщийМодуль.Плоский|Server",
+     "2|ОбщийМодуль.Клиент|ThinClient",
+     "3|q1|Server"
+    ]
+   ],
+   [
+    "extcheck.run",
+    [
+     "Сервер/Module.bsl",
+     "Плоский/Module.bsl",
+     "Клиент/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Сервер",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.Плоский",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.Клиент",
+      "<xml/>"
+     ]
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "com",
+   "extcheck",
+   "tools",
+   "yaxunit"
+  ]
+ },
+ "com-fails": {
+  "results": [
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Плоский/Module.bsl",
+    "owner": "ОбщийМодуль.Плоский",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "ThinClient",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "yaxunit",
+    "kind": "query",
+    "module": "Сервер/Module.bsl",
+    "owner": "q1",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Плоский/Module.bsl",
+    "owner": "ОбщийМодуль.Плоский",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [
+   "коннектор другой версии — серверные пробы и запросы через YAxUnit",
+   "примечание YAxUnit"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "com.available",
+    "V85.COMConnector"
+   ],
+   [
+    "com.run",
+    [
+     "Сервер/Module.bsl",
+     "Плоский/Module.bsl"
+    ],
+    [
+     "q1"
+    ]
+   ],
+   [
+    "install_tools",
+    [],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Сервер|Server",
+     "1|ОбщийМодуль.Плоский|Server",
+     "2|ОбщийМодуль.Клиент|ThinClient",
+     "3|q1|Server"
+    ]
+   ],
+   [
+    "extcheck.run",
+    [
+     "Сервер/Module.bsl",
+     "Плоский/Module.bsl",
+     "Клиент/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Сервер",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.Плоский",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.Клиент",
+      "<xml/>"
+     ]
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "com",
+   "extcheck",
+   "tools",
+   "yaxunit"
+  ]
+ },
+ "com-fails-no-yax": {
+  "results": [
+   {
+    "executor": "plan",
+    "kind": "probe",
+    "module": "Плоский/Module.bsl",
+    "owner": "ОбщийМодуль.Плоский",
+    "context": "Server",
+    "outcome": "skipped",
+    "message": "сервер без внешнего соединения — не найдено: YAxUnit (--yaxunit; environment.yaxunit)",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Плоский/Module.bsl",
+    "owner": "ОбщийМодуль.Плоский",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [],
+  "notChecked": [
+   {
+    "check": "probes-client",
+    "what": "проверка «компиляция в тонком клиенте»",
+    "file": null,
+    "line": null,
+    "reason": "не найдено: YAxUnit (--yaxunit; environment.yaxunit) — теряется: ошибки компиляции клиентских модулей",
+    "reasonCode": "no-yaxunit"
+   },
+   {
+    "check": "probes-server",
+    "what": "проверка «компиляция на сервере и во внешнем соединении»",
+    "file": null,
+    "line": null,
+    "reason": "не найдено: коннектор другой версии; YAxUnit (--yaxunit; environment.yaxunit) — теряется: ошибки компиляции серверных модулей",
+    "reasonCode": "no-yaxunit"
+   },
+   {
+    "check": "queries",
+    "what": "проверка «разбор запросов платформой»",
+    "file": null,
+    "line": null,
+    "reason": "не найдено: коннектор другой версии; YAxUnit (--yaxunit; environment.yaxunit) — теряется: ошибки в текстах запросов",
+    "reasonCode": "no-yaxunit"
+   }
+  ],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "com.available",
+    "V85.COMConnector"
+   ],
+   [
+    "com.run",
+    [
+     "Сервер/Module.bsl",
+     "Плоский/Module.bsl"
+    ],
+    [
+     "q1"
+    ]
+   ],
+   [
+    "extcheck.run",
+    [
+     "Сервер/Module.bsl",
+     "Плоский/Module.bsl",
+     "Клиент/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Сервер",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.Плоский",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.Клиент",
+      "<xml/>"
+     ]
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "com",
+   "extcheck"
+  ]
+ },
+ "no-tools": {
+  "results": [
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Плоский/Module.bsl",
+    "owner": "ОбщийМодуль.Плоский",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [],
+  "notChecked": [
+   {
+    "check": "probes-server",
+    "what": "проверка «компиляция на сервере и во внешнем соединении»",
+    "file": null,
+    "line": null,
+    "reason": "не найдено: COM-соединение (Windows, pywin32) или YAxUnit (--yaxunit; environment.yaxunit) — теряется: ошибки компиляции серверных модулей",
+    "reasonCode": "no-com"
+   },
+   {
+    "check": "queries",
+    "what": "проверка «разбор запросов платформой»",
+    "file": null,
+    "line": null,
+    "reason": "не найдено: COM-соединение (Windows, pywin32) или YAxUnit (--yaxunit; environment.yaxunit) — теряется: ошибки в текстах запросов",
+    "reasonCode": "no-com"
+   },
+   {
+    "check": "probes-client",
+    "what": "проверка «компиляция в тонком клиенте»",
+    "file": null,
+    "line": null,
+    "reason": "не найдено: YAxUnit (--yaxunit; environment.yaxunit) — теряется: ошибки компиляции клиентских модулей",
+    "reasonCode": "no-yaxunit"
+   },
+   {
+    "check": "smoke",
+    "what": "проверка «открытие изменённых форм»",
+    "file": null,
+    "line": null,
+    "reason": "не найдено: YAxUnit (--yaxunit; environment.yaxunit) — теряется: ошибки при открытии форм",
+    "reasonCode": "no-yaxunit"
+   },
+   {
+    "check": "scenarios",
+    "what": "проверка «сценарные тесты по изменённым методам»",
+    "file": null,
+    "line": null,
+    "reason": "не найдено: YAxUnit (--yaxunit; environment.yaxunit) — теряется: логика изменённых методов (тесты)",
+    "reasonCode": "no-yaxunit"
+   }
+  ],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "com.available",
+    "V85.COMConnector"
+   ],
+   [
+    "extcheck.run",
+    [
+     "Сервер/Module.bsl",
+     "Плоский/Module.bsl",
+     "Клиент/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Сервер",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.Плоский",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.Клиент",
+      "<xml/>"
+     ]
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "extcheck"
+  ]
+ },
+ "no-yax-com-ok": {
+  "results": [
+   {
+    "executor": "plan",
+    "kind": "probe",
+    "module": "Плоский/Module.bsl",
+    "owner": "ОбщийМодуль.Плоский",
+    "context": "Server",
+    "outcome": "skipped",
+    "message": "сервер без внешнего соединения — не найдено: YAxUnit (--yaxunit; environment.yaxunit)",
+    "line": null
+   },
+   {
+    "executor": "com",
+    "kind": "probe",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "com",
+    "kind": "probe",
+    "module": "Плоский/Module.bsl",
+    "owner": "ОбщийМодуль.Плоский",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "com",
+    "kind": "query",
+    "module": "Сервер/Module.bsl",
+    "owner": "q1",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null,
+    "query": "q1"
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Плоский/Module.bsl",
+    "owner": "ОбщийМодуль.Плоский",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [
+   "примечание COM"
+  ],
+  "notChecked": [
+   {
+    "check": "probes-client",
+    "what": "проверка «компиляция в тонком клиенте»",
+    "file": null,
+    "line": null,
+    "reason": "не найдено: YAxUnit (--yaxunit; environment.yaxunit) — теряется: ошибки компиляции клиентских модулей",
+    "reasonCode": "no-yaxunit"
+   }
+  ],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "com.available",
+    "V85.COMConnector"
+   ],
+   [
+    "com.run",
+    [
+     "Сервер/Module.bsl",
+     "Плоский/Module.bsl"
+    ],
+    [
+     "q1"
+    ]
+   ],
+   [
+    "extcheck.run",
+    [
+     "Сервер/Module.bsl",
+     "Плоский/Module.bsl",
+     "Клиент/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Сервер",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.Плоский",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.Клиент",
+      "<xml/>"
+     ]
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "com",
+   "extcheck"
+  ]
+ },
+ "server-yaxunit": {
+  "results": [
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Объект/Module.bsl",
+    "owner": "ОбщийМодуль.Объект",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "yaxunit",
+    "kind": "query",
+    "module": "Сервер/Module.bsl",
+    "owner": "q1",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "plan",
+    "kind": "uncovered",
+    "module": "Объект/Module.bsl",
+    "owner": "ОбщийМодуль.Объект",
+    "context": "WebClient",
+    "needs": "designer:WebClient",
+    "outcome": "skipped",
+    "message": "только в CI",
+    "line": null
+   }
+  ],
+  "notes": [
+   "COM отключён настройкой (environment.executors.server) — серверные пробы и запросы через YAxUnit",
+   "примечание YAxUnit"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "install_tools",
+    [],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Сервер|Server",
+     "1|ОбщийМодуль.Объект|Server",
+     "2|q1|Server"
+    ]
+   ],
+   [
+    "extcheck.run",
+    [
+     "Сервер/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Сервер",
+      "<xml/>"
+     ]
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "com",
+   "extcheck",
+   "tools",
+   "yaxunit"
+  ]
+ },
+ "session-start": {
+  "results": [
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": null,
+    "owner": "старт сеанса",
+    "context": "ThinClient",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [
+   "примечание YAxUnit"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "install_tools",
+    [],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|старт сеанса|ThinClient"
+    ]
+   ],
+   [
+    "extcheck.run",
+    [],
+    []
+   ]
+  ],
+  "timings": [
+   "build",
+   "extcheck",
+   "tools",
+   "yaxunit"
+  ]
+ },
+ "session-start-off": {
+  "results": [],
+  "notes": [],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "extcheck.run",
+    [],
+    []
+   ]
+  ],
+  "timings": [
+   "build",
+   "extcheck"
+  ]
+ },
+ "conflict": {
+  "results": [
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "ThinClient",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [
+   "примечание YAxUnit"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "install_tools",
+    [],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Клиент|ThinClient"
+    ]
+   ],
+   [
+    "install_tools",
+    [
+     "ОбщийМодуль"
+    ],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Клиент|ThinClient"
+    ]
+   ],
+   [
+    "extcheck.run",
+    [
+     "Клиент/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Клиент",
+      "<xml/>"
+     ]
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "extcheck",
+   "tools",
+   "yaxunit"
+  ]
+ },
+ "load-error": {
+  "results": [
+   {
+    "executor": "build",
+    "kind": "load",
+    "module": "Форма/Form.xml",
+    "owner": "Форма/Form.xml",
+    "context": "Designer",
+    "outcome": "compile-error",
+    "message": "неверный путь",
+    "line": null
+   }
+  ],
+  "notes": [
+   "пробы не выполнялись: выгрузка не загружается в копию ИБ"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ]
+  ],
+  "timings": [
+   "build"
+  ]
+ },
+ "extension": {
+  "results": [
+   {
+    "executor": "com",
+    "kind": "probe",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "ThinClient",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [
+   "примечание COM",
+   "примечание YAxUnit",
+   "примечание расширения"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    "Расш"
+   ],
+   [
+    "com.available",
+    "V85.COMConnector"
+   ],
+   [
+    "com.run",
+    [
+     "Сервер/Module.bsl"
+    ],
+    []
+   ],
+   [
+    "install_tools",
+    [],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Клиент|ThinClient"
+    ]
+   ],
+   [
+    "extcheck.run_extension",
+    "Расш",
+    [
+     "Сервер/Module.bsl",
+     "Клиент/Module.bsl"
+    ],
+    [
+     "ОбщийМодуль.Сервер",
+     "ОбщийМодуль.Клиент",
+     null
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "com",
+   "extcheck",
+   "tools",
+   "yaxunit"
+  ]
+ },
+ "checks-off": {
+  "results": [
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "ThinClient",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Форма/Module.bsl",
+    "owner": "ОбщийМодуль.Форма",
+    "context": "ThinClient",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "scenarios",
+    "kind": "scenario",
+    "module": null,
+    "owner": null,
+    "context": "ThinClient",
+    "outcome": "failed",
+    "message": "тест упал",
+    "line": null
+   }
+  ],
+  "notes": [
+   "примечание YAxUnit"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "install_tools",
+    [],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Клиент|ThinClient",
+     "1|ОбщийМодуль.Форма|ThinClient"
+    ]
+   ],
+   [
+    "materialize",
+    "tests/Тесты"
+   ],
+   [
+    "scen.install",
+    [
+     "Тесты"
+    ],
+    "tree"
+   ],
+   [
+    "scen.run",
+    [
+     "s1"
+    ],
+    false
+   ]
+  ],
+  "timings": [
+   "build",
+   "scenarios",
+   "tools",
+   "yaxunit"
+  ]
+ },
+ "checks-on-missing": {
+  "results": [
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [],
+  "notChecked": [],
+  "infra": [
+   {
+    "message": "[checks] probes-client = \"on\", но не найдено: YAxUnit (--yaxunit; environment.yaxunit)",
+    "reasonCode": "no-yaxunit"
+   },
+   {
+    "message": "[checks] smoke = \"on\", но не найдено: YAxUnit (--yaxunit; environment.yaxunit)",
+    "reasonCode": "no-yaxunit"
+   }
+  ],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "extcheck.run",
+    [
+     "Клиент/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Клиент",
+      "<xml/>"
+     ]
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "extcheck"
+  ]
+ },
+ "web-only": {
+  "results": [
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "extcheck.run",
+    [
+     "Клиент/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Клиент",
+      "<xml/>"
+     ]
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "extcheck"
+  ]
+ },
+ "session": {
+  "results": [
+   {
+    "executor": "com",
+    "kind": "probe",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "ThinClient",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "scenarios",
+    "kind": "scenario",
+    "module": null,
+    "owner": null,
+    "context": "ThinClient",
+    "outcome": "failed",
+    "message": "тест упал",
+    "line": null
+   }
+  ],
+  "notes": [
+   "примечание COM",
+   "примечание YAxUnit"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "unlock"
+   ],
+   [
+    "unlock"
+   ],
+   [
+    "db_config_changed",
+    "V85.COMConnector"
+   ],
+   [
+    "com.available",
+    "V85.COMConnector"
+   ],
+   [
+    "com.run",
+    [
+     "Сервер/Module.bsl"
+    ],
+    []
+   ],
+   [
+    "install_tools",
+    [],
+    true
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Клиент|ThinClient"
+    ]
+   ],
+   [
+    "extcheck.run",
+    [
+     "Сервер/Module.bsl",
+     "Клиент/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Сервер",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.Клиент",
+      "<xml/>"
+     ]
+    ]
+   ],
+   [
+    "materialize",
+    "tests/Тесты"
+   ],
+   [
+    "session.guard",
+    "Тесты"
+   ],
+   [
+    "scen.install",
+    [
+     "Тесты"
+    ],
+    "tree"
+   ],
+   [
+    "scen.run",
+    [
+     "s1"
+    ],
+    false
+   ]
+  ],
+  "timings": [
+   "build",
+   "com",
+   "extcheck",
+   "scenarios",
+   "tools",
+   "yaxunit"
+  ]
+ },
+ "session-ext": {
+  "results": [
+   {
+    "executor": "com",
+    "kind": "probe",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [
+   "примечание COM",
+   "примечание расширения"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "session.load_project_extension",
+    "Расш"
+   ],
+   [
+    "com.available",
+    "V85.COMConnector"
+   ],
+   [
+    "com.run",
+    [
+     "Сервер/Module.bsl"
+    ],
+    []
+   ],
+   [
+    "extcheck.run_extension",
+    "Расш",
+    [
+     "Сервер/Module.bsl"
+    ],
+    [
+     "ОбщийМодуль.Сервер",
+     null
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "com",
+   "extcheck"
+  ]
+ },
+ "session-db-changed": {
+  "results": [
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [
+   "конфигурация БД рабочей базы не обновлена: пробы исполнения не выполнялись"
+  ],
+  "notChecked": [
+   {
+    "check": "probes-server",
+    "what": "проверка «компиляция на сервере и во внешнем соединении»",
+    "file": null,
+    "line": null,
+    "reason": "основная конфигурация рабочей базы не применена к БД (КонфигурацияИзменена): пробы исполнили бы прежний код — обновите конфигурацию базы данных — теряется: ошибки компиляции серверных модулей"
+   },
+   {
+    "check": "probes-client",
+    "what": "проверка «компиляция в тонком клиенте»",
+    "file": null,
+    "line": null,
+    "reason": "основная конфигурация рабочей базы не применена к БД (КонфигурацияИзменена): пробы исполнили бы прежний код — обновите конфигурацию базы данных — теряется: ошибки компиляции клиентских модулей"
+   },
+   {
+    "check": "queries",
+    "what": "проверка «разбор запросов платформой»",
+    "file": null,
+    "line": null,
+    "reason": "основная конфигурация рабочей базы не применена к БД (КонфигурацияИзменена): пробы исполнили бы прежний код — обновите конфигурацию базы данных — теряется: ошибки в текстах запросов"
+   },
+   {
+    "check": "scenarios",
+    "what": "проверка «сценарные тесты по изменённым методам»",
+    "file": null,
+    "line": null,
+    "reason": "основная конфигурация рабочей базы не применена к БД (КонфигурацияИзменена): пробы исполнили бы прежний код — обновите конфигурацию базы данных — теряется: логика изменённых методов (тесты)"
+   },
+   {
+    "check": "smoke",
+    "what": "проверка «открытие изменённых форм»",
+    "file": null,
+    "line": null,
+    "reason": "основная конфигурация рабочей базы не применена к БД (КонфигурацияИзменена): пробы исполнили бы прежний код — обновите конфигурацию базы данных — теряется: ошибки при открытии форм"
+   }
+  ],
+  "infra": [],
+  "calls": [
+   [
+    "unlock"
+   ],
+   [
+    "unlock"
+   ],
+   [
+    "db_config_changed",
+    "V85.COMConnector"
+   ],
+   [
+    "extcheck.run",
+    [
+     "Сервер/Module.bsl",
+     "Клиент/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Сервер",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.Клиент",
+      "<xml/>"
+     ]
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "extcheck"
+  ]
+ },
+ "empty": {
+  "results": [],
+  "notes": [],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ]
+  ],
+  "timings": [
+   "build"
+  ]
+ },
+ "conflict-exhausted": {
+  "results": [
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [
+   "пробы YAxUnit не выполнены: конфликт имён YAxUnit с конфигурацией не устранён переименованием за 4 попытки (имена: ОбщийМодуль)"
+  ],
+  "notChecked": [
+   {
+    "check": "probes-client",
+    "what": "проверка «компиляция в тонком клиенте»",
+    "file": null,
+    "line": null,
+    "reason": "конфликт имён YAxUnit с конфигурацией не устранён переименованием за 4 попытки (имена: ОбщийМодуль) — теряется: ошибки компиляции клиентских модулей"
+   }
+  ],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "install_tools",
+    [],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Клиент|ThinClient"
+    ]
+   ],
+   [
+    "install_tools",
+    [
+     "ОбщийМодуль"
+    ],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Клиент|ThinClient"
+    ]
+   ],
+   [
+    "install_tools",
+    [
+     "ОбщийМодуль"
+    ],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Клиент|ThinClient"
+    ]
+   ],
+   [
+    "install_tools",
+    [
+     "ОбщийМодуль"
+    ],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Клиент|ThinClient"
+    ]
+   ],
+   [
+    "extcheck.run",
+    [
+     "Клиент/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Клиент",
+      "<xml/>"
+     ]
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "extcheck",
+   "tools",
+   "yaxunit"
+  ]
+ },
+ "conflict-exhausted-on": {
+  "results": [
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [
+   "пробы YAxUnit не выполнены: конфликт имён YAxUnit с конфигурацией не устранён переименованием за 4 попытки (имена: ОбщийМодуль)"
+  ],
+  "notChecked": [],
+  "infra": [
+   {
+    "message": "[checks] probes-client = \"on\", но конфликт имён YAxUnit с конфигурацией не устранён переименованием за 4 попытки (имена: ОбщийМодуль)",
+    "reasonCode": null
+   }
+  ],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "install_tools",
+    [],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Клиент|ThinClient"
+    ]
+   ],
+   [
+    "install_tools",
+    [
+     "ОбщийМодуль"
+    ],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Клиент|ThinClient"
+    ]
+   ],
+   [
+    "install_tools",
+    [
+     "ОбщийМодуль"
+    ],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Клиент|ThinClient"
+    ]
+   ],
+   [
+    "install_tools",
+    [
+     "ОбщийМодуль"
+    ],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Клиент|ThinClient"
+    ]
+   ],
+   [
+    "extcheck.run",
+    [
+     "Клиент/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Клиент",
+      "<xml/>"
+     ]
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "extcheck",
+   "tools",
+   "yaxunit"
+  ]
+ },
+ "conflict-exhausted-com": {
+  "results": [
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [
+   "COM недоступен (тест) — серверные пробы и запросы через YAxUnit",
+   "пробы YAxUnit не выполнены: конфликт имён YAxUnit с конфигурацией не устранён переименованием за 4 попытки (имена: ОбщийМодуль)"
+  ],
+  "notChecked": [
+   {
+    "check": "probes-server",
+    "what": "проверка «компиляция на сервере и во внешнем соединении»",
+    "file": null,
+    "line": null,
+    "reason": "конфликт имён YAxUnit с конфигурацией не устранён переименованием за 4 попытки (имена: ОбщийМодуль) — теряется: ошибки компиляции серверных модулей"
+   },
+   {
+    "check": "probes-client",
+    "what": "проверка «компиляция в тонком клиенте»",
+    "file": null,
+    "line": null,
+    "reason": "конфликт имён YAxUnit с конфигурацией не устранён переименованием за 4 попытки (имена: ОбщийМодуль) — теряется: ошибки компиляции клиентских модулей"
+   },
+   {
+    "check": "queries",
+    "what": "проверка «разбор запросов платформой»",
+    "file": null,
+    "line": null,
+    "reason": "конфликт имён YAxUnit с конфигурацией не устранён переименованием за 4 попытки (имена: ОбщийМодуль) — теряется: ошибки в текстах запросов"
+   }
+  ],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "com.available",
+    "V85.COMConnector"
+   ],
+   [
+    "install_tools",
+    [],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Сервер|Server",
+     "1|ОбщийМодуль.Клиент|ThinClient",
+     "2|q1|Server"
+    ]
+   ],
+   [
+    "install_tools",
+    [
+     "ОбщийМодуль"
+    ],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Сервер|Server",
+     "1|ОбщийМодуль.Клиент|ThinClient",
+     "2|q1|Server"
+    ]
+   ],
+   [
+    "install_tools",
+    [
+     "ОбщийМодуль"
+    ],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Сервер|Server",
+     "1|ОбщийМодуль.Клиент|ThinClient",
+     "2|q1|Server"
+    ]
+   ],
+   [
+    "install_tools",
+    [
+     "ОбщийМодуль"
+    ],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Сервер|Server",
+     "1|ОбщийМодуль.Клиент|ThinClient",
+     "2|q1|Server"
+    ]
+   ],
+   [
+    "extcheck.run",
+    [
+     "Сервер/Module.bsl",
+     "Клиент/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Сервер",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.Клиент",
+      "<xml/>"
+     ]
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "com",
+   "extcheck",
+   "tools",
+   "yaxunit"
+  ]
+ },
+ "conflict-smoke": {
+  "results": [
+   {
+    "executor": "smoke",
+    "kind": "smoke",
+    "module": "Форма/Form.xml",
+    "owner": "Документ.Д.Форма.Ф",
+    "context": "ThinClient",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "install_tools",
+    [],
+    false
+   ],
+   [
+    "yax.run_smoke",
+    [
+     "0|Документ.Д.Форма.Ф|smoke"
+    ],
+    60,
+    "error"
+   ],
+   [
+    "install_tools",
+    [
+     "ОбщийМодуль"
+    ],
+    false
+   ],
+   [
+    "yax.run_smoke",
+    [
+     "0|Документ.Д.Форма.Ф|smoke"
+    ],
+    60,
+    "error"
+   ]
+  ],
+  "timings": [
+   "build",
+   "smoke",
+   "tools"
+  ]
+ },
+ "conflict-scenarios": {
+  "results": [
+   {
+    "executor": "scenarios",
+    "kind": "scenario",
+    "module": null,
+    "owner": null,
+    "context": "ThinClient",
+    "outcome": "failed",
+    "message": "тест упал",
+    "line": null
+   }
+  ],
+  "notes": [],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "install_tools",
+    [],
+    false
+   ],
+   [
+    "materialize",
+    "tests/Тесты"
+   ],
+   [
+    "scen.install",
+    [
+     "Тесты"
+    ],
+    "tree"
+   ],
+   [
+    "scen.run",
+    [
+     "s1"
+    ],
+    false
+   ],
+   [
+    "install_tools",
+    [
+     "ОбщийМодуль"
+    ],
+    false
+   ],
+   [
+    "scen.run",
+    [
+     "s1"
+    ],
+    false
+   ]
+  ],
+  "timings": [
+   "build",
+   "scenarios",
+   "tools"
+  ]
+ },
+ "conflict-exhausted-smoke-scen": {
+  "results": [
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [
+   "пробы YAxUnit не выполнены: конфликт имён YAxUnit с конфигурацией не устранён переименованием за 4 попытки (имена: ОбщийМодуль)",
+   "дымовой тест форм не выполнен: конфликт имён YAxUnit с конфигурацией не устранён переименованием за 4 попытки (имена: ОбщийМодуль)",
+   "сценарии не выполнены: конфликт имён YAxUnit с конфигурацией не устранён переименованием за 4 попытки (имена: ОбщийМодуль)"
+  ],
+  "notChecked": [
+   {
+    "check": "probes-client",
+    "what": "проверка «компиляция в тонком клиенте»",
+    "file": null,
+    "line": null,
+    "reason": "конфликт имён YAxUnit с конфигурацией не устранён переименованием за 4 попытки (имена: ОбщийМодуль) — теряется: ошибки компиляции клиентских модулей"
+   },
+   {
+    "check": "smoke",
+    "what": "проверка «открытие изменённых форм»",
+    "file": null,
+    "line": null,
+    "reason": "конфликт имён YAxUnit с конфигурацией не устранён переименованием за 4 попытки (имена: ОбщийМодуль) — теряется: ошибки при открытии форм"
+   },
+   {
+    "check": "scenarios",
+    "what": "проверка «сценарные тесты по изменённым методам»",
+    "file": null,
+    "line": null,
+    "reason": "конфликт имён YAxUnit с конфигурацией не устранён переименованием за 4 попытки (имена: ОбщийМодуль) — теряется: логика изменённых методов (тесты)"
+   }
+  ],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "install_tools",
+    [],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Клиент|ThinClient"
+    ]
+   ],
+   [
+    "install_tools",
+    [
+     "ОбщийМодуль"
+    ],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Клиент|ThinClient"
+    ]
+   ],
+   [
+    "install_tools",
+    [
+     "ОбщийМодуль"
+    ],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Клиент|ThinClient"
+    ]
+   ],
+   [
+    "install_tools",
+    [
+     "ОбщийМодуль"
+    ],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Клиент|ThinClient"
+    ]
+   ],
+   [
+    "extcheck.run",
+    [
+     "Клиент/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Клиент",
+      "<xml/>"
+     ]
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "extcheck",
+   "scenarios",
+   "smoke",
+   "tools",
+   "yaxunit"
+  ]
+ },
+ "com-missing-ec": {
+  "results": [
+   {
+    "executor": "com",
+    "kind": "session",
+    "module": "ВнешнееСоединение/Module.bsl",
+    "owner": "ОбщийМодуль.ВнешнееСоединение",
+    "context": "ExternalConnection",
+    "outcome": "skipped",
+    "message": "COM недоступен (тест); теряется: ошибки компиляции кода внешнего соединения",
+    "line": null,
+    "check": "probes-server"
+   },
+   {
+    "executor": "com",
+    "kind": "probe",
+    "module": "ВетвьВС/Module.bsl",
+    "owner": "ОбщийМодуль.ВетвьВС",
+    "context": "ExternalConnection",
+    "outcome": "skipped",
+    "message": "COM недоступен (тест); код под условием «ВнешнееСоединение» проверяется только через COM — теряется: ошибки компиляции кода внешнего соединения",
+    "line": null,
+    "check": "probes-server"
+   },
+   {
+    "executor": "com",
+    "kind": "probe",
+    "module": "ТолькоВС/Module.bsl",
+    "owner": "ОбщийМодуль.ТолькоВС",
+    "context": "ExternalConnection",
+    "outcome": "skipped",
+    "message": "COM недоступен (тест); код под условием «ВнешнееСоединение» проверяется только через COM — теряется: ошибки компиляции кода внешнего соединения",
+    "line": null,
+    "check": "probes-server"
+   },
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "ВетвьВС/Module.bsl",
+    "owner": "ОбщийМодуль.ВетвьВС",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "ThinClient",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "ВетвьВС/Module.bsl",
+    "owner": "ОбщийМодуль.ВетвьВС",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "ТолькоВС/Module.bsl",
+    "owner": "ОбщийМодуль.ТолькоВС",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [
+   "COM недоступен (тест) — серверные пробы и запросы через YAxUnit",
+   "примечание YAxUnit"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "com.available",
+    "V85.COMConnector"
+   ],
+   [
+    "install_tools",
+    [],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.ВетвьВС|Server",
+     "1|ОбщийМодуль.Клиент|ThinClient"
+    ]
+   ],
+   [
+    "extcheck.run",
+    [
+     "ВетвьВС/Module.bsl",
+     "ТолькоВС/Module.bsl",
+     "Клиент/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.ВетвьВС",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.ТолькоВС",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.Клиент",
+      "<xml/>"
+     ]
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "com",
+   "extcheck",
+   "tools",
+   "yaxunit"
+  ]
+ },
+ "ec-no-tools": {
+  "results": [],
+  "notes": [],
+  "notChecked": [
+   {
+    "check": "probes-server",
+    "what": "проверка «компиляция на сервере и во внешнем соединении»",
+    "file": null,
+    "line": null,
+    "reason": "не найдено: COM-соединение (Windows, pywin32) или YAxUnit (--yaxunit; environment.yaxunit) — теряется: ошибки компиляции серверных модулей",
+    "reasonCode": "no-com"
+   }
+  ],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "com.available",
+    "V85.COMConnector"
+   ],
+   [
+    "extcheck.run",
+    [],
+    []
+   ]
+  ],
+  "timings": [
+   "build",
+   "extcheck"
+  ]
+ },
+ "com-ok-ec": {
+  "results": [
+   {
+    "executor": "com",
+    "kind": "session",
+    "module": "ВнешнееСоединение/Module.bsl",
+    "owner": "ОбщийМодуль.ВнешнееСоединение",
+    "context": "ExternalConnection",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [
+   "примечание COM"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "com.available",
+    "V85.COMConnector"
+   ],
+   [
+    "com.run",
+    [],
+    []
+   ],
+   [
+    "extcheck.run",
+    [],
+    []
+   ]
+  ],
+  "timings": [
+   "build",
+   "com",
+   "extcheck"
+  ]
+ },
+ "contexts-no-ec": {
+  "results": [
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "ВетвьВС/Module.bsl",
+    "owner": "ОбщийМодуль.ВетвьВС",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "ThinClient",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "yaxunit",
+    "kind": "query",
+    "module": "Сервер/Module.bsl",
+    "owner": "q1",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "ВетвьВС/Module.bsl",
+    "owner": "ОбщийМодуль.ВетвьВС",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "ТолькоВС/Module.bsl",
+    "owner": "ОбщийМодуль.ТолькоВС",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "plan",
+    "kind": "uncovered",
+    "module": "ВнешнееСоединение/Module.bsl",
+    "owner": "ОбщийМодуль.ВнешнееСоединение",
+    "context": "ExternalConnection",
+    "needs": "designer:ExternalConnection",
+    "outcome": "skipped",
+    "message": "контекст недоступен локально",
+    "line": null
+   }
+  ],
+  "notes": [
+   "внешнее соединение исключено настройкой (environment.contexts) — серверные пробы и запросы через YAxUnit",
+   "примечание YAxUnit"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "install_tools",
+    [],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Сервер|Server",
+     "1|ОбщийМодуль.ВетвьВС|Server",
+     "2|ОбщийМодуль.Клиент|ThinClient",
+     "3|q1|Server"
+    ]
+   ],
+   [
+    "extcheck.run",
+    [
+     "Сервер/Module.bsl",
+     "ВетвьВС/Module.bsl",
+     "ТолькоВС/Module.bsl",
+     "Клиент/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Сервер",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.ВетвьВС",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.ТолькоВС",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.Клиент",
+      "<xml/>"
+     ]
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "com",
+   "extcheck",
+   "tools",
+   "yaxunit"
+  ]
+ },
+ "contexts-no-ec-no-yax": {
+  "results": [
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "ТолькоВС/Module.bsl",
+    "owner": "ОбщийМодуль.ТолькоВС",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [],
+  "notChecked": [
+   {
+    "check": "probes-server",
+    "what": "проверка «компиляция на сервере и во внешнем соединении»",
+    "file": null,
+    "line": null,
+    "reason": "внешнее соединение исключено настройкой (environment.contexts); не найдено: YAxUnit (--yaxunit; environment.yaxunit) — теряется: ошибки компиляции серверных модулей",
+    "reasonCode": "no-yaxunit"
+   },
+   {
+    "check": "queries",
+    "what": "проверка «разбор запросов платформой»",
+    "file": null,
+    "line": null,
+    "reason": "внешнее соединение исключено настройкой (environment.contexts); не найдено: YAxUnit (--yaxunit; environment.yaxunit) — теряется: ошибки в текстах запросов",
+    "reasonCode": "no-yaxunit"
+   }
+  ],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "extcheck.run",
+    [
+     "Сервер/Module.bsl",
+     "ТолькоВС/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Сервер",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.ТолькоВС",
+      "<xml/>"
+     ]
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "extcheck"
+  ]
+ },
+ "contexts-no-ec-no-yax-on": {
+  "results": [
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [],
+  "notChecked": [],
+  "infra": [
+   {
+    "message": "[checks] probes-server = \"on\", но внешнее соединение исключено настройкой (environment.contexts); не найдено: YAxUnit (--yaxunit; environment.yaxunit)",
+    "reasonCode": "no-yaxunit"
+   },
+   {
+    "message": "[checks] queries = \"on\", но внешнее соединение исключено настройкой (environment.contexts); не найдено: YAxUnit (--yaxunit; environment.yaxunit)",
+    "reasonCode": "no-yaxunit"
+   }
+  ],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "extcheck.run",
+    [
+     "Сервер/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Сервер",
+      "<xml/>"
+     ]
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "extcheck"
+  ]
+ },
+ "contexts-ec-only-modules": {
+  "results": [
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "ТолькоВС/Module.bsl",
+    "owner": "ОбщийМодуль.ТолькоВС",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "plan",
+    "kind": "uncovered",
+    "module": "ВнешнееСоединение/Module.bsl",
+    "owner": "ОбщийМодуль.ВнешнееСоединение",
+    "context": "ExternalConnection",
+    "needs": "designer:ExternalConnection",
+    "outcome": "skipped",
+    "message": "контекст недоступен локально",
+    "line": null
+   }
+  ],
+  "notes": [],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "extcheck.run",
+    [
+     "ТолькоВС/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.ТолькоВС",
+      "<xml/>"
+     ]
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "extcheck"
+  ]
+ },
+ "contexts-no-ec-server-yaxunit": {
+  "results": [
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "ВетвьВС/Module.bsl",
+    "owner": "ОбщийМодуль.ВетвьВС",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "yaxunit",
+    "kind": "query",
+    "module": "Сервер/Module.bsl",
+    "owner": "q1",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "ВетвьВС/Module.bsl",
+    "owner": "ОбщийМодуль.ВетвьВС",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "ТолькоВС/Module.bsl",
+    "owner": "ОбщийМодуль.ТолькоВС",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [
+   "внешнее соединение исключено настройкой (environment.contexts) — серверные пробы и запросы через YAxUnit",
+   "примечание YAxUnit"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "install_tools",
+    [],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Сервер|Server",
+     "1|ОбщийМодуль.ВетвьВС|Server",
+     "2|q1|Server"
+    ]
+   ],
+   [
+    "extcheck.run",
+    [
+     "Сервер/Module.bsl",
+     "ВетвьВС/Module.bsl",
+     "ТолькоВС/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Сервер",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.ВетвьВС",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.ТолькоВС",
+      "<xml/>"
+     ]
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "com",
+   "extcheck",
+   "tools",
+   "yaxunit"
+  ]
+ },
+ "contexts-no-ec-plain": {
+  "results": [
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Плоский/Module.bsl",
+    "owner": "ОбщийМодуль.Плоский",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Объект/Module.bsl",
+    "owner": "ОбщийМодуль.Объект",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Плоский/Module.bsl",
+    "owner": "ОбщийМодуль.Плоский",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "plan",
+    "kind": "uncovered",
+    "module": "Объект/Module.bsl",
+    "owner": "ОбщийМодуль.Объект",
+    "context": "WebClient",
+    "needs": "designer:WebClient",
+    "outcome": "skipped",
+    "message": "только в CI",
+    "line": null
+   }
+  ],
+  "notes": [
+   "внешнее соединение исключено настройкой (environment.contexts) — серверные пробы и запросы через YAxUnit",
+   "примечание YAxUnit"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "install_tools",
+    [],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Плоский|Server",
+     "1|ОбщийМодуль.Объект|Server"
+    ]
+   ],
+   [
+    "extcheck.run",
+    [
+     "Плоский/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Плоский",
+      "<xml/>"
+     ]
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "com",
+   "extcheck",
+   "tools",
+   "yaxunit"
+  ]
+ },
+ "contexts-no-ec-probes-off": {
+  "results": [
+   {
+    "executor": "yaxunit",
+    "kind": "query",
+    "module": "Сервер/Module.bsl",
+    "owner": "q1",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [
+   "внешнее соединение исключено настройкой (environment.contexts) — серверные пробы и запросы через YAxUnit",
+   "примечание YAxUnit"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "install_tools",
+    [],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|q1|Server"
+    ]
+   ],
+   [
+    "extcheck.run",
+    [
+     "Сервер/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Сервер",
+      "<xml/>"
+     ]
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "com",
+   "extcheck",
+   "tools",
+   "yaxunit"
+  ]
+ },
+ "contexts-no-ec-queries-off": {
+  "results": [
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [
+   "внешнее соединение исключено настройкой (environment.contexts) — серверные пробы и запросы через YAxUnit",
+   "примечание YAxUnit"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "install_tools",
+    [],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Сервер|Server"
+    ]
+   ],
+   [
+    "extcheck.run",
+    [
+     "Сервер/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Сервер",
+      "<xml/>"
+     ]
+    ]
+   ]
+  ],
+  "timings": [
+   "build",
+   "com",
+   "extcheck",
+   "tools",
+   "yaxunit"
+  ]
+ },
+ "no-git": {
+  "results": [
+   {
+    "executor": "com",
+    "kind": "probe",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "yaxunit",
+    "kind": "probe",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "ThinClient",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Сервер/Module.bsl",
+    "owner": "ОбщийМодуль.Сервер",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Клиент/Module.bsl",
+    "owner": "ОбщийМодуль.Клиент",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "scenarios",
+    "kind": "scenario",
+    "module": null,
+    "owner": null,
+    "context": "ThinClient",
+    "outcome": "failed",
+    "message": "тест упал",
+    "line": null
+   }
+  ],
+  "notes": [
+   "примечание COM",
+   "примечание YAxUnit"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build_dirs",
+    null
+   ],
+   [
+    "com.available",
+    "V85.COMConnector"
+   ],
+   [
+    "com.run",
+    [
+     "Сервер/Module.bsl"
+    ],
+    []
+   ],
+   [
+    "install_tools",
+    [],
+    false
+   ],
+   [
+    "yax.run",
+    [
+     "0|ОбщийМодуль.Клиент|ThinClient"
+    ]
+   ],
+   [
+    "extcheck.run",
+    [
+     "Сервер/Module.bsl",
+     "Клиент/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Сервер",
+      "<xml/>"
+     ],
+     [
+      null,
+      "ОбщийМодуль.Клиент",
+      "<xml/>"
+     ]
+    ]
+   ],
+   [
+    "scen.install",
+    [
+     "Тесты"
+    ],
+    "repo"
+   ],
+   [
+    "scen.run",
+    [
+     "s1"
+    ],
+    false
+   ]
+  ],
+  "timings": [
+   "build",
+   "com",
+   "extcheck",
+   "scenarios",
+   "tools",
+   "yaxunit"
+  ]
+ }
+}

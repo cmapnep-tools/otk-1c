@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Утечки памяти / циклические ссылки на сервере: CALL (Memory, MemoryPeak) + LEAKS со стеком создания объектов.
+     Объёмный — включать на время расследования. otk tj calls, value memory -->
+<config xmlns="http://v8.1c.ru/v8/tech-log">
+	<log location="C:\1c_logs\leaks" history="12">
+		<event><eq property="name" value="CALL"/></event>
+		<event><eq property="name" value="LEAKS"/></event>
+		<property name="all"/>
+	</log>
+	<leaks collect="1">
+		<point call="server"/>
+	</leaks>
+</config>

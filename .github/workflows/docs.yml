@@ -1,0 +1,46 @@
+# Сайт документации на GitHub Pages: сборка MkDocs (--strict: битая ссылка или якорь — ошибка) и выкладка
+# при изменении документации в master. Проверка той же сборки на PR — задание docs в ci.yml.
+name: docs
+
+on:
+  push:
+    branches: [master]
+    paths: [docs/**, README.md, mkdocs.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - run: |
+          pip install -r docs/.site/requirements.txt
+          mkdocs build --strict
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site/
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

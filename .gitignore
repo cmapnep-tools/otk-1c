@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+*.egg-info/
+# Сборки и прогоны: вложения релизов / каталог прогона вне репозитория
+dist/
+build/
+runs/
+site/
+*.cf
+*.cfe
+*.cfu
+*.epf
+*.log
+# Локальные настройки окружения
+otk.local.toml

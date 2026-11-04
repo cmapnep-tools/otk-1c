@@ -1,0 +1,41 @@
+name: Ложное срабатывание
+description: ОТК сообщает об ошибке, которой в коде нет
+labels: ["kind/false-positive"]
+body:
+  - type: input
+    id: code
+    attributes:
+      label: Код находки
+      placeholder: metadata-ref, probe/compile-error, bslls:…
+    validations:
+      required: true
+  - type: textarea
+    id: finding
+    attributes:
+      label: Находка из сводки
+      description: Строка из summary.md или запись из summary.json.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: fragment
+    attributes:
+      label: Минимальный фрагмент кода 1С
+      description: Метод или модуль, на котором воспроизводится; без кода и данных заказчика. Почему это не ошибка?
+      render: bsl
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Вывод `otk doctor` с теми же ключами
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Окружение
+      placeholder: "версия ОТК (otk --version), платформа и режим совместимости, выгрузка / EDT"
+    validations:
+      required: true

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Постоянный журнал рабочих серверов: ошибки, процессы, соединения, сеансы, кластер, администрирование; вызовы без
+     контекста (меньше объём); дампы аварийных завершений. Каталоги архивировать, при нехватке места — history="12"
+     и без CallScall. otk tj errors | calls | events -->
+<config xmlns="http://v8.1c.ru/v8/tech-log">
+	<dump create="true" location="C:\1c_dumps" type="3" prntscrn="false"/>
+	<log location="C:\1c_logs\all" history="28">
+		<event><eq property="name" value="EXCP"/></event>
+		<event><eq property="name" value="PROC"/></event>
+		<event><eq property="name" value="ADMIN"/></event>
+		<event><eq property="name" value="CONN"/></event>
+		<event><eq property="name" value="SESN"/></event>
+		<event><eq property="name" value="CLSTR"/></event>
+		<event><eq property="name" value="SRVC"/></event>
+		<property name="all"/>
+	</log>
+	<log location="C:\1c_logs\callscall" history="28">
+		<event><eq property="name" value="CALL"/></event>
+		<event><eq property="name" value="SCALL"/></event>
+		<property name="Context">
+			<event><eq property="name" value=""/></event>
+		</property>
+		<property name="all"/>
+	</log>
+</config>

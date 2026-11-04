@@ -1,0 +1,13 @@
+# Обновления действий GitHub Actions; у самого пакета зависимостей нет (только стандартная библиотека).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+    labels: [kind/chore, area/ci]
+    commit-message:
+      prefix: ci

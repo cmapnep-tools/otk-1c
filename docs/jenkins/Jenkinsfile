@@ -1,0 +1,51 @@
+// Шаблон: ОТК в Jenkins (Multibranch Pipeline) — проверка запроса на слияние (otk gate) и проверка всех модулей
+// Конфигуратором (otk designer-check). Положить в корень репозитория проекта 1С как Jenkinsfile и заполнить
+// environment: свои пути агента. Агент с меткой windows-1c: платформа 1С, Python 3.11+ и ОТК
+// (python -m pip install otk-1c). Пароль ИБ — учётные данные Secret text с идентификатором otk-password.
+// Копия ИБ и каталог прогонов живут между запусками (частичная загрузка изменённых модулей).
+// Linux-агент: своя метка, sh и python3 вместо bat и python; X-сервер ОТК поднимает сама (docs/linux.md).
+// База gate — целевая ветка запроса (CHANGE_TARGET); нет её в рабочем каталоге — ОТК догрузит сама.
+// designer-check — ночью по расписанию и при сборке с параметром DESIGNER_CHECK.
+pipeline {
+    agent { label 'windows-1c' }
+    options { timeout(time: 6, unit: 'HOURS') }
+    triggers { cron('H 2 * * *') }
+    parameters {
+        booleanParam(name: 'DESIGNER_CHECK', defaultValue: false,
+                     description: 'проверка всех модулей Конфигуратором (otk designer-check)')
+    }
+    environment {
+        OTK_HOME = 'C:/otk-ci'                  // стенд агента: копии ИБ, прогоны, YAxUnit, BSL LS
+        OTK_IB = "${OTK_HOME}/ib/ПРОЕКТ"        // своя файловая копия ИБ CI (ОТК её меняет)
+        OTK_USER = ''                           // пользователь ИБ
+        OTK_PASSWORD = credentials('otk-password')
+        OTK_RUN_DIR = "${OTK_HOME}/runs"
+        OTK_PLATFORM = ''                       // пусто — самая новая установленная платформа
+        OTK_YAXUNIT = "${OTK_HOME}/YAxUnit.cfe"
+        OTK_BSLLS = "${OTK_HOME}/bsl-language-server/bsl-language-server.exe"
+        PYTHONIOENCODING = 'utf-8'
+    }
+    stages {
+        stage('otk gate') {
+            when { changeRequest() }
+            steps {
+                bat 'python -m otk_1c ci gate --artifacts otk-artifacts'
+            }
+        }
+        stage('otk designer-check') {
+            when { anyOf { triggeredBy 'TimerTrigger'; expression { params.DESIGNER_CHECK } } }
+            steps {
+                bat 'python -m otk_1c ci designer-check --artifacts otk-artifacts'
+            }
+        }
+    }
+    post {
+        always {
+            archiveArtifacts artifacts: 'otk-artifacts/**', allowEmptyArchive: true
+            junit testResults: 'otk-artifacts/junit*.xml', allowEmptyResults: true
+        }
+        cleanup {
+            dir('otk-artifacts') { deleteDir() }   // рабочий каталог живёт между сборками
+        }
+    }
+}

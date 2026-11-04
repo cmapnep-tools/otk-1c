@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Управляемые блокировки: ожидания TLOCK (WaitConnections), таймауты, взаимоблокировки и границы транзакций
+     (SDBL с Func=Transaction) — otk tj locks | timeouts; жертва и виновник — по t:connectID из WaitConnections -->
+<config xmlns="http://v8.1c.ru/v8/tech-log">
+	<log location="C:\1c_logs\locks" history="24">
+		<event>
+			<eq property="name" value="TLOCK"/>
+		</event>
+		<event>
+			<eq property="name" value="TTIMEOUT"/>
+		</event>
+		<event>
+			<eq property="name" value="TDEADLOCK"/>
+		</event>
+		<event>
+			<eq property="name" value="SDBL"/>
+			<eq property="Func" value="Transaction"/>
+		</event>
+		<property name="all"/>
+	</log>
+</config>

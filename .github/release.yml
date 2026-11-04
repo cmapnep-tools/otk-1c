@@ -1,0 +1,15 @@
+# Разделы заметок выпуска GitHub по меткам PR (схема меток — .github/labels.yml).
+changelog:
+  exclude:
+    labels: [kind/chore]
+  categories:
+    - title: Новое
+      labels: [kind/feature]
+    - title: Исправления
+      labels: [kind/bug, kind/false-positive, kind/false-negative]
+    - title: Скорость
+      labels: [kind/perf]
+    - title: Документация
+      labels: [kind/docs]
+    - title: Прочее
+      labels: ["*"]

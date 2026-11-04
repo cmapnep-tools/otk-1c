@@ -1,0 +1,106 @@
+{
+  "$schema": "https://raw.githubusercontent.com/yellow-hammer/vscode-1c-platform-tools/main/resources/schemas/hooks.schema.json",
+  "version": 1,
+  "hooks": {
+    "1c-platform-tools.cfe.load": {
+      "pre": {
+        "command": "python -m otk_1c pt pre",
+        "timeout": 300
+      },
+      "post": {
+        "command": "python -m otk_1c pt post",
+        "timeout": 1200
+      },
+      "onError": {
+        "command": "python -m otk_1c pt post --on-error",
+        "timeout": 1200
+      }
+    },
+    "1c-platform-tools.cfe.loadByList": {
+      "pre": {
+        "command": "python -m otk_1c pt pre",
+        "timeout": 300
+      },
+      "post": {
+        "command": "python -m otk_1c pt post",
+        "timeout": 1200
+      },
+      "onError": {
+        "command": "python -m otk_1c pt post --on-error",
+        "timeout": 1200
+      }
+    },
+    "1c-platform-tools.cfe.loadFile": {
+      "pre": {
+        "command": "python -m otk_1c pt pre",
+        "timeout": 300
+      },
+      "post": {
+        "command": "python -m otk_1c pt post --no-static",
+        "timeout": 1200
+      },
+      "onError": {
+        "command": "python -m otk_1c pt post --no-static --on-error",
+        "timeout": 1200
+      }
+    },
+    "1c-platform-tools.cfe.updateDb": {
+      "pre": {
+        "command": "python -m otk_1c pt check",
+        "timeout": 1200
+      }
+    },
+    "1c-platform-tools.cfe.unload": {
+      "pre": {
+        "command": "python -m otk_1c pt check",
+        "timeout": 1200
+      }
+    },
+    "1c-platform-tools.cfe.compile": {
+      "pre": {
+        "command": "python -m otk_1c pt static",
+        "timeout": 600
+      }
+    },
+    "1c-platform-tools.cf.load": {
+      "pre": {
+        "command": "python -m otk_1c pt cf-pre",
+        "timeout": 600
+      },
+      "post": {
+        "command": "python -m otk_1c pt cf-post",
+        "timeout": 1200
+      }
+    },
+    "1c-platform-tools.cf.loadIncrement": {
+      "pre": {
+        "command": "python -m otk_1c pt cf-pre",
+        "timeout": 600
+      },
+      "post": {
+        "command": "python -m otk_1c pt cf-post",
+        "timeout": 1200
+      }
+    },
+    "1c-platform-tools.cf.loadByList": {
+      "pre": {
+        "command": "python -m otk_1c pt cf-pre",
+        "timeout": 600
+      },
+      "post": {
+        "command": "python -m otk_1c pt cf-post",
+        "timeout": 1200
+      }
+    },
+    "1c-platform-tools.infobase.updateDb": {
+      "pre": {
+        "command": "python -m otk_1c pt cf-pre",
+        "timeout": 600
+      },
+      "post": {
+        "command": "python -m otk_1c pt cf-post",
+        "timeout": 1200
+      }
+    }
+  }
+}

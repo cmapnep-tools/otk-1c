@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Ошибки: otk tj errors (mode: descr | descr+context) -->
+<config xmlns="http://v8.1c.ru/v8/tech-log">
+	<log location="C:\1c_logs\errors" history="168">
+		<event>
+			<eq property="name" value="EXCP"/>
+		</event>
+		<event>
+			<eq property="name" value="EXCPCNTX"/>
+		</event>
+		<property name="all"/>
+	</log>
+</config>

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmapnep-tools.github.io/otk-1c/schema/static.v1.json",
+  "title": "Результат шага static (static.json)",
+  "type": "object",
+  "required": ["schema", "version", "plan", "index", "checks", "analyzers", "analyzerInfo", "apiInfo", "findings",
+               "dependents", "notChecked", "infra"],
+  "additionalProperties": false,
+  "properties": {
+    "$comment": {"type": "string", "description": "внутренний файл ОТК, не контракт"},
+    "schema": {"const": "otk.static.v1"},
+    "version": {"type": "string", "description": "версия ОТК"},
+    "plan": {"type": "string", "description": "отпечаток плана (model.plan_id): файл от другого плана не учитывается"},
+    "index": {"type": "number", "description": "время построения индекса, с"},
+    "checks": {"type": "number", "description": "время своих проверок, с"},
+    "analyzers": {"type": "number", "description": "время проверки analyzers (анализаторы BSL), с"},
+    "analyzerInfo": {"type": "object", "description": "адаптер анализаторов: analyzer — выбор (bslls, bsl-analyzer, both), по анализатору — сведения о прогоне (config — откуда настройки), onlyIn — замечания только у одного при both, notes, error"},
+    "apiInfo": {"type": "object", "description": "методы платформы: platform и compat (notes — подмена версии справки, устаревший индекс), или off/skipped"},
+    "findings": {"type": "array", "items": {"$ref": "#/$defs/finding"}},
+    "dependents": {"type": "array", "description": "зависимые модули вне плана: элемент modules плана (plan.schema.json) с reason = dependent и dependentLines",
+                   "items": {"type": "object",
+                             "required": ["path", "status", "kind", "owner", "reason", "contexts", "probe", "dependentLines"],
+                             "properties": {"reason": {"enum": ["dependent"]},
+                                            "dependentLines": {"type": "array", "items": {"type": "integer"}}}}},
+    "notChecked": {"type": "array", "description": "решения реестра проверок шага: проверка не выполнена (режим auto)",
+                   "items": {"$ref": "#/$defs/notChecked"}},
+    "infra": {"type": "array", "description": "сбои инфраструктуры шага (режим on без зависимости)", "items": {"type": "object", "required": ["message"], "properties": {"message": {"type": "string"}, "reasonCode": {"type": ["string", "null"], "description": "код места сбоя; null — по тексту"}}}}
+  },
+  "$defs": {
+    "finding": {"type": "object", "required": ["check", "severity", "module", "line", "message"],
+                "properties": {"check": {"type": "string"}, "severity": {"enum": ["error", "warning"]},
+                               "module": {"type": "string"}, "line": {"type": ["integer", "null"]},
+                               "message": {"type": "string"},
+                               "analyzers": {"type": "array", "items": {"type": "string"},
+                                             "description": "при environment.analyzer = both — какие анализаторы дали замечание"}}},
+    "notChecked": {"type": "object", "required": ["check", "what", "reason"],
+                   "properties": {"check": {"type": "string"}, "what": {"type": "string"},
+                                  "file": {"type": ["string", "null"]}, "line": {"type": ["integer", "null"]},
+                                  "reason": {"type": "string"}}}
+  }
+}

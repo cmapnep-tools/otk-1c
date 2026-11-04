@@ -1,0 +1,60 @@
+# Шаблон: проверка PR ОТК (otk gate). Скопировать в .forgejo/workflows/ проекта 1С
+# и заполнить env: свои пути раннера. Раннер windows-1c (host): платформа 1С, Python 3.11+, git с
+# доступом к серверу (GIT_PREFIX). Копия ИБ и каталог прогонов живут между запусками
+# (частичная загрузка изменённых модулей); первый запуск — полная загрузка выгрузки.
+# Артефакт otk-gate: summary.html, summary.md, summary.json, junit.xml, problems.txt, summary.sarif, otk.json.
+name: otk
+
+on:
+  pull_request:
+
+env:
+  GIT_PREFIX: "forgejo:"                         # откуда клонировать: SSH-хост раннера («host:») или «https://сервер/»
+  OTK_REPO: pet/otk-1c                    # откуда брать ОТК
+  OTK_REF: master                           # его ветка или тег
+  OTK_HOME: C:/otk-ci                       # стенд раннера: копии ИБ, прогоны, YAxUnit, BSL LS (пути — в шаге otk gate)
+  OTK_USER: ""                              # пользователь ИБ (пароль — секрет OTK_PASSWORD)
+  OTK_PLATFORM: ""                          # пусто — самая новая установленная платформа
+
+jobs:
+  gate:
+    runs-on: windows-1c
+    timeout-minutes: 120
+    steps:
+      - name: checkout (проект + ОТК)
+        shell: python
+        env:
+          SELF: ${{ github.repository }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+          BASE: ${{ github.base_ref }}
+        run: |
+          import os, shutil, subprocess, sys
+          ws, env = os.environ["GITHUB_WORKSPACE"], os.environ
+          def git(*a, cwd=None):
+              r = subprocess.run(["git", *a], cwd=cwd, capture_output=True, text=True)
+              if r.returncode:
+                  sys.exit(f"git {' '.join(a)}: {r.stderr.strip()}")
+              return r.stdout.strip()
+          d = os.path.join(ws, env["SELF"].split("/")[1])
+          k = os.path.join(ws, "_otk")
+          for p in (d, k):
+              shutil.rmtree(p, ignore_errors=True)
+          git("clone", "-q", "--no-checkout", f"{env['GIT_PREFIX']}{env['SELF']}.git", d)
+          git("fetch", "-q", "origin", env["REF"], f"+refs/heads/{env['BASE']}:refs/remotes/origin/{env['BASE']}", cwd=d)
+          ok = subprocess.run(["git", "cat-file", "-e", env["SHA"]], cwd=d).returncode == 0
+          git("checkout", "-q", "--detach", env["SHA"] if ok else "FETCH_HEAD", cwd=d)
+          git("clone", "-q", "--depth", "1", "--branch", env["OTK_REF"],
+              f"{env['GIT_PREFIX']}{env['OTK_REPO']}.git", k)
+          print("проект:", git("log", "--oneline", "-1", cwd=d))
+          print("ОТК:", git("log", "--oneline", "-1", cwd=k))
+
+      - name: otk gate
+        env:
+          PYTHONPATH: ${{ github.workspace }}/_otk/src
+          OTK_PASSWORD: ${{ secrets.OTK_PASSWORD }}
+          OTK_IB: ${{ env.OTK_HOME }}/ib/ПРОЕКТ        # своя файловая копия ИБ CI (ОТК её меняет)
+          OTK_RUN_DIR: ${{ env.OTK_HOME }}/runs
+          OTK_YAXUNIT: ${{ env.OTK_HOME }}/YAxUnit.cfe
+          OTK_BSLLS: ${{ env.OTK_HOME }}/bsl-language-server/bsl-language-server.exe
+        run: python -m otk_1c ci gate --base origin/${{ github.base_ref }}

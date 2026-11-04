@@ -1,0 +1,41 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "otk: проверить изменения",
+      "type": "process",
+      "command": "python",
+      "args": [
+        "-m",
+        "otk_1c",
+        "gate",
+        "--repo",
+        "${workspaceFolder}",
+        "--base",
+        "origin/master",
+        "--worktree",
+        "--problems",
+        "--quiet"
+      ],
+      "options": {
+        "env": {
+          "PYTHONPATH": "C:/путь/к/otk-1c/src"
+        }
+      },
+      "problemMatcher": {
+        "owner": "otk",
+        "fileLocation": "absolute",
+        "pattern": {
+          "regexp": "^(.+\\.(?:bsl|xml))\\((\\d+),(\\d+)\\): (error|warning) (\\S+): (.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "code": 5,
+          "message": 6
+        }
+      },
+      "group": "test"
+    }
+  ]
+}

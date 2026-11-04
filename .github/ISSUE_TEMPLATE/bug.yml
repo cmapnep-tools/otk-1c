@@ -1,0 +1,37 @@
+name: Ошибка ОТК
+description: ОТК упал, завис, выдал сбой окружения (код 2) или неверную сводку
+labels: ["kind/bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: Что произошло и что ожидалось
+    validations:
+      required: true
+  - type: input
+    id: command
+    attributes:
+      label: Команда
+      placeholder: otk gate --base origin/master
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Вывод `otk doctor` с теми же ключами
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: summary.json и вывод команды
+      description: "Каталог прогона `gate` печатает последней строкой («сводка: …»); там же файлы шагов (`static.json`, `run.json`, `designer.json`). Перед отправкой уберите пути и имена, которые нельзя раскрывать."
+      render: json
+  - type: textarea
+    id: env
+    attributes:
+      label: Окружение
+      placeholder: "ОС, версия платформы 1С и режим совместимости, формат исходников (выгрузка / EDT), инструмент копии ИБ (environment.ibTool: designer / ibcmd), версия ОТК (otk --version)"
+    validations:
+      required: true

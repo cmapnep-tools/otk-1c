@@ -1,0 +1,107 @@
+# Проверки ОТК на облачных раннерах GitHub: линтер и формат спецификации, юнит-тесты на Windows и Linux,
+# сборка пакета. Платформа 1С и внешние программы здесь не нужны: тесты на них идут только при заданных
+# переменных OTK_TEST_* (docs/development.md), без них пропускаются.
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - name: ruff
+        run: |
+          pip install ruff==0.17.0
+          ruff check --output-format github src tests
+      - name: mypy
+        # типы на границах пакета: настройки — [tool.mypy] в pyproject.toml
+        run: |
+          pip install mypy==1.18.2
+          mypy
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - name: openspec
+        run: npx --yes @fission-ai/openspec@1.13.2 validate --all --strict --no-interactive
+
+  docs:
+    # сайт документации собирается без ошибок: битая ссылка или якорь — красный (выкладка — docs.yml)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - run: |
+          pip install -r docs/.site/requirements.txt
+          mkdocs build --strict
+
+  tests:
+    name: tests (${{ matrix.os }}, ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+        python: ["3.11", "3.14"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: unittest
+        env:
+          PYTHONPATH: src
+          PYTHONUTF8: "1"
+        run: python -m unittest discover -s tests -v
+
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: build
+        run: |
+          pip install build==1.3.0
+          python docs/.site/pypi_readme.py   # README для PyPI: абсолютные ссылки
+          python -m build
+      - name: install
+        # колесо ставится в чистое окружение: команда otk запускается, данные пакета на месте
+        run: |
+          python -m venv /tmp/otk-venv
+          /tmp/otk-venv/bin/pip install dist/*.whl
+          /tmp/otk-venv/bin/otk --version
+          /tmp/otk-venv/bin/python - <<'EOF'
+          from importlib.resources import files
+          root = files("otk_1c")
+          for d in ("lang", "schema", "onec", "availability", "availability/webclient"):
+              n = sum(1 for f in root.joinpath(d).iterdir() if f.is_file())
+              print(f"{d}: {n}")
+              assert n, f"в пакете нет файлов {d}"
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error

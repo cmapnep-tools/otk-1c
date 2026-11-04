@@ -1,0 +1,47 @@
+# Шаблон: ОТК в GitLab CI — проверка запроса на слияние (otk gate) и проверка всех модулей Конфигуратором
+# (otk designer-check). Вставить в .gitlab-ci.yml проекта 1С (или подключить через include) и заполнить
+# variables: свои пути раннера. Раннер — свой, исполнитель shell, с тегом windows-1c: платформа 1С, Python 3.11+
+# и ОТК (python -m pip install otk-1c). Пароль ИБ — замаскированная переменная CI/CD OTK_PASSWORD в настройках
+# проекта. Копия ИБ и каталог прогонов живут между запусками (частичная загрузка изменённых модулей).
+# Linux-раннер: свой тег, команда python3; X-сервер ОТК поднимает сама (docs/linux.md).
+# База gate — целевая ветка запроса (CI_MERGE_REQUEST_TARGET_BRANCH_NAME): GitLab клонирует только ветку запроса
+# и неполную историю, ОТК догружает недостающее сама.
+# designer-check — по метке запроса otk-designer-check, по расписанию (CI/CD > Schedules) и вручную (Run pipeline).
+
+variables:
+  OTK_HOME: C:/otk-ci                      # стенд раннера: копии ИБ, прогоны, YAxUnit, BSL LS
+  OTK_IB: $OTK_HOME/ib/ПРОЕКТ              # своя файловая копия ИБ CI (ОТК её меняет)
+  OTK_USER: ""                             # пользователь ИБ (пароль — переменная CI/CD OTK_PASSWORD)
+  OTK_RUN_DIR: $OTK_HOME/runs
+  OTK_PLATFORM: ""                         # пусто — самая новая установленная платформа
+  OTK_YAXUNIT: $OTK_HOME/YAxUnit.cfe
+  OTK_BSLLS: $OTK_HOME/bsl-language-server/bsl-language-server.exe
+
+otk-gate:
+  tags: [windows-1c]
+  timeout: 2h
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - python -m otk_1c ci gate --artifacts otk-artifacts
+  artifacts:
+    when: always
+    paths: [otk-artifacts/]
+    reports:
+      junit: otk-artifacts/junit.xml
+    expire_in: 2 weeks
+
+otk-designer-check:
+  tags: [windows-1c]
+  timeout: 6h
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_LABELS =~ /(^|,)otk-designer-check(,|$)/
+    - if: $CI_PIPELINE_SOURCE == "schedule" || $CI_PIPELINE_SOURCE == "web"
+  script:
+    - python -m otk_1c ci designer-check --artifacts otk-artifacts
+  artifacts:
+    when: always
+    paths: [otk-artifacts/]
+    reports:
+      junit: otk-artifacts/junit-designer-check.xml
+    expire_in: 2 weeks

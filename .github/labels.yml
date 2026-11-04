@@ -1,0 +1,83 @@
+# Метки задач и PR — одна схема; по kind/* собираются разделы заметок выпуска (.github/release.yml).
+# Синхронизирует задание labels (.github/workflows/labels.yml): метки не из этого списка удаляются.
+- name: kind/bug
+  color: d73a4a
+  description: Ошибка ОТК
+- name: kind/false-positive
+  color: e99695
+  description: Ложное срабатывание — ОТК нашёл ошибку, которой нет
+- name: kind/false-negative
+  color: b60205
+  description: Пропуск — ОТК не нашёл ошибку
+- name: kind/feature
+  color: a2eeef
+  description: Новая возможность
+- name: kind/docs
+  color: 0075ca
+  description: Документация
+- name: kind/perf
+  color: fbca04
+  description: Скорость и ресурсы
+- name: kind/chore
+  color: ededed
+  description: Обслуживание — в заметки выпуска не попадает
+- name: area/static
+  color: c5def5
+  description: Статика без базы
+- name: area/probes
+  color: c5def5
+  description: Пробы компиляции в копии ИБ
+- name: area/queries
+  color: c5def5
+  description: Разбор запросов
+- name: area/forms
+  color: c5def5
+  description: Формы
+- name: area/scenarios
+  color: c5def5
+  description: Сценарные тесты YAxUnit
+- name: area/edt
+  color: c5def5
+  description: Формат 1C:EDT
+- name: area/ci
+  color: c5def5
+  description: CI и хуки
+- name: area/cli
+  color: c5def5
+  description: Командная строка и сводка
+- name: area/mcp
+  color: c5def5
+  description: Консоль ИБ и MCP-сервер
+- name: area/techlog
+  color: c5def5
+  description: Технологический журнал
+- name: prio/high
+  color: b60205
+  description: Срочно
+- name: prio/low
+  color: cfd3d7
+  description: Когда дойдут руки
+- name: needs/info
+  color: d876e3
+  description: Нужны сведения от автора
+- name: needs/repro
+  color: d876e3
+  description: Нужен воспроизводимый пример
+- name: needs/platform
+  color: d876e3
+  description: Воспроизведение требует платформы 1С
+- name: repro/confirmed
+  color: 0e8a16
+  description: Воспроизведено
+- name: repro/failed
+  color: 5319e7
+  description: Не воспроизвелось
+- name: auto-repro
+  color: 1d76db
+  description: Запустить автоматическое воспроизведение (ставит сопровождающий)
+- name: good first issue
+  color: 7057ff
+  description: Подходит для первого вклада
+- name: help wanted
+  color: 008672
+  description: Нужна помощь

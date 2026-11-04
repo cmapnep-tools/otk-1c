@@ -1,0 +1,3 @@
+#!/bin/sh
+# ruff и openspec до push (как в CI); включение: git config core.hooksPath .githooks
+exec python "$(git rev-parse --show-toplevel)/.githooks/lint.py"

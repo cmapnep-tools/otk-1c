@@ -1,0 +1,5326 @@
+{
+"platform": "8.3.27.2342",
+"contexts": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"methods": {
+"ACos": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ASin": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ATan": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Base64Значение": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Base64Строка": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Cos": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Exp": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Log": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Log10": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Pow": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Sin": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Sqrt": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Tan": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"XMLЗначение": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"XMLСтрока": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"XMLТип": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"XMLТипЗнч": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"АктивноеОкно": [
+"ThinClient",
+"WebClient"
+],
+"БезопасныйРежим": [
+"Server",
+"ExternalConnection"
+],
+"БезопасныйРежимРазделенияДанных": [
+"Server",
+"ExternalConnection"
+],
+"Булево": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ВРег": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ВвестиДату": [
+"ThinClient",
+"WebClient"
+],
+"ВвестиДатуАсинх": [
+"ThinClient",
+"WebClient"
+],
+"ВвестиЗначение": [
+"ThinClient",
+"WebClient"
+],
+"ВвестиЗначениеАсинх": [
+"ThinClient",
+"WebClient"
+],
+"ВвестиСтроку": [
+"ThinClient",
+"WebClient"
+],
+"ВвестиСтрокуАсинх": [
+"ThinClient",
+"WebClient"
+],
+"ВвестиЧисло": [
+"ThinClient",
+"WebClient"
+],
+"ВвестиЧислоАсинх": [
+"ThinClient",
+"WebClient"
+],
+"ВозможностьЧтенияXML": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"Вопрос": [
+"ThinClient",
+"WebClient"
+],
+"ВопросАсинх": [
+"ThinClient",
+"WebClient"
+],
+"ВосстановитьЗначение": [],
+"ВыгрузитьЖурналРегистрации": [
+"Server",
+"ExternalConnection"
+],
+"ВызватьПаузу": [
+"Server",
+"ExternalConnection"
+],
+"ВыполнитьОбработкуЗаданий": [
+"ThinClient",
+"WebClient"
+],
+"ВыполнитьОбработкуОповещения": [
+"ThinClient",
+"WebClient"
+],
+"ВыполнитьПроверкуПравДоступа": [
+"Server",
+"ExternalConnection"
+],
+"Вычислить": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ВычислитьСохраняемоеЗначениеПароляПользователя": [
+"Server",
+"ExternalConnection"
+],
+"Год": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ДанныеФормыВЗначение": [
+"Server",
+"ExternalConnection"
+],
+"Дата": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"День": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ДеньГода": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ДеньНедели": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ДобавитьМесяц": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ДокументЗащищенПаролем": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ДокументЗащищенПаролемАсинх": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ЗаблокироватьДанныеДляРедактирования": [
+"Server",
+"ExternalConnection"
+],
+"ЗаблокироватьРаботуПользователя": [
+"ThinClient"
+],
+"ЗавершитьРаботуСистемы": [
+"ThinClient",
+"WebClient"
+],
+"ЗагрузитьВнешнююКомпоненту": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ЗакрытьСправку": [
+"ThinClient",
+"WebClient"
+],
+"ЗаписатьJSON": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ЗаписатьXML": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ЗаписатьДатуJSON": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ЗаписатьЗначениеJSON": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ЗаписьЖурналаРегистрации": [
+"Server",
+"ExternalConnection"
+],
+"ЗаполнитьЗначенияСвойств": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ЗапрещеноОткрытиеФорм": [
+"ThinClient",
+"WebClient"
+],
+"ЗапроситьРазрешениеПользователя": [
+"ThinClient",
+"WebClient"
+],
+"ЗапроситьРазрешениеПользователяАсинх": [
+"ThinClient",
+"WebClient"
+],
+"ЗапуститьПриложение": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ЗапуститьПриложениеАсинх": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ЗапуститьСистему": [
+"ThinClient"
+],
+"ЗафиксироватьТранзакцию": [
+"Server",
+"ExternalConnection"
+],
+"ЗначениеВДанныеФормы": [
+"Server",
+"ExternalConnection"
+],
+"ЗначениеВСтрокуВнутр": [
+"Server",
+"ExternalConnection"
+],
+"ЗначениеВФайл": [
+"Server",
+"ExternalConnection"
+],
+"ЗначениеЗаполнено": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ЗначениеИзСтрокиВнутр": [
+"Server",
+"ExternalConnection"
+],
+"ЗначениеИзФайла": [
+"Server",
+"ExternalConnection"
+],
+"ИзXMLТипа": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ИмпортМоделиXDTO": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ИмяКомпьютера": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ИмяПользователя": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ИнициализироватьПредопределенныеДанные": [
+"Server",
+"ExternalConnection"
+],
+"ИнформацияОбОшибке": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КаталогБиблиотекиМобильногоУстройства": [],
+"КаталогБиблиотекиМобильногоУстройстваАсинх": [],
+"КаталогВременныхФайлов": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КаталогВременныхФайловАсинх": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КаталогДокументов": [
+"ThinClient",
+"WebClient"
+],
+"КаталогДокументовАсинх": [
+"ThinClient",
+"WebClient"
+],
+"КаталогПрограммы": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"КодЛокализацииИнформационнойБазы": [
+"Server",
+"ExternalConnection"
+],
+"КодСимвола": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КодироватьСтроку": [
+"Server",
+"ExternalConnection"
+],
+"КомандаСистемы": [
+"ThinClient"
+],
+"КонецГода": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КонецДня": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КонецКвартала": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КонецМесяца": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КонецМинуты": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КонецНедели": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КонецЧаса": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КонфигурацияБазыДанныхИзмененаДинамически": [
+"Server",
+"ExternalConnection"
+],
+"КонфигурацияИзменена": [
+"Server",
+"ExternalConnection"
+],
+"КопироватьДанныеФормы": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КопироватьФайл": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КопироватьФайлАсинх": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КраткоеПредставлениеОшибки": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Лев": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Макс": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"МестноеВремя": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Месяц": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Мин": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Минута": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"МонопольныйРежим": [
+"Server",
+"ExternalConnection"
+],
+"НРег": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НСтр": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Найти": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НайтиНедопустимыеСимволыXML": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"НайтиОкноПоНавигационнойСсылке": [
+"ThinClient",
+"WebClient"
+],
+"НайтиПоСсылкам": [
+"Server",
+"ExternalConnection"
+],
+"НайтиПомеченныеНаУдаление": [
+"Server",
+"ExternalConnection"
+],
+"НайтиФайлы": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НайтиФайлыАсинх": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НачалоГода": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НачалоДня": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НачалоКвартала": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НачалоМесяца": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НачалоМинуты": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НачалоНедели": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НачалоСтолетияСеанса": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НачалоЧаса": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НачатьЗапросРазрешенияПользователя": [
+"ThinClient",
+"WebClient"
+],
+"НачатьЗапускПриложения": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НачатьКопированиеФайла": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НачатьПеремещениеФайла": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НачатьПодключениеВнешнейКомпоненты": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НачатьПодключениеРасширенияПолученияИнформацииОКомпьютере": [
+"ThinClient",
+"WebClient"
+],
+"НачатьПодключениеРасширенияРаботыСКриптографией": [
+"ThinClient",
+"WebClient"
+],
+"НачатьПодключениеРасширенияРаботыСФайлами": [
+"ThinClient",
+"WebClient"
+],
+"НачатьПоискФайлов": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НачатьПолучениеИнформацииОСетевыхАдаптерах": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НачатьПолучениеКаталогаБиблиотекиМобильногоУстройства": [],
+"НачатьПолучениеКаталогаВременныхФайлов": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НачатьПолучениеКаталогаДокументов": [
+"ThinClient",
+"WebClient"
+],
+"НачатьПолучениеРабочегоКаталогаДанныхПользователя": [
+"ThinClient",
+"WebClient"
+],
+"НачатьПолучениеФайлаССервера": [
+"ThinClient",
+"WebClient"
+],
+"НачатьПолучениеФайлов": [
+"ThinClient",
+"WebClient"
+],
+"НачатьПолучениеФайловССервера": [
+"ThinClient",
+"WebClient"
+],
+"НачатьПомещениеФайла": [
+"ThinClient",
+"WebClient"
+],
+"НачатьПомещениеФайлаНаСервер": [
+"ThinClient",
+"WebClient"
+],
+"НачатьПомещениеФайлов": [
+"ThinClient",
+"WebClient"
+],
+"НачатьПомещениеФайловНаСервер": [
+"ThinClient",
+"WebClient"
+],
+"НачатьСозданиеДвоичныхДанныхИзФайла": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НачатьСозданиеКаталога": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НачатьТранзакцию": [
+"Server",
+"ExternalConnection"
+],
+"НачатьУдалениеФайлов": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НачатьУстановкуВнешнейКомпоненты": [
+"ThinClient",
+"WebClient"
+],
+"НачатьУстановкуРасширенияПолученияИнформацииОКомпьютере": [
+"ThinClient",
+"WebClient"
+],
+"НачатьУстановкуРасширенияРаботыСКриптографией": [
+"ThinClient",
+"WebClient"
+],
+"НачатьУстановкуРасширенияРаботыСФайлами": [
+"ThinClient",
+"WebClient"
+],
+"НеделяГода": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НеобходимостьЗавершенияСоединения": [
+"Server",
+"ExternalConnection"
+],
+"НомерСеансаИнформационнойБазы": [
+"Server",
+"ExternalConnection"
+],
+"НомерСоединенияИнформационнойБазы": [
+"Server",
+"ExternalConnection"
+],
+"ОбновитьИнтерфейс": [
+"ThinClient",
+"WebClient"
+],
+"ОбновитьНумерациюОбъектов": [
+"Server",
+"ExternalConnection"
+],
+"ОбновитьПовторноИспользуемыеЗначения": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ОбработкаПрерыванияПользователя": [
+"ThinClient",
+"WebClient"
+],
+"ОбъединитьФайлы": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"Окр": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ОписаниеОшибки": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Оповестить": [
+"ThinClient",
+"WebClient"
+],
+"ОповеститьОбИзменении": [
+"ThinClient",
+"WebClient"
+],
+"ОсновнойСерверДоступен": [],
+"ОтключитьОбработчикЗапросаНастроекКлиентаЛицензирования": [
+"ThinClient",
+"WebClient"
+],
+"ОтключитьОбработчикОжидания": [
+"ThinClient",
+"WebClient"
+],
+"ОтключитьОбработчикОповещения": [
+"ThinClient",
+"WebClient"
+],
+"ОткрытьЗначение": [
+"ThinClient",
+"WebClient"
+],
+"ОткрытьЗначениеАсинх": [
+"ThinClient",
+"WebClient"
+],
+"ОткрытьИндексСправки": [
+"ThinClient",
+"WebClient"
+],
+"ОткрытьСодержаниеСправки": [
+"ThinClient",
+"WebClient"
+],
+"ОткрытьСправку": [
+"ThinClient",
+"WebClient"
+],
+"ОткрытьФорму": [
+"ThinClient",
+"WebClient"
+],
+"ОткрытьФормуМодально": [
+"ThinClient",
+"WebClient"
+],
+"ОтменитьТранзакцию": [
+"Server",
+"ExternalConnection"
+],
+"ОчиститьЖурналРегистрации": [
+"Server",
+"ExternalConnection"
+],
+"ОчиститьНастройкиПользователя": [],
+"ОчиститьСообщения": [
+"ThinClient",
+"WebClient"
+],
+"ПараметрыДоступа": [
+"Server",
+"ExternalConnection"
+],
+"ПерейтиПоНавигационнойСсылке": [
+"ThinClient",
+"WebClient"
+],
+"ПереместитьФайл": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПереместитьФайлАсинх": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПобитовоеИ": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПобитовоеИНе": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПобитовоеИли": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПобитовоеИсключительноеИли": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПобитовоеНе": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПобитовыйСдвигВлево": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПобитовыйСдвигВправо": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПоддерживаетсяДинамическаяУстановкаВнешнихКомпонент": [
+"ThinClient",
+"WebClient"
+],
+"ПоддерживаетсяОтображениеКарты": [],
+"ПоддерживаетсяФункциональностьМобильногоПриложения": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПодключитьВнешнююКомпоненту": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПодключитьВнешнююКомпонентуАсинх": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПодключитьОбработчикЗапросаНастроекКлиентаЛицензирования": [
+"ThinClient",
+"WebClient"
+],
+"ПодключитьОбработчикОжидания": [
+"ThinClient",
+"WebClient"
+],
+"ПодключитьОбработчикОповещения": [
+"ThinClient",
+"WebClient"
+],
+"ПодключитьРасширениеПолученияИнформацииОКомпьютереАсинх": [
+"ThinClient",
+"WebClient"
+],
+"ПодключитьРасширениеРаботыСКриптографией": [
+"ThinClient",
+"WebClient"
+],
+"ПодключитьРасширениеРаботыСКриптографиейАсинх": [
+"ThinClient",
+"WebClient"
+],
+"ПодключитьРасширениеРаботыСФайлами": [
+"ThinClient",
+"WebClient"
+],
+"ПодключитьРасширениеРаботыСФайламиАсинх": [
+"ThinClient",
+"WebClient"
+],
+"ПодробноеПредставлениеОшибки": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПоказатьВводДаты": [
+"ThinClient",
+"WebClient"
+],
+"ПоказатьВводЗначения": [
+"ThinClient",
+"WebClient"
+],
+"ПоказатьВводОценкиПриложения": [],
+"ПоказатьВводСтроки": [
+"ThinClient",
+"WebClient"
+],
+"ПоказатьВводЧисла": [
+"ThinClient",
+"WebClient"
+],
+"ПоказатьВопрос": [
+"ThinClient",
+"WebClient"
+],
+"ПоказатьЗначение": [
+"ThinClient",
+"WebClient"
+],
+"ПоказатьИнформациюОбОшибке": [
+"ThinClient",
+"WebClient"
+],
+"ПоказатьНаКарте": [],
+"ПоказатьОповещениеПользователя": [
+"ThinClient",
+"WebClient"
+],
+"ПоказатьПредупреждение": [
+"ThinClient",
+"WebClient"
+],
+"ПолноеИмяПользователя": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьBase64БуферДвоичныхДанныхИзБуфераДвоичныхДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьBase64ДвоичныеДанныеИзДвоичныхДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьBase64СтрокуИзБуфераДвоичныхДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьBase64СтрокуИзДвоичныхДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьCOMОбъект": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьHexБуферДвоичныхДанныхИзБуфераДвоичныхДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьHexДвоичныеДанныеИзДвоичныхДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьHexСтрокуИзБуфераДвоичныхДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьHexСтрокуИзДвоичныхДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьXMLТип": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ПолучитьАдресПоМестоположению": [],
+"ПолучитьБлокировкуСеансов": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьБуферДвоичныхДанныхИзBase64БуфераДвоичныхДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьБуферДвоичныхДанныхИзBase64Строки": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьБуферДвоичныхДанныхИзHexБуфераДвоичныхДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьБуферДвоичныхДанныхИзHexСтроки": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьБуферДвоичныхДанныхИзДвоичныхДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьБуферДвоичныхДанныхИзСтроки": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьВнешнююНавигационнуюСсылку": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьВремяЗавершенияСеансаПриБездействии": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьВремяЗавершенияСпящегоСеанса": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьВремяЗасыпанияПассивногоСеанса": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьВремяОжиданияБлокировкиДанных": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьВремяПредупрежденияОЗавершенииСеансаПриБездействии": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьДанныеВыбора": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьДвоичныеДанныеИзBase64ДвоичныхДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьДвоичныеДанныеИзBase64Строки": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьДвоичныеДанныеИзHexДвоичныхДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьДвоичныеДанныеИзHexСтроки": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьДвоичныеДанныеИзБуфераДвоичныхДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьДвоичныеДанныеИзСтроки": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьДействиеПриНесоответствииПаролейПользователейТребованиямПриАутентификации": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьДополнительныйПараметрКлиентаЛицензирования": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьДопустимыеКодыЛокализации": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьДопустимыеЧасовыеПояса": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьЗапретЗасыпанияКомпьютера": [],
+"ПолучитьЗначенияОтбораЖурналаРегистрации": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьИдентификаторКонфигурации": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьИзВременногоХранилища": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьИмяВременногоФайла": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ПолучитьИмяКлиентаЛицензирования": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьИнформациюОСетевыхАдаптерахАсинх": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьИнформациюЭкрановКлиента": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьИспользованиеДополнительныхИндексов": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьИспользованиеЖурналаРегистрации": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьИспользованиеСобытияЖурналаРегистрации": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьИспользуемыйСервер": [],
+"ПолучитьКоличествоЗаданийПересчетаИтогов": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьМакетОформления": [],
+"ПолучитьМаксимальныйСрокДействияПаролейПользователей": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьМаскуВсеФайлы": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьМаскуВсеФайлыКлиента": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьМаскуВсеФайлыСервера": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьМестоположениеПоАдресу": [],
+"ПолучитьМинимальнуюДлинуПаролейПользователей": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьМинимальныйСрокДействияПаролейПользователей": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьНавигационнуюСсылку": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьНавигационнуюСсылкуИнформационнойБазы": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьНачалоСтолетияИнформационнойБазы": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьОбновлениеКонфигурацииБазыДанных": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьОбновлениеПредопределенныхДанныхИнформационнойБазы": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьОбщийМакет": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьОбщуюФорму": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьОграничениеПовторенияПаролейПользователейСредиПоследних": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьОкна": [
+"ThinClient",
+"WebClient"
+],
+"ПолучитьОперативнуюОтметкуВремени": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьОтключениеБезопасногоРежима": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьОтключениеЗащитыОтОпасныхДействий": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьПараметрыМонопольногоРежима": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьПараметрыФункциональныхОпцийИнтерфейса": [
+"ThinClient",
+"WebClient"
+],
+"ПолучитьПериодЖурналаРегистрации": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьПериодРазделенияХраненияДанныхЖурналаРегистрации": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьПолноеИмяПредопределенногоЗначения": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьПредставленияНавигационныхСсылок": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьПреимущественноеИспользованиеОсновногоСервера": [],
+"ПолучитьПроверкуРаскрытияПаролейПользователей": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьПроверкуСложностиПаролейПользователей": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьРазделительПути": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьРазделительПутиКлиента": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьРазделительПутиСервера": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьРазмерДанныхБазыДанных": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьРазмерДанныхБазыДанныхИХранилищаДвоичныхДанных": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьРегиональныеНастройкиИнформационнойБазы": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьРегиональныеНастройкиСеанса": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьРежимВнешнихРесурсов": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьСеансыИнформационнойБазы": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьСклоненияСтроки": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьСклоненияСтрокиПоЧислу": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьСкоростьКлиентскогоСоединения": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьСоединенияИнформационнойБазы": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьСообщенияПользователю": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьСоответствиеОбъектаИРеквизитаФормы": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьСоответствиеОбъектаИФормы": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьСоставСтандартногоИнтерфейсаOData": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьСпособПроверкиПодписиМобильногоКлиента": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьСрокПредупрежденияОбИстеченииСрокаДействияПаролейПользователей": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьСтандартноеХранилищеВариантовОтчетов": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьСтандартноеХранилищеВнешнихДанныхНавигационныхСсылок": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьСтандартноеХранилищеНастроекДанныхФорм": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьСтандартноеХранилищеОбщихНастроек": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьСтандартноеХранилищеПользовательскихНастроекДинамическихСписков": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьСтандартноеХранилищеПользовательскихНастроекОтчетов": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьСтрокуИзБуфераДвоичныхДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьСтрокуИзДвоичныхДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьСтруктуруХраненияБазыДанных": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьТекущийСеансИнформационнойБазы": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьТипАлгоритмаХешированияПаролейПользователей": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьУникальныйИдентификаторСПоддержкойСовместимости": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолучитьФайл": [
+"ThinClient",
+"WebClient"
+],
+"ПолучитьФайлССервераАсинх": [
+"ThinClient",
+"WebClient"
+],
+"ПолучитьФайлы": [
+"ThinClient",
+"WebClient"
+],
+"ПолучитьФайлыССервераАсинх": [
+"ThinClient",
+"WebClient"
+],
+"ПолучитьФорму": [
+"ThinClient",
+"WebClient"
+],
+"ПолучитьФункциональнуюОпцию": [
+"Server",
+"ExternalConnection"
+],
+"ПолучитьФункциональнуюОпциюИнтерфейса": [
+"ThinClient",
+"WebClient"
+],
+"ПолучитьЧасовойПоясИнформационнойБазы": [
+"Server",
+"ExternalConnection"
+],
+"ПользователиWindows": [
+"ThinClient"
+],
+"ПользователиОС": [
+"ThinClient"
+],
+"ПоместитьВоВременноеХранилище": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПоместитьФайл": [
+"ThinClient",
+"WebClient"
+],
+"ПоместитьФайлНаСерверАсинх": [
+"ThinClient",
+"WebClient"
+],
+"ПоместитьФайлы": [
+"ThinClient",
+"WebClient"
+],
+"ПоместитьФайлыНаСерверАсинх": [
+"ThinClient",
+"WebClient"
+],
+"Прав": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПравоДоступа": [
+"Server",
+"ExternalConnection"
+],
+"ПредопределенноеЗначение": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПредставлениеКодаЛокализации": [
+"Server",
+"ExternalConnection"
+],
+"ПредставлениеПериода": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПредставлениеПрава": [
+"Server",
+"ExternalConnection"
+],
+"ПредставлениеПриложения": [
+"Server",
+"ExternalConnection"
+],
+"ПредставлениеСобытияЖурналаРегистрации": [
+"Server",
+"ExternalConnection"
+],
+"ПредставлениеЧасовогоПояса": [
+"Server",
+"ExternalConnection"
+],
+"Предупреждение": [
+"ThinClient",
+"WebClient"
+],
+"ПредупреждениеАсинх": [
+"ThinClient",
+"WebClient"
+],
+"ПрекратитьРаботуСистемы": [
+"ThinClient",
+"WebClient"
+],
+"ПривилегированныйРежим": [
+"Server",
+"ExternalConnection"
+],
+"ПроверитьБит": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПроверитьПоБитовойМаске": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПроверитьПодключениеВнешнейКомпоненты": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПроверитьРаскрытиеПароля": [
+"Server",
+"ExternalConnection"
+],
+"ПроверитьСоответствиеПароляПользователяСохраняемомуЗначению": [
+"Server",
+"ExternalConnection"
+],
+"ПроверитьЦиклическиеСсылкиВстроенногоЯзыка": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПродолжитьВызов": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПрочитатьJSON": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ПрочитатьXML": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ПрочитатьДатуJSON": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ПрочитатьЗначениеJSON": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПустаяСтрока": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"РабочийКаталогДанныхПользователя": [
+"ThinClient",
+"WebClient"
+],
+"РабочийКаталогДанныхПользователяАсинх": [
+"ThinClient",
+"WebClient"
+],
+"РазблокироватьДанныеДляРедактирования": [
+"Server",
+"ExternalConnection"
+],
+"РазделитьДвоичныеДанные": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"РазделитьФайл": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"РазорватьСоединениеСВнешнимИсточникомДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"РаскодироватьСтроку": [
+"Server",
+"ExternalConnection"
+],
+"РольДоступна": [
+"Server",
+"ExternalConnection"
+],
+"Секунда": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Сигнал": [
+"ThinClient"
+],
+"Символ": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СкопироватьЖурналРегистрации": [
+"Server",
+"ExternalConnection"
+],
+"СмещениеЛетнегоВремени": [
+"Server",
+"ExternalConnection"
+],
+"СмещениеСтандартногоВремени": [
+"Server",
+"ExternalConnection"
+],
+"СоединитьБуферыДвоичныхДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СоединитьДвоичныеДанные": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СоздатьДвоичныеДанныеИзФайлаАсинх": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СоздатьКаталог": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СоздатьКаталогАсинх": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СоздатьОбъектВнешнейКомпонентыАсинх": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СоздатьФабрикуXDTO": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"СокрЛ": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СокрЛП": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СокрП": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СократитьЖурналРегистрации": [
+"Server",
+"ExternalConnection"
+],
+"Сообщить": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Состояние": [
+"ThinClient",
+"WebClient"
+],
+"СохранитьЗначение": [],
+"СохранитьНастройкиПользователя": [],
+"Сред": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СтрДлина": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СтрЗаканчиваетсяНа": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СтрЗаменить": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СтрЗаменитьПоРегулярномуВыражению": [
+"Server",
+"ExternalConnection"
+],
+"СтрНайти": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СтрНайтиВсеПоРегулярномуВыражению": [
+"Server",
+"ExternalConnection"
+],
+"СтрНайтиИВыделитьОформлением": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СтрНайтиПоРегулярномуВыражению": [
+"Server",
+"ExternalConnection"
+],
+"СтрНачинаетсяС": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СтрПодобнаПоРегулярномуВыражению": [
+"Server",
+"ExternalConnection"
+],
+"СтрПолучитьСтроку": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СтрРазделить": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СтрСоединить": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СтрСравнить": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СтрЧислоВхождений": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СтрЧислоСтрок": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СтрШаблон": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Строка": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СтрокаСЧислом": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СтрокаСоединенияИнформационнойБазы": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СформироватьОтветДляАутентификацииОткрытымКлючом": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СформироватьОтветДляАутентификацииОткрытымКлючомАсинх": [
+"ThinClient",
+"WebClient"
+],
+"ТРег": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ТекущаяДата": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ТекущаяДатаСеанса": [
+"Server",
+"ExternalConnection"
+],
+"ТекущаяУниверсальнаяДата": [
+"Server",
+"ExternalConnection"
+],
+"ТекущаяУниверсальнаяДатаВМиллисекундах": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ТекущийВариантИнтерфейсаКлиентскогоПриложения": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ТекущийКодЛокализации": [
+"Server",
+"ExternalConnection"
+],
+"ТекущийРежимЗапуска": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ТекущийСеансТестируется": [],
+"ТекущийЯзык": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ТекущийЯзыкСистемы": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Тип": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ТипЗнч": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ТранзакцияАктивна": [
+"Server",
+"ExternalConnection"
+],
+"УдалитьДанныеИнформационнойБазы": [
+"Server",
+"ExternalConnection"
+],
+"УдалитьИзВременногоХранилища": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"УдалитьНедопустимыеСимволыXML": [],
+"УдалитьОбъекты": [
+"Server",
+"ExternalConnection"
+],
+"УдалитьФайлы": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"УдалитьФайлыАсинх": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"УниверсальноеВремя": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"УстановитьБезопасныйРежим": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьБезопасныйРежимРазделенияДанных": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьБит": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"УстановитьБлокировкуСеансов": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьВнешнююКомпоненту": [
+"ThinClient",
+"WebClient"
+],
+"УстановитьВнешнююКомпонентуАсинх": [
+"ThinClient",
+"WebClient"
+],
+"УстановитьВремяЗавершенияСеансаПриБездействии": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьВремяЗавершенияСпящегоСеанса": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьВремяЗасыпанияПассивногоСеанса": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьВремяОжиданияБлокировкиДанных": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьВремяПредупрежденияОЗавершенииСеансаПриБездействии": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьДействиеПриНесоответствииПаролейПользователейТребованиямПриАутентификации": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьЗапретЗасыпанияКомпьютера": [],
+"УстановитьИспользованиеДополнительныхИндексов": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьИспользованиеЖурналаРегистрации": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьИспользованиеСобытияЖурналаРегистрации": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьИспользуемыйСервер": [],
+"УстановитьКоличествоЗаданийПересчетаИтогов": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьМаксимальныйСрокДействияПаролейПользователей": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьМинимальнуюДлинуПаролейПользователей": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьМинимальныйСрокДействияПаролейПользователей": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьМонопольныйРежим": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьНастройкиКлиентаЛицензирования": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьНачалоСтолетияИнформационнойБазы": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьОбновлениеПредопределенныхДанныхИнформационнойБазы": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьОграничениеПовторенияПаролейПользователейСредиПоследних": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьОтключениеБезопасногоРежима": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьОтключениеЗащитыОтОпасныхДействий": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьПараметрыФункциональныхОпцийИнтерфейса": [
+"ThinClient",
+"WebClient"
+],
+"УстановитьПериодРазделенияХраненияДанныхЖурналаРегистрации": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьПреимущественноеИспользованиеОсновногоСервера": [],
+"УстановитьПривилегированныйРежим": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьПроверкуРаскрытияПаролейПользователей": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьПроверкуСложностиПаролейПользователей": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьРасширениеПолученияИнформацииОКомпьютереАсинх": [
+"ThinClient",
+"WebClient"
+],
+"УстановитьРасширениеРаботыСКриптографией": [
+"ThinClient",
+"WebClient"
+],
+"УстановитьРасширениеРаботыСКриптографиейАсинх": [
+"ThinClient",
+"WebClient"
+],
+"УстановитьРасширениеРаботыСФайлами": [
+"ThinClient",
+"WebClient"
+],
+"УстановитьРасширениеРаботыСФайламиАсинх": [
+"ThinClient",
+"WebClient"
+],
+"УстановитьРегиональныеНастройкиИнформационнойБазы": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьСоединениеСВнешнимИсточникомДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"УстановитьСоответствиеОбъектаИРеквизитаФормы": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьСоответствиеОбъектаИФормы": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьСоставСтандартногоИнтерфейсаOData": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьСпособПроверкиПодписиМобильногоКлиента": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьСрокПредупрежденияОбИстеченииСрокаДействияПаролейПользователей": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьТипАлгоритмаХешированияПаролейПользователей": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьЧасовойПоясИнформационнойБазы": [
+"Server",
+"ExternalConnection"
+],
+"УстановитьЧасовойПоясСеанса": [
+"Server",
+"ExternalConnection"
+],
+"Формат": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Цел": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Час": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ЧасовойПояс": [
+"Server",
+"ExternalConnection"
+],
+"ЧасовойПоясСеанса": [
+"Server",
+"ExternalConnection"
+],
+"Число": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ЧислоИзДвоичнойСтроки": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ЧислоИзШестнадцатеричнойСтроки": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ЧислоПрописью": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ЭтоАдресВременногоХранилища": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+]
+},
+"properties": {
+"WSСсылки": [
+"Server",
+"ExternalConnection"
+],
+"WebSocketКлиентСоединения": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"WebSocketКлиенты": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"АгентКлиентскогоПриложения": [
+"ThinClient",
+"WebClient"
+],
+"БезопасноеХранилище": [],
+"БиблиотекаКартинок": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"БиблиотекаМакетовОформленияКомпоновкиДанных": [
+"Server",
+"ExternalConnection"
+],
+"БиблиотекаСтилей": [
+"Server",
+"ExternalConnection"
+],
+"БизнесПроцессы": [
+"Server",
+"ExternalConnection"
+],
+"БлокировкаАутентификации": [
+"Server",
+"ExternalConnection"
+],
+"ВнешниеИсточникиДанных": [
+"Server",
+"ExternalConnection"
+],
+"ВнешниеОбработки": [
+"Server",
+"ExternalConnection"
+],
+"ВнешниеОтчеты": [
+"Server",
+"ExternalConnection"
+],
+"ВнешниеХранилищаДвоичныхДанных": [
+"Server",
+"ExternalConnection"
+],
+"ВстроенныеПокупки": [],
+"ГлавныйИнтерфейс": [],
+"ГлавныйСтиль": [
+"Server",
+"ExternalConnection"
+],
+"ГлобальныйПоиск": [
+"ThinClient",
+"WebClient"
+],
+"ДанныеЗапросаПоделитьсяЗапуска": [],
+"ДанныеПереходаПоНавигационнойСсылкеЗапуска": [
+"ThinClient",
+"WebClient"
+],
+"Документы": [
+"Server",
+"ExternalConnection"
+],
+"ДополнительнаяПроверкаПользователя": [],
+"ДополнительныеНастройкиАутентификации": [
+"Server",
+"ExternalConnection"
+],
+"ДоставляемыеУведомления": [],
+"ЖурналыДокументов": [
+"Server",
+"ExternalConnection"
+],
+"Задачи": [
+"Server",
+"ExternalConnection"
+],
+"ИнформацияОбИнтернетСоединении": [],
+"ИспользованиеРабочейДаты": [],
+"ИсторияДанных": [
+"Server",
+"ExternalConnection"
+],
+"ИсторияРаботыПользователя": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КлиентскоеПриложение": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Константы": [
+"Server",
+"ExternalConnection"
+],
+"КопииБазыДанных": [
+"Server",
+"ExternalConnection"
+],
+"КритерииОтбора": [
+"Server",
+"ExternalConnection"
+],
+"Метаданные": [
+"Server",
+"ExternalConnection"
+],
+"НавигационнаяСсылкаЗапуска": [
+"ThinClient",
+"WebClient"
+],
+"ОбменДаннымиСОсновнымСервером": [],
+"ОбработкаОшибок": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ОбработкаСтрокиXML": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Обработки": [
+"Server",
+"ExternalConnection"
+],
+"ОкноВнешнегоСайта": [
+"ThinClient",
+"WebClient"
+],
+"ОсновнойСервер": [],
+"ОтображениеРекламы": [],
+"ОтправкаДоставляемыхУведомлений": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"Отчеты": [
+"Server",
+"ExternalConnection"
+],
+"ОформлениеОтчетов": [
+"Server",
+"ExternalConnection"
+],
+"ПанельЗадачОС": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ПараметрЗапуска": [
+"ThinClient",
+"WebClient"
+],
+"ПараметрыСеанса": [
+"Server",
+"ExternalConnection"
+],
+"Перечисления": [
+"Server",
+"ExternalConnection"
+],
+"ПланыВидовРасчета": [
+"Server",
+"ExternalConnection"
+],
+"ПланыВидовХарактеристик": [
+"Server",
+"ExternalConnection"
+],
+"ПланыОбмена": [
+"Server",
+"ExternalConnection"
+],
+"ПланыСчетов": [
+"Server",
+"ExternalConnection"
+],
+"ПолитикиПаролейПользователей": [
+"Server",
+"ExternalConnection"
+],
+"ПолнотекстовыйПоиск": [
+"Server",
+"ExternalConnection"
+],
+"ПолучениеЛицензий": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ПользователиИнформационнойБазы": [
+"Server",
+"ExternalConnection"
+],
+"Последовательности": [
+"Server",
+"ExternalConnection"
+],
+"ПроверкаВстроенныхПокупок": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ПрогрессивноеВебПриложение": [
+"ThinClient",
+"WebClient"
+],
+"РаботаСРечью": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"РабочаяДата": [],
+"РасширенияКонфигурации": [
+"Server",
+"ExternalConnection"
+],
+"РегистрыБухгалтерии": [
+"Server",
+"ExternalConnection"
+],
+"РегистрыНакопления": [
+"Server",
+"ExternalConnection"
+],
+"РегистрыРасчета": [
+"Server",
+"ExternalConnection"
+],
+"РегистрыСведений": [
+"Server",
+"ExternalConnection"
+],
+"РегламентныеЗадания": [
+"Server",
+"ExternalConnection"
+],
+"СервисыИнтеграции": [
+"Server",
+"ExternalConnection"
+],
+"СериализаторXDTO": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"СистемаАналитики": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СистемаВзаимодействия": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Справочники": [
+"Server",
+"ExternalConnection"
+],
+"СредстваNFC": [],
+"СредстваБуфераОбмена": [
+"ThinClient",
+"WebClient"
+],
+"СредстваГеопозиционирования": [],
+"СредстваКриптографии": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СредстваМультимедиа": [],
+"СредстваОтображенияРекламы": [],
+"СредстваПередачиДанныхНаУстройстве": [],
+"СредстваПочты": [],
+"СредстваТелефонии": [],
+"СредстваУстройства": [],
+"СтатистикаИспользованияПриложения": [],
+"ТабличныеПространстваБазыДанных": [
+"Server",
+"ExternalConnection"
+],
+"УведомленияКлиента": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ФабрикаXDTO": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ФайловыеПотоки": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ФоновыеЗадания": [
+"Server",
+"ExternalConnection"
+],
+"ХранилищаНастроек": [
+"Server",
+"ExternalConnection"
+],
+"ХранилищеВариантовОтчетов": [
+"Server",
+"ExternalConnection"
+],
+"ХранилищеВнешнихДанныхНавигационныхСсылок": [
+"Server",
+"ExternalConnection"
+],
+"ХранилищеДвоичныхДанных": [
+"Server",
+"ExternalConnection"
+],
+"ХранилищеНастроекДанныхФорм": [
+"Server",
+"ExternalConnection"
+],
+"ХранилищеОбщихНастроек": [
+"Server",
+"ExternalConnection"
+],
+"ХранилищеПользовательскихНастроекДинамическихСписков": [
+"Server",
+"ExternalConnection"
+],
+"ХранилищеПользовательскихНастроекОтчетов": [
+"Server",
+"ExternalConnection"
+],
+"ХранилищеСистемныхНастроек": [
+"Server",
+"ExternalConnection"
+],
+"ШаблоныНастроекВторогоФактораАутентификации": [
+"Server",
+"ExternalConnection"
+]
+},
+"english": {
+"ACos": "ACos",
+"ASin": "ASin",
+"ATan": "ATan",
+"Base64Значение": "Base64Value",
+"Base64Строка": "Base64String",
+"Cos": "Cos",
+"Exp": "Exp",
+"Log": "Log",
+"Log10": "Log10",
+"Pow": "Pow",
+"Sin": "Sin",
+"Sqrt": "Sqrt",
+"Tan": "Tan",
+"WSСсылки": "WSReferences",
+"WebSocketКлиентСоединения": "WebSocketClientConnections",
+"WebSocketКлиенты": "WebSocketClients",
+"XMLЗначение": "XMLValue",
+"XMLСтрока": "XMLString",
+"XMLТип": "XMLType",
+"XMLТипЗнч": "XMLTypeOf",
+"АгентКлиентскогоПриложения": "ClientApplicationAgent",
+"АктивноеОкно": "ActiveWindow",
+"БезопасноеХранилище": "SecureStorage",
+"БезопасныйРежим": "SafeMode",
+"БезопасныйРежимРазделенияДанных": "DataSeparationSafeMode",
+"БиблиотекаКартинок": "PictureLib",
+"БиблиотекаМакетовОформленияКомпоновкиДанных": "DataCompositionAppearanceTemplateLib",
+"БиблиотекаСтилей": "StyleLib",
+"БизнесПроцессы": "BusinessProcesses",
+"БлокировкаАутентификации": "AuthenticationLock",
+"Булево": "Boolean",
+"ВРег": "Upper",
+"ВвестиДату": "InputDate",
+"ВвестиДатуАсинх": "InputDateAsync",
+"ВвестиЗначение": "InputValue",
+"ВвестиЗначениеАсинх": "InputValueAsync",
+"ВвестиСтроку": "InputString",
+"ВвестиСтрокуАсинх": "InputStringAsync",
+"ВвестиЧисло": "InputNumber",
+"ВвестиЧислоАсинх": "InputNumberAsync",
+"ВнешниеИсточникиДанных": "ExternalDataSources",
+"ВнешниеОбработки": "ExternalDataProcessors",
+"ВнешниеОтчеты": "ExternalReports",
+"ВнешниеХранилищаДвоичныхДанных": "BinaryDataExternalStorages",
+"ВозможностьЧтенияXML": "CanReadXML",
+"Вопрос": "DoQueryBox",
+"ВопросАсинх": "DoQueryBoxAsync",
+"ВосстановитьЗначение": "RestoreValue",
+"ВстроенныеПокупки": "InAppPurchases",
+"ВыгрузитьЖурналРегистрации": "UnloadEventLog",
+"ВызватьПаузу": "CallSleep",
+"ВыполнитьОбработкуЗаданий": "ProcessJobs",
+"ВыполнитьОбработкуОповещения": "RunCallback",
+"ВыполнитьПроверкуПравДоступа": "VerifyAccessRights",
+"Вычислить": "Eval",
+"ВычислитьСохраняемоеЗначениеПароляПользователя": "EvaluateStoredUserPasswordValue",
+"ГлавныйИнтерфейс": "MainInterface",
+"ГлавныйСтиль": "MainStyle",
+"ГлобальныйПоиск": "GlobalSearch",
+"Год": "Year",
+"ДанныеЗапросаПоделитьсяЗапуска": "LaunchShareRequestData",
+"ДанныеПереходаПоНавигационнойСсылкеЗапуска": "LaunchURLNavigationData",
+"ДанныеФормыВЗначение": "FormDataToValue",
+"Дата": "Date",
+"День": "Day",
+"ДеньГода": "DayOfYear",
+"ДеньНедели": "WeekDay",
+"ДобавитьМесяц": "AddMonth",
+"ДокументЗащищенПаролем": "DocumentIsPasswordProtected",
+"ДокументЗащищенПаролемАсинх": "DocumentIsPasswordProtectedAsync",
+"Документы": "Documents",
+"ДополнительнаяПроверкаПользователя": "AdditionalUserVerification",
+"ДополнительныеНастройкиАутентификации": "AdditionalAuthenticationSettings",
+"ДоставляемыеУведомления": "DeliverableNotifications",
+"ЖурналыДокументов": "DocumentJournals",
+"ЗаблокироватьДанныеДляРедактирования": "LockDataForEdit",
+"ЗаблокироватьРаботуПользователя": "LockApplication",
+"ЗавершитьРаботуСистемы": "Exit",
+"ЗагрузитьВнешнююКомпоненту": "LoadAddIn",
+"Задачи": "Tasks",
+"ЗакрытьСправку": "CloseHelp",
+"ЗаписатьJSON": "WriteJSON",
+"ЗаписатьXML": "WriteXML",
+"ЗаписатьДатуJSON": "WriteJSONDate",
+"ЗаписатьЗначениеJSON": "WriteJSONValue",
+"ЗаписьЖурналаРегистрации": "WriteLogEvent",
+"ЗаполнитьЗначенияСвойств": "FillPropertyValues",
+"ЗапрещеноОткрытиеФорм": "CannotOpenForm",
+"ЗапроситьРазрешениеПользователя": "RequestUserPermission",
+"ЗапроситьРазрешениеПользователяАсинх": "RequestUserPermissionAsync",
+"ЗапуститьПриложение": "RunApp",
+"ЗапуститьПриложениеАсинх": "RunAppAsync",
+"ЗапуститьСистему": "RunSystem",
+"ЗафиксироватьТранзакцию": "CommitTransaction",
+"ЗначениеВДанныеФормы": "ValueToFormData",
+"ЗначениеВСтрокуВнутр": "ValueToStringInternal",
+"ЗначениеВФайл": "ValueToFile",
+"ЗначениеЗаполнено": "ValueIsFilled",
+"ЗначениеИзСтрокиВнутр": "ValueFromStringInternal",
+"ЗначениеИзФайла": "ValueFromFile",
+"ИзXMLТипа": "FromXMLType",
+"ИмпортМоделиXDTO": "ImportXDTOModel",
+"ИмяКомпьютера": "ComputerName",
+"ИмяПользователя": "UserName",
+"ИнициализироватьПредопределенныеДанные": "InitializePredefinedData",
+"ИнформацияОбИнтернетСоединении": "InternetConnectionInformation",
+"ИнформацияОбОшибке": "ErrorInfo",
+"ИспользованиеРабочейДаты": "WorkingDateUse",
+"ИсторияДанных": "DataHistory",
+"ИсторияРаботыПользователя": "UserWorkHistory",
+"КаталогБиблиотекиМобильногоУстройства": "MobileDeviceLibraryDir",
+"КаталогБиблиотекиМобильногоУстройстваАсинх": "MobileDeviceLibraryDirAsync",
+"КаталогВременныхФайлов": "TempFilesDir",
+"КаталогВременныхФайловАсинх": "TempFilesDirAsync",
+"КаталогДокументов": "DocumentsDir",
+"КаталогДокументовАсинх": "DocumentsDirAsync",
+"КаталогПрограммы": "BinDir",
+"КлиентскоеПриложение": "ClientApplication",
+"КодЛокализацииИнформационнойБазы": "InfoBaseLocaleCode",
+"КодСимвола": "CharCode",
+"КодироватьСтроку": "EncodeString",
+"КомандаСистемы": "System",
+"КонецГода": "EndOfYear",
+"КонецДня": "EndOfDay",
+"КонецКвартала": "EndOfQuarter",
+"КонецМесяца": "EndOfMonth",
+"КонецМинуты": "EndOfMinute",
+"КонецНедели": "EndOfWeek",
+"КонецЧаса": "EndOfHour",
+"Константы": "Constants",
+"КонфигурацияБазыДанныхИзмененаДинамически": "DataBaseConfigurationChangedDynamically",
+"КонфигурацияИзменена": "ConfigurationChanged",
+"КопииБазыДанных": "DatabaseCopies",
+"КопироватьДанныеФормы": "CopyFormData",
+"КопироватьФайл": "CopyFile",
+"КопироватьФайлАсинх": "CopyFileAsync",
+"КраткоеПредставлениеОшибки": "BriefErrorDescription",
+"КритерииОтбора": "FilterCriteria",
+"Лев": "Left",
+"Макс": "Max",
+"МестноеВремя": "ToLocalTime",
+"Месяц": "Month",
+"Метаданные": "Metadata",
+"Мин": "Min",
+"Минута": "Minute",
+"МонопольныйРежим": "ExclusiveMode",
+"НРег": "Lower",
+"НСтр": "NStr",
+"НавигационнаяСсылкаЗапуска": "LaunchURL",
+"Найти": "Find",
+"НайтиНедопустимыеСимволыXML": "FindDisallowedXMLCharacters",
+"НайтиОкноПоНавигационнойСсылке": "FindWindowByURL",
+"НайтиПоСсылкам": "FindByRef",
+"НайтиПомеченныеНаУдаление": "FindMarkedForDeletion",
+"НайтиФайлы": "FindFiles",
+"НайтиФайлыАсинх": "FindFilesAsync",
+"НачалоГода": "BegOfYear",
+"НачалоДня": "BegOfDay",
+"НачалоКвартала": "BegOfQuarter",
+"НачалоМесяца": "BegOfMonth",
+"НачалоМинуты": "BegOfMinute",
+"НачалоНедели": "BegOfWeek",
+"НачалоСтолетияСеанса": "SessionBeginningOfCentury",
+"НачалоЧаса": "BegOfHour",
+"НачатьЗапросРазрешенияПользователя": "BeginRequestingUserPermission",
+"НачатьЗапускПриложения": "BeginRunningApplication",
+"НачатьКопированиеФайла": "BeginCopyingFile",
+"НачатьПеремещениеФайла": "BeginMovingFile",
+"НачатьПодключениеВнешнейКомпоненты": "BeginAttachingAddIn",
+"НачатьПодключениеРасширенияПолученияИнформацииОКомпьютере": "BeginAttachingComputerInformationExtension",
+"НачатьПодключениеРасширенияРаботыСКриптографией": "BeginAttachingCryptoExtension",
+"НачатьПодключениеРасширенияРаботыСФайлами": "BeginAttachingFileSystemExtension",
+"НачатьПоискФайлов": "BeginFindingFiles",
+"НачатьПолучениеИнформацииОСетевыхАдаптерах": "BeginGettingNetworkAdaptersInformation",
+"НачатьПолучениеКаталогаБиблиотекиМобильногоУстройства": "BeginGettingMobileDeviceLibraryDir",
+"НачатьПолучениеКаталогаВременныхФайлов": "BeginGettingTempFilesDir",
+"НачатьПолучениеКаталогаДокументов": "BeginGettingDocumentsDir",
+"НачатьПолучениеРабочегоКаталогаДанныхПользователя": "BeginGettingUserDataWorkDir",
+"НачатьПолучениеФайлаССервера": "BeginGetFileFromServer",
+"НачатьПолучениеФайлов": "BeginGettingFiles",
+"НачатьПолучениеФайловССервера": "BeginGetFilesFromServer",
+"НачатьПомещениеФайла": "BeginPutFile",
+"НачатьПомещениеФайлаНаСервер": "BeginPutFileToServer",
+"НачатьПомещениеФайлов": "BeginPuttingFiles",
+"НачатьПомещениеФайловНаСервер": "BeginPutFilesToServer",
+"НачатьСозданиеДвоичныхДанныхИзФайла": "BeginCreateBinaryDataFromFile",
+"НачатьСозданиеКаталога": "BeginCreatingDirectory",
+"НачатьТранзакцию": "BeginTransaction",
+"НачатьУдалениеФайлов": "BeginDeletingFiles",
+"НачатьУстановкуВнешнейКомпоненты": "BeginInstallAddIn",
+"НачатьУстановкуРасширенияПолученияИнформацииОКомпьютере": "BeginInstallingComputerInformationExtension",
+"НачатьУстановкуРасширенияРаботыСКриптографией": "BeginInstallCryptoExtension",
+"НачатьУстановкуРасширенияРаботыСФайлами": "BeginInstallFileSystemExtension",
+"НеделяГода": "WeekOfYear",
+"НеобходимостьЗавершенияСоединения": "ConnectionStopRequest",
+"НомерСеансаИнформационнойБазы": "InfoBaseSessionNumber",
+"НомерСоединенияИнформационнойБазы": "InfoBaseConnectionNumber",
+"ОбменДаннымиСОсновнымСервером": "DataExchangeWithMainServer",
+"ОбновитьИнтерфейс": "RefreshInterface",
+"ОбновитьНумерациюОбъектов": "RefreshObjectsNumbering",
+"ОбновитьПовторноИспользуемыеЗначения": "RefreshReusableValues",
+"ОбработкаОшибок": "ErrorProcessing",
+"ОбработкаПрерыванияПользователя": "UserInterruptProcessing",
+"ОбработкаСтрокиXML": "XMLStringProcessing",
+"Обработки": "DataProcessors",
+"ОбъединитьФайлы": "MergeFiles",
+"ОкноВнешнегоСайта": "ExternalSiteWindow",
+"Окр": "Round",
+"ОписаниеОшибки": "ErrorDescription",
+"Оповестить": "Notify",
+"ОповеститьОбИзменении": "NotifyChanged",
+"ОсновнойСервер": "MainServer",
+"ОсновнойСерверДоступен": "MainServerAvailable",
+"ОтключитьОбработчикЗапросаНастроекКлиентаЛицензирования": "DetachLicensingClientParametersRequestHandler",
+"ОтключитьОбработчикОжидания": "DetachIdleHandler",
+"ОтключитьОбработчикОповещения": "DetachNotificationHandler",
+"ОткрытьЗначение": "OpenValue",
+"ОткрытьЗначениеАсинх": "OpenValueAsync",
+"ОткрытьИндексСправки": "OpenHelpIndex",
+"ОткрытьСодержаниеСправки": "OpenHelpContent",
+"ОткрытьСправку": "OpenHelp",
+"ОткрытьФорму": "OpenForm",
+"ОткрытьФормуМодально": "OpenFormModal",
+"ОтменитьТранзакцию": "RollbackTransaction",
+"ОтображениеРекламы": "AdRepresentation",
+"ОтправкаДоставляемыхУведомлений": "DeliverableNotificationSend",
+"Отчеты": "Reports",
+"ОформлениеОтчетов": "ReportsAppearance",
+"ОчиститьЖурналРегистрации": "ClearEventLog",
+"ОчиститьНастройкиПользователя": "ClearUserSettings",
+"ОчиститьСообщения": "ClearMessages",
+"ПанельЗадачОС": "OSTaskbar",
+"ПараметрЗапуска": "LaunchParameter",
+"ПараметрыДоступа": "AccessParameters",
+"ПараметрыСеанса": "SessionParameters",
+"ПерейтиПоНавигационнойСсылке": "GotoURL",
+"ПереместитьФайл": "MoveFile",
+"ПереместитьФайлАсинх": "MoveFileAsync",
+"Перечисления": "Enums",
+"ПланыВидовРасчета": "ChartsOfCalculationTypes",
+"ПланыВидовХарактеристик": "ChartsOfCharacteristicTypes",
+"ПланыОбмена": "ExchangePlans",
+"ПланыСчетов": "ChartsOfAccounts",
+"ПобитовоеИ": "BitwiseAnd",
+"ПобитовоеИНе": "BitwiseAndNot",
+"ПобитовоеИли": "BitwiseOr",
+"ПобитовоеИсключительноеИли": "BitwiseXor",
+"ПобитовоеНе": "BitwiseNot",
+"ПобитовыйСдвигВлево": "BitwiseShiftLeft",
+"ПобитовыйСдвигВправо": "BitwiseShiftRight",
+"ПоддерживаетсяДинамическаяУстановкаВнешнихКомпонент": "DynamicAddInInstallationSupported",
+"ПоддерживаетсяОтображениеКарты": "MapRepresentationSupported",
+"ПоддерживаетсяФункциональностьМобильногоПриложения": "MobileApplicationFunctionalitySupported",
+"ПодключитьВнешнююКомпоненту": "AttachAddIn",
+"ПодключитьВнешнююКомпонентуАсинх": "AttachAddInAsync",
+"ПодключитьОбработчикЗапросаНастроекКлиентаЛицензирования": "AttachLicensingClientParametersRequestHandler",
+"ПодключитьОбработчикОжидания": "AttachIdleHandler",
+"ПодключитьОбработчикОповещения": "AttachNotificationHandler",
+"ПодключитьРасширениеПолученияИнформацииОКомпьютереАсинх": "AttachComputerInformationExtensionAsync",
+"ПодключитьРасширениеРаботыСКриптографией": "AttachCryptoExtension",
+"ПодключитьРасширениеРаботыСКриптографиейАсинх": "AttachCryptoExtensionAsync",
+"ПодключитьРасширениеРаботыСФайлами": "AttachFileSystemExtension",
+"ПодключитьРасширениеРаботыСФайламиАсинх": "AttachFileSystemExtensionAsync",
+"ПодробноеПредставлениеОшибки": "DetailErrorDescription",
+"ПоказатьВводДаты": "ShowInputDate",
+"ПоказатьВводЗначения": "ShowInputValue",
+"ПоказатьВводОценкиПриложения": "ShowInputAppRate",
+"ПоказатьВводСтроки": "ShowInputString",
+"ПоказатьВводЧисла": "ShowInputNumber",
+"ПоказатьВопрос": "ShowQueryBox",
+"ПоказатьЗначение": "ShowValue",
+"ПоказатьИнформациюОбОшибке": "ShowErrorInfo",
+"ПоказатьНаКарте": "ShowOnMap",
+"ПоказатьОповещениеПользователя": "ShowUserNotification",
+"ПоказатьПредупреждение": "ShowMessageBox",
+"ПолитикиПаролейПользователей": "UserPasswordPolicies",
+"ПолноеИмяПользователя": "UserFullName",
+"ПолнотекстовыйПоиск": "FullTextSearch",
+"ПолучениеЛицензий": "LicenseAcquisition",
+"ПолучитьBase64БуферДвоичныхДанныхИзБуфераДвоичныхДанных": "GetBase64BinaryDataBufferFromBinaryDataBuffer",
+"ПолучитьBase64ДвоичныеДанныеИзДвоичныхДанных": "GetBase64BinaryDataFromBinaryData",
+"ПолучитьBase64СтрокуИзБуфераДвоичныхДанных": "GetBase64StringFromBinaryDataBuffer",
+"ПолучитьBase64СтрокуИзДвоичныхДанных": "GetBase64StringFromBinaryData",
+"ПолучитьCOMОбъект": "GetCOMObject",
+"ПолучитьHexБуферДвоичныхДанныхИзБуфераДвоичныхДанных": "GetHexBinaryDataBufferFromBinaryDataBuffer",
+"ПолучитьHexДвоичныеДанныеИзДвоичныхДанных": "GetHexBinaryDataFromBinaryData",
+"ПолучитьHexСтрокуИзБуфераДвоичныхДанных": "GetHexStringFromBinaryDataBuffer",
+"ПолучитьHexСтрокуИзДвоичныхДанных": "GetHexStringFromBinaryData",
+"ПолучитьXMLТип": "GetXMLType",
+"ПолучитьАдресПоМестоположению": "GetAddressByLocation",
+"ПолучитьБлокировкуСеансов": "GetSessionsLock",
+"ПолучитьБуферДвоичныхДанныхИзBase64БуфераДвоичныхДанных": "GetBinaryDataBufferFromBase64BinaryDataBuffer",
+"ПолучитьБуферДвоичныхДанныхИзBase64Строки": "GetBinaryDataBufferFromBase64String",
+"ПолучитьБуферДвоичныхДанныхИзHexБуфераДвоичныхДанных": "GetBinaryDataBufferFromHexBinaryDataBuffer",
+"ПолучитьБуферДвоичныхДанныхИзHexСтроки": "GetBinaryDataBufferFromHexString",
+"ПолучитьБуферДвоичныхДанныхИзДвоичныхДанных": "GetBinaryDataBufferFromBinaryData",
+"ПолучитьБуферДвоичныхДанныхИзСтроки": "GetBinaryDataBufferFromString",
+"ПолучитьВнешнююНавигационнуюСсылку": "GetExternalURL",
+"ПолучитьВремяЗавершенияСеансаПриБездействии": "GetInactivityTimeForTerminateSession",
+"ПолучитьВремяЗавершенияСпящегоСеанса": "GetHibernateSessionTerminateTime",
+"ПолучитьВремяЗасыпанияПассивногоСеанса": "GetPassiveSessionHibernateTime",
+"ПолучитьВремяОжиданияБлокировкиДанных": "GetLockWaitTime",
+"ПолучитьВремяПредупрежденияОЗавершенииСеансаПриБездействии": "GetInactivityTimeForTerminateSessionNotification",
+"ПолучитьДанныеВыбора": "GetChoiceData",
+"ПолучитьДвоичныеДанныеИзBase64ДвоичныхДанных": "GetBinaryDataFromBase64BinaryData",
+"ПолучитьДвоичныеДанныеИзBase64Строки": "GetBinaryDataFromBase64String",
+"ПолучитьДвоичныеДанныеИзHexДвоичныхДанных": "GetBinaryDataFromHexBinaryData",
+"ПолучитьДвоичныеДанныеИзHexСтроки": "GetBinaryDataFromHexString",
+"ПолучитьДвоичныеДанныеИзБуфераДвоичныхДанных": "GetBinaryDataFromBinaryDataBuffer",
+"ПолучитьДвоичныеДанныеИзСтроки": "GetBinaryDataFromString",
+"ПолучитьДействиеПриНесоответствииПаролейПользователейТребованиямПриАутентификации": "GetActionOnUserPasswordRequirementsViolationOnAuthentication",
+"ПолучитьДополнительныйПараметрКлиентаЛицензирования": "GetLicensingClientAdditionalParameter",
+"ПолучитьДопустимыеКодыЛокализации": "GetAvailableLocaleCodes",
+"ПолучитьДопустимыеЧасовыеПояса": "GetAvailableTimeZones",
+"ПолучитьЗапретЗасыпанияКомпьютера": "GetComputerSleepModeProhibition",
+"ПолучитьЗначенияОтбораЖурналаРегистрации": "GetEventLogFilterValues",
+"ПолучитьИдентификаторКонфигурации": "GetConfigurationID",
+"ПолучитьИзВременногоХранилища": "GetFromTempStorage",
+"ПолучитьИмяВременногоФайла": "GetTempFileName",
+"ПолучитьИмяКлиентаЛицензирования": "GetLicensingClientName",
+"ПолучитьИнформациюОСетевыхАдаптерахАсинх": "GetNetworkAdaptersInformationAsync",
+"ПолучитьИнформациюЭкрановКлиента": "GetClientDisplaysInformation",
+"ПолучитьИспользованиеДополнительныхИндексов": "GetAdditionalIndexesUsage",
+"ПолучитьИспользованиеЖурналаРегистрации": "GetEventLogUsing",
+"ПолучитьИспользованиеСобытияЖурналаРегистрации": "GetEventLogEventUse",
+"ПолучитьИспользуемыйСервер": "GetUsedServer",
+"ПолучитьКоличествоЗаданийПересчетаИтогов": "GetTotalRecalcJobCount",
+"ПолучитьМакетОформления": "GetAppearanceTemplate",
+"ПолучитьМаксимальныйСрокДействияПаролейПользователей": "GetUserPasswordMaxEffectivePeriod",
+"ПолучитьМаскуВсеФайлы": "GetAllFilesMask",
+"ПолучитьМаскуВсеФайлыКлиента": "GetClientAllFilesMask",
+"ПолучитьМаскуВсеФайлыСервера": "GetServerAllFilesMask",
+"ПолучитьМестоположениеПоАдресу": "GetLocationByAddress",
+"ПолучитьМинимальнуюДлинуПаролейПользователей": "GetUserPasswordMinLength",
+"ПолучитьМинимальныйСрокДействияПаролейПользователей": "GetUserPasswordMinEffectivePeriod",
+"ПолучитьНавигационнуюСсылку": "GetURL",
+"ПолучитьНавигационнуюСсылкуИнформационнойБазы": "GetInfoBaseURL",
+"ПолучитьНачалоСтолетияИнформационнойБазы": "GetInfoBaseBeginningOfCentury",
+"ПолучитьОбновлениеКонфигурацииБазыДанных": "GetDataBaseConfigurationUpdate",
+"ПолучитьОбновлениеПредопределенныхДанныхИнформационнойБазы": "GetInfoBasePredefinedData",
+"ПолучитьОбщийМакет": "GetCommonTemplate",
+"ПолучитьОбщуюФорму": "GetCommonForm",
+"ПолучитьОграничениеПовторенияПаролейПользователейСредиПоследних": "GetUserPasswordReuseLimit",
+"ПолучитьОкна": "GetWindows",
+"ПолучитьОперативнуюОтметкуВремени": "GetRealTimeTimestamp",
+"ПолучитьОтключениеБезопасногоРежима": "GetSafeModeDisabled",
+"ПолучитьОтключениеЗащитыОтОпасныхДействий": "GetUnsafeActionProtectionDisabled",
+"ПолучитьПараметрыМонопольногоРежима": "GetExclusiveModeParameters",
+"ПолучитьПараметрыФункциональныхОпцийИнтерфейса": "GetInterfaceFunctionalOptionParameters",
+"ПолучитьПериодЖурналаРегистрации": "GetEventLogPeriod",
+"ПолучитьПериодРазделенияХраненияДанныхЖурналаРегистрации": "GetEventLogDataStorageSplitPeriod",
+"ПолучитьПолноеИмяПредопределенногоЗначения": "GetPredefinedValueFullName",
+"ПолучитьПредставленияНавигационныхСсылок": "GetURLsPresentations",
+"ПолучитьПреимущественноеИспользованиеОсновногоСервера": "GetPreferableMainServerUse",
+"ПолучитьПроверкуРаскрытияПаролейПользователей": "GetUserPasswordCompromiseCheck",
+"ПолучитьПроверкуСложностиПаролейПользователей": "GetUserPasswordStrengthCheck",
+"ПолучитьРазделительПути": "GetPathSeparator",
+"ПолучитьРазделительПутиКлиента": "GetClientPathSeparator",
+"ПолучитьРазделительПутиСервера": "GetServerPathSeparator",
+"ПолучитьРазмерДанныхБазыДанных": "GetDatabaseDataSize",
+"ПолучитьРазмерДанныхБазыДанныхИХранилищаДвоичныхДанных": "GetDatabaseAndBinaryDataStorageDataSize",
+"ПолучитьРегиональныеНастройкиИнформационнойБазы": "GetInfoBaseRegionalSettings",
+"ПолучитьРегиональныеНастройкиСеанса": "GetSessionRegionalSettings",
+"ПолучитьРежимВнешнихРесурсов": "GetExternalResourcesMode",
+"ПолучитьСеансыИнформационнойБазы": "GetInfoBaseSessions",
+"ПолучитьСклоненияСтроки": "GetStringDeclensions",
+"ПолучитьСклоненияСтрокиПоЧислу": "GetStringDeclensionsByNumber",
+"ПолучитьСкоростьКлиентскогоСоединения": "GetClientConnectionSpeed",
+"ПолучитьСоединенияИнформационнойБазы": "GetInfoBaseConnections",
+"ПолучитьСообщенияПользователю": "GetUserMessages",
+"ПолучитьСоответствиеОбъектаИРеквизитаФормы": "GetObjectAndFormAttributeConformity",
+"ПолучитьСоответствиеОбъектаИФормы": "GetObjectAndFormConformity",
+"ПолучитьСоставСтандартногоИнтерфейсаOData": "GetStandardODataInterfaceContent",
+"ПолучитьСпособПроверкиПодписиМобильногоКлиента": "GetMobileClientSignatureVerificationMethod",
+"ПолучитьСрокПредупрежденияОбИстеченииСрокаДействияПаролейПользователей": "GetUserPasswordExpirationNotificationPeriod",
+"ПолучитьСтандартноеХранилищеВариантовОтчетов": "GetStandardReportsVariantsStorage",
+"ПолучитьСтандартноеХранилищеВнешнихДанныхНавигационныхСсылок": "GetStandardURLExternalDataStorage",
+"ПолучитьСтандартноеХранилищеНастроекДанныхФорм": "GetStandardFormDataSettingsStorage",
+"ПолучитьСтандартноеХранилищеОбщихНастроек": "GetStandardCommonSettingsStorage",
+"ПолучитьСтандартноеХранилищеПользовательскихНастроекДинамическихСписков": "GetStandardDynamicListsUserSettingsStorage",
+"ПолучитьСтандартноеХранилищеПользовательскихНастроекОтчетов": "GetStandardReportsUserSettingsStorage",
+"ПолучитьСтрокуИзБуфераДвоичныхДанных": "GetStringFromBinaryDataBuffer",
+"ПолучитьСтрокуИзДвоичныхДанных": "GetStringFromBinaryData",
+"ПолучитьСтруктуруХраненияБазыДанных": "GetDBStorageStructureInfo",
+"ПолучитьТекущийСеансИнформационнойБазы": "GetCurrentInfoBaseSession",
+"ПолучитьТипАлгоритмаХешированияПаролейПользователей": "GetUserPasswordHashAlgorithmType",
+"ПолучитьУникальныйИдентификаторСПоддержкойСовместимости": "GetUUIDWithCompatibilitySupport",
+"ПолучитьФайл": "GetFile",
+"ПолучитьФайлССервераАсинх": "GetFileFromServerAsync",
+"ПолучитьФайлы": "GetFiles",
+"ПолучитьФайлыССервераАсинх": "GetFilesFromServerAsync",
+"ПолучитьФорму": "GetForm",
+"ПолучитьФункциональнуюОпцию": "GetFunctionalOption",
+"ПолучитьФункциональнуюОпциюИнтерфейса": "GetInterfaceFunctionalOption",
+"ПолучитьЧасовойПоясИнформационнойБазы": "GetInfoBaseTimeZone",
+"ПользователиWindows": "WindowsUsers",
+"ПользователиИнформационнойБазы": "InfoBaseUsers",
+"ПользователиОС": "OSUsers",
+"ПоместитьВоВременноеХранилище": "PutToTempStorage",
+"ПоместитьФайл": "PutFile",
+"ПоместитьФайлНаСерверАсинх": "PutFileToServerAsync",
+"ПоместитьФайлы": "PutFiles",
+"ПоместитьФайлыНаСерверАсинх": "PutFilesToServerAsync",
+"Последовательности": "Sequences",
+"Прав": "Right",
+"ПравоДоступа": "AccessRight",
+"ПредопределенноеЗначение": "PredefinedValue",
+"ПредставлениеКодаЛокализации": "LocaleCodePresentation",
+"ПредставлениеПериода": "PeriodPresentation",
+"ПредставлениеПрава": "RightPresentation",
+"ПредставлениеПриложения": "ApplicationPresentation",
+"ПредставлениеСобытияЖурналаРегистрации": "EventLogEventPresentation",
+"ПредставлениеЧасовогоПояса": "TimeZonePresentation",
+"Предупреждение": "DoMessageBox",
+"ПредупреждениеАсинх": "DoMessageBoxAsync",
+"ПрекратитьРаботуСистемы": "Terminate",
+"ПривилегированныйРежим": "PrivilegedMode",
+"ПроверитьБит": "CheckBit",
+"ПроверитьПоБитовойМаске": "CheckByBitMask",
+"ПроверитьПодключениеВнешнейКомпоненты": "CheckAddInAttachment",
+"ПроверитьРаскрытиеПароля": "CheckPasswordCompromise",
+"ПроверитьСоответствиеПароляПользователяСохраняемомуЗначению": "CheckUserPasswordComplianceWithStoredValue",
+"ПроверитьЦиклическиеСсылкиВстроенногоЯзыка": "CheckScriptCircularRefs",
+"ПроверкаВстроенныхПокупок": "InAppPurchasesValidation",
+"ПрогрессивноеВебПриложение": "ProgressiveWebApplication",
+"ПродолжитьВызов": "ProceedWithCall",
+"ПрочитатьJSON": "ReadJSON",
+"ПрочитатьXML": "ReadXML",
+"ПрочитатьДатуJSON": "ReadJSONDate",
+"ПрочитатьЗначениеJSON": "ReadJSONValue",
+"ПустаяСтрока": "IsBlankString",
+"РаботаСРечью": "SpeechProcessing",
+"РабочаяДата": "WorkingDate",
+"РабочийКаталогДанныхПользователя": "UserDataWorkDir",
+"РабочийКаталогДанныхПользователяАсинх": "UserDataWorkDirAsync",
+"РазблокироватьДанныеДляРедактирования": "UnlockDataForEdit",
+"РазделитьДвоичныеДанные": "SplitBinaryData",
+"РазделитьФайл": "SplitFile",
+"РазорватьСоединениеСВнешнимИсточникомДанных": "DisconnectExternalDataSource",
+"РаскодироватьСтроку": "DecodeString",
+"РасширенияКонфигурации": "ConfigurationExtensions",
+"РегистрыБухгалтерии": "AccountingRegisters",
+"РегистрыНакопления": "AccumulationRegisters",
+"РегистрыРасчета": "CalculationRegisters",
+"РегистрыСведений": "InformationRegisters",
+"РегламентныеЗадания": "ScheduledJobs",
+"РольДоступна": "IsInRole",
+"Секунда": "Second",
+"СервисыИнтеграции": "IntegrationServices",
+"СериализаторXDTO": "XDTOSerializer",
+"Сигнал": "Beep",
+"Символ": "Char",
+"СистемаАналитики": "AnalyticsSystem",
+"СистемаВзаимодействия": "CollaborationSystem",
+"СкопироватьЖурналРегистрации": "CopyEventLog",
+"СмещениеЛетнегоВремени": "DaylightTimeOffset",
+"СмещениеСтандартногоВремени": "StandardTimeOffset",
+"СоединитьБуферыДвоичныхДанных": "ConcatBinaryDataBuffers",
+"СоединитьДвоичныеДанные": "ConcatBinaryData",
+"СоздатьДвоичныеДанныеИзФайлаАсинх": "CreateBinaryDataFromFileAsync",
+"СоздатьКаталог": "CreateDirectory",
+"СоздатьКаталогАсинх": "CreateDirectoryAsync",
+"СоздатьОбъектВнешнейКомпонентыАсинх": "CreateAddInObjectAsync",
+"СоздатьФабрикуXDTO": "CreateXDTOFactory",
+"СокрЛ": "TrimL",
+"СокрЛП": "TrimAll",
+"СокрП": "TrimR",
+"СократитьЖурналРегистрации": "TruncateEventLog",
+"Сообщить": "Message",
+"Состояние": "Status",
+"СохранитьЗначение": "SaveValue",
+"СохранитьНастройкиПользователя": "SaveUserSettings",
+"Справочники": "Catalogs",
+"Сред": "Mid",
+"СредстваNFC": "NFCTools",
+"СредстваБуфераОбмена": "ClipboardTools",
+"СредстваГеопозиционирования": "LocationTools",
+"СредстваКриптографии": "CryptoTools",
+"СредстваМультимедиа": "MultimediaTools",
+"СредстваОтображенияРекламы": "AdvertisingPresentationTools",
+"СредстваПередачиДанныхНаУстройстве": "DeviceDataSharingTools",
+"СредстваПочты": "MailTools",
+"СредстваТелефонии": "TelephonyTools",
+"СредстваУстройства": "DeviceTools",
+"СтатистикаИспользованияПриложения": "ApplicationUsageStatistics",
+"СтрДлина": "StrLen",
+"СтрЗаканчиваетсяНа": "StrEndsWith",
+"СтрЗаменить": "StrReplace",
+"СтрЗаменитьПоРегулярномуВыражению": "StrReplaceByRegularExpression",
+"СтрНайти": "StrFind",
+"СтрНайтиВсеПоРегулярномуВыражению": "StrFindAllByRegularExpression",
+"СтрНайтиИВыделитьОформлением": "StrFindAndHighlightByAppearance",
+"СтрНайтиПоРегулярномуВыражению": "StrFindByRegularExpression",
+"СтрНачинаетсяС": "StrStartsWith",
+"СтрПодобнаПоРегулярномуВыражению": "StrLikeByRegularExpression",
+"СтрПолучитьСтроку": "StrGetLine",
+"СтрРазделить": "StrSplit",
+"СтрСоединить": "StrConcat",
+"СтрСравнить": "StrCompare",
+"СтрЧислоВхождений": "StrOccurrenceCount",
+"СтрЧислоСтрок": "StrLineCount",
+"СтрШаблон": "StrTemplate",
+"Строка": "String",
+"СтрокаСЧислом": "StringWithNumber",
+"СтрокаСоединенияИнформационнойБазы": "InfoBaseConnectionString",
+"СформироватьОтветДляАутентификацииОткрытымКлючом": "GenerateResponseForPublicKeyAuthentication",
+"СформироватьОтветДляАутентификацииОткрытымКлючомАсинх": "GenerateResponseForPublicKeyAuthenticationAsync",
+"ТРег": "Title",
+"ТабличныеПространстваБазыДанных": "DatabaseTablespaces",
+"ТекущаяДата": "CurrentDate",
+"ТекущаяДатаСеанса": "CurrentSessionDate",
+"ТекущаяУниверсальнаяДата": "CurrentUniversalDate",
+"ТекущаяУниверсальнаяДатаВМиллисекундах": "CurrentUniversalDateInMilliseconds",
+"ТекущийВариантИнтерфейсаКлиентскогоПриложения": "ClientApplicationInterfaceCurrentVariant",
+"ТекущийКодЛокализации": "CurrentLocaleCode",
+"ТекущийРежимЗапуска": "CurrentRunMode",
+"ТекущийСеансТестируется": "CurrentSessionIsTested",
+"ТекущийЯзык": "CurrentLanguage",
+"ТекущийЯзыкСистемы": "CurrentSystemLanguage",
+"Тип": "Type",
+"ТипЗнч": "TypeOf",
+"ТранзакцияАктивна": "TransactionActive",
+"УведомленияКлиента": "ClientNotifications",
+"УдалитьДанныеИнформационнойБазы": "EraseInfoBaseData",
+"УдалитьИзВременногоХранилища": "DeleteFromTempStorage",
+"УдалитьНедопустимыеСимволыXML": "DeleteDisallowedXMLCharacters",
+"УдалитьОбъекты": "DeleteObjects",
+"УдалитьФайлы": "DeleteFiles",
+"УдалитьФайлыАсинх": "DeleteFilesAsync",
+"УниверсальноеВремя": "ToUniversalTime",
+"УстановитьБезопасныйРежим": "SetSafeMode",
+"УстановитьБезопасныйРежимРазделенияДанных": "SetDataSeparationSafeMode",
+"УстановитьБит": "SetBit",
+"УстановитьБлокировкуСеансов": "SetSessionsLock",
+"УстановитьВнешнююКомпоненту": "InstallAddIn",
+"УстановитьВнешнююКомпонентуАсинх": "InstallAddInAsync",
+"УстановитьВремяЗавершенияСеансаПриБездействии": "SetInactivityTimeForTerminateSession",
+"УстановитьВремяЗавершенияСпящегоСеанса": "SetHibernateSessionTerminateTime",
+"УстановитьВремяЗасыпанияПассивногоСеанса": "SetPassiveSessionHibernateTime",
+"УстановитьВремяОжиданияБлокировкиДанных": "SetLockWaitTime",
+"УстановитьВремяПредупрежденияОЗавершенииСеансаПриБездействии": "SetInactivityTimeForTerminateSessionNotification",
+"УстановитьДействиеПриНесоответствииПаролейПользователейТребованиямПриАутентификации": "SetActionOnUserPasswordRequirementsViolationOnAuthentication",
+"УстановитьЗапретЗасыпанияКомпьютера": "SetComputerSleepModeProhibition",
+"УстановитьИспользованиеДополнительныхИндексов": "SetAdditionalIndexesUsage",
+"УстановитьИспользованиеЖурналаРегистрации": "SetEventLogUsing",
+"УстановитьИспользованиеСобытияЖурналаРегистрации": "SetEventLogEventUse",
+"УстановитьИспользуемыйСервер": "SetUsedServer",
+"УстановитьКоличествоЗаданийПересчетаИтогов": "SetTotalRecalcJobCount",
+"УстановитьМаксимальныйСрокДействияПаролейПользователей": "SetUserPasswordMaxEffectivePeriod",
+"УстановитьМинимальнуюДлинуПаролейПользователей": "SetUserPasswordMinLength",
+"УстановитьМинимальныйСрокДействияПаролейПользователей": "SetUserPasswordMinEffectivePeriod",
+"УстановитьМонопольныйРежим": "SetExclusiveMode",
+"УстановитьНастройкиКлиентаЛицензирования": "SetLicensingClientParameters",
+"УстановитьНачалоСтолетияИнформационнойБазы": "SetInfoBaseBeginningOfCentury",
+"УстановитьОбновлениеПредопределенныхДанныхИнформационнойБазы": "SetInfoBasePredefinedDataUpdate",
+"УстановитьОграничениеПовторенияПаролейПользователейСредиПоследних": "SetUserPasswordReuseLimit",
+"УстановитьОтключениеБезопасногоРежима": "SetSafeModeDisabled",
+"УстановитьОтключениеЗащитыОтОпасныхДействий": "SetUnsafeActionProtectionDisabled",
+"УстановитьПараметрыФункциональныхОпцийИнтерфейса": "SetInterfaceFunctionalOptionParameters",
+"УстановитьПериодРазделенияХраненияДанныхЖурналаРегистрации": "SetEventLogDataStorageSplitPeriod",
+"УстановитьПреимущественноеИспользованиеОсновногоСервера": "SetPreferableMainServerUse",
+"УстановитьПривилегированныйРежим": "SetPrivilegedMode",
+"УстановитьПроверкуРаскрытияПаролейПользователей": "SetUserPasswordCompromiseCheck",
+"УстановитьПроверкуСложностиПаролейПользователей": "SetUserPasswordStrengthCheck",
+"УстановитьРасширениеПолученияИнформацииОКомпьютереАсинх": "InstallComputerInformationExtensionAsync",
+"УстановитьРасширениеРаботыСКриптографией": "InstallCryptoExtension",
+"УстановитьРасширениеРаботыСКриптографиейАсинх": "InstallCryptoExtensionAsync",
+"УстановитьРасширениеРаботыСФайлами": "InstallFileSystemExtension",
+"УстановитьРасширениеРаботыСФайламиАсинх": "InstallFileSystemExtensionAsync",
+"УстановитьРегиональныеНастройкиИнформационнойБазы": "SetInfoBaseRegionalSettings",
+"УстановитьСоединениеСВнешнимИсточникомДанных": "ConnectExternalDataSource",
+"УстановитьСоответствиеОбъектаИРеквизитаФормы": "SetObjectAndFormAttributeConformity",
+"УстановитьСоответствиеОбъектаИФормы": "SetObjectAndFormConformity",
+"УстановитьСоставСтандартногоИнтерфейсаOData": "SetStandardODataInterfaceContent",
+"УстановитьСпособПроверкиПодписиМобильногоКлиента": "SetMobileClientSignatureVerificationMethod",
+"УстановитьСрокПредупрежденияОбИстеченииСрокаДействияПаролейПользователей": "SetUserPasswordExpirationNotificationPeriod",
+"УстановитьТипАлгоритмаХешированияПаролейПользователей": "SetUserPasswordHashAlgorithmType",
+"УстановитьЧасовойПоясИнформационнойБазы": "SetInfoBaseTimeZone",
+"УстановитьЧасовойПоясСеанса": "SetSessionTimeZone",
+"ФабрикаXDTO": "XDTOFactory",
+"ФайловыеПотоки": "FileStreams",
+"ФоновыеЗадания": "BackgroundJobs",
+"Формат": "Format",
+"ХранилищаНастроек": "SettingsStorages",
+"ХранилищеВариантовОтчетов": "ReportsVariantsStorage",
+"ХранилищеВнешнихДанныхНавигационныхСсылок": "URLExternalDataStorage",
+"ХранилищеДвоичныхДанных": "BinaryDataStorage",
+"ХранилищеНастроекДанныхФорм": "FormDataSettingsStorage",
+"ХранилищеОбщихНастроек": "CommonSettingsStorage",
+"ХранилищеПользовательскихНастроекДинамическихСписков": "DynamicListsUserSettingsStorage",
+"ХранилищеПользовательскихНастроекОтчетов": "ReportsUserSettingsStorage",
+"ХранилищеСистемныхНастроек": "SystemSettingsStorage",
+"Цел": "Int",
+"Час": "Hour",
+"ЧасовойПояс": "TimeZone",
+"ЧасовойПоясСеанса": "SessionTimeZone",
+"Число": "Number",
+"ЧислоИзДвоичнойСтроки": "NumberFromBinaryString",
+"ЧислоИзШестнадцатеричнойСтроки": "NumberFromHexString",
+"ЧислоПрописью": "NumberInWords",
+"ШаблоныНастроекВторогоФактораАутентификации": "SecondAuthenticationFactorSettingsTemplates",
+"ЭтоАдресВременногоХранилища": "IsTempStorageURL"
+},
+"types": {
+"COMSafeArray": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"COMОбъект": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"FTPСоединение": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"HTTPЗапрос": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"HTTPСервисОтвет": [
+"Server",
+"ExternalConnection"
+],
+"HTTPСоединение": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"MMSВложение": [
+"Server",
+"ExternalConnection"
+],
+"SMSСообщение": [
+"Server",
+"ExternalConnection"
+],
+"URIЗаписьNDEF": [
+"Server",
+"ExternalConnection"
+],
+"WSОпределения": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"WSПрокси": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"XBase": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"АдминистрированиеДиапазонПортов": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"АдминистрированиеСервера": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"АнализДанных": [
+"Server",
+"ExternalConnection"
+],
+"АннотацияXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"БлокировкаДанных": [
+"Server",
+"ExternalConnection"
+],
+"БлокировкаСеансов": [
+"Server",
+"ExternalConnection"
+],
+"БуферДвоичныхДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ВключениеXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ВыборНастроек": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ВыражениеКомпоновкиДанных": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ВыражениеСхемыЗапроса": [
+"Server",
+"ExternalConnection"
+],
+"ГенераторСлучайныхПаролей": [
+"Server",
+"ExternalConnection"
+],
+"ГенераторСлучайныхЧисел": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ГеографическаяСхема": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ГеографическиеКоординаты": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Геозона": [
+"Server",
+"ExternalConnection"
+],
+"Граница": [
+"Server",
+"ExternalConnection"
+],
+"ГрафическаяСхема": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ГруппаМоделиXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ГруппаНастройкиСоставаИнтерфейсаКлиентскогоПриложения": [
+"Server",
+"ExternalConnection"
+],
+"ДанныеАдреса": [
+"Server",
+"ExternalConnection"
+],
+"ДанныеКалендаря": [
+"Server",
+"ExternalConnection"
+],
+"ДанныеКалендаряУчетнойЗаписи": [
+"Server",
+"ExternalConnection"
+],
+"ДанныеКонтакта": [
+"Server",
+"ExternalConnection"
+],
+"ДанныеКонтактаУчетнойЗаписи": [
+"Server",
+"ExternalConnection"
+],
+"ДанныеМультимедиа": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ДанныеРасшифровкиКомпоновкиДанных": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ДанныеСобытияКалендаря": [
+"Server",
+"ExternalConnection"
+],
+"ДанныеСобытияКалендаряУчетнойЗаписи": [
+"Server",
+"ExternalConnection"
+],
+"ДвоичныеДанные": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Действие": [
+"ThinClient"
+],
+"Дендрограмма": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ДеревоЗначений": [
+"Server",
+"ExternalConnection"
+],
+"Диаграмма": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ДиаграммаГанта": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ДиалогВыбораПользователейИсторииДанных": [
+"ThinClient",
+"WebClient"
+],
+"ДиалогВыбораТипаДиаграммы": [
+"ThinClient",
+"WebClient"
+],
+"ДиалогВыбораФайла": [
+"ThinClient",
+"WebClient"
+],
+"ДиалогВыбораЦвета": [
+"ThinClient",
+"WebClient"
+],
+"ДиалогВыбораШрифта": [
+"ThinClient",
+"WebClient"
+],
+"ДиалогОтбораВерсийИсторииДанных": [
+"ThinClient",
+"WebClient"
+],
+"ДиалогРасписанияРегламентногоЗадания": [
+"ThinClient",
+"WebClient"
+],
+"ДиалогРасписанияЭлементаПланировщика": [
+"ThinClient",
+"WebClient"
+],
+"ДиалогРедактированияСтандартногоПериода": [
+"ThinClient",
+"WebClient"
+],
+"Диапазон": [
+"Server",
+"ExternalConnection"
+],
+"ДокументDOM": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ДокументHTML": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ДокументPDF": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ДокументацияXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ДополнительныеДанныеЗапускаПриложенияМобильногоУстройства": [
+"Server",
+"ExternalConnection"
+],
+"ДоставляемоеУведомление": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ЗаписьDOM": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ЗаписьFastInfoset": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ЗаписьHTML": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ЗаписьJSON": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ЗаписьNDEFВнешнегоТипа": [
+"Server",
+"ExternalConnection"
+],
+"ЗаписьPDF": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ЗаписьXML": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ЗаписьZipФайла": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ЗаписьДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ЗаписьТекста": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ЗаписьУзловDOM": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ЗаписьФайлаАрхива": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"Запрос": [
+"Server",
+"ExternalConnection"
+],
+"ЗапросНаПолучениеЛицензии": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ЗапускПриложенияМобильногоУстройства": [
+"Server",
+"ExternalConnection"
+],
+"ЗащищенноеСоединениеOpenSSL": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ЗащищенноеСоединениеКриптоПро": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ЗначенияПолейРасшифровкиКомпоновкиДанных": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ИдентификаторВыгрузкиДанныхСистемыВзаимодействия": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ИдентификаторМоделиРаспознаванияРечи": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ИдентификаторОбсужденияСистемыВзаимодействия": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ИдентификаторОтложенногоРаспознаванияРечи": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ИдентификаторПользователяСистемыВзаимодействия": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ИдентификаторПриложенияСистемыВзаимодействия": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ИдентификаторСообщенияСистемыВзаимодействия": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ИдентификаторШаблонаСообщенияСистемыВзаимодействия": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ИзбранноеРаботыПользователя": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ИзвлечениеТекста": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ИмпортXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ИнтернетПочта": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ИнтернетПочтовоеСообщение": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ИнтернетПочтовыйПрофиль": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ИнтернетПрокси": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ИнтернетСоединение": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ИнформацияДляПриложенияXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ИспользованиеАтрибутаXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ИспользованиеСобытияЖурналаРегистрации": [
+"Server",
+"ExternalConnection"
+],
+"ИсточникДоступныхНастроекКомпоновкиДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ИтераторУзловDOM": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"КаноническаяЗаписьXML": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"КаноническийDOM": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"Картинка": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КвалификаторыДаты": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КвалификаторыДвоичныхДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КвалификаторыСтроки": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КвалификаторыЧисла": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КвитанцияВстроеннойПокупки": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"КлючСтрокиДинамическогоСписка": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КоллекцияВложенийPDF": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КоллекцияИдентификаторовПользователейСистемыВзаимодействия": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КоллекцияИдентификаторовПриложенийСистемыВзаимодействия": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"КомпоновщикМакетаКомпоновкиДанных": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"КомпоновщикНастроекКомпоновкиДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КонструкторЗапроса": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"КонструкторМакетаОформленияКомпоновкиДанных": [
+"ThinClient"
+],
+"КонструкторНастроекКомпоновкиДанных": [
+"ThinClient"
+],
+"КонструкторСхемыКомпоновкиДанных": [
+"ThinClient"
+],
+"КонструкторФорматнойСтроки": [
+"ThinClient",
+"WebClient"
+],
+"КонтейнерКлючейКриптографии": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"КонтекстОбсужденияСистемыВзаимодействия": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Линия": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"МакетЗаголовкаКоллекцииЗначенийОбластиКомпоновкиДанных": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"МакетКоллекцииЗначенийОбластиКомпоновкиДанных": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"МакетКомпоновкиДанных": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"МакетОбластиКомпоновкиДанных": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"МакетОформленияКомпоновкиДанных": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"МаскаXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"Массив": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"МедиаЗаписьNDEF": [
+"Server",
+"ExternalConnection"
+],
+"МенеджерВременныхТаблиц": [
+"Server",
+"ExternalConnection"
+],
+"МенеджерКалендарей": [
+"Server",
+"ExternalConnection"
+],
+"МенеджерКонтактов": [
+"Server",
+"ExternalConnection"
+],
+"МенеджерКриптографии": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"МоментВремени": [
+"Server",
+"ExternalConnection"
+],
+"МоментВремениСУточнениемПериода": [
+"Server",
+"ExternalConnection"
+],
+"НаборСхемXML": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"НастройкаОформления": [
+"Server",
+"ExternalConnection"
+],
+"НастройкаПериода": [],
+"НастройкаПорядка": [
+"Server",
+"ExternalConnection"
+],
+"НастройкиВосстановленияПароля": [
+"Server",
+"ExternalConnection"
+],
+"НастройкиИнтерфейсаКлиентскогоПриложения": [
+"Server",
+"ExternalConnection"
+],
+"НастройкиИсторииДанных": [
+"Server",
+"ExternalConnection"
+],
+"НастройкиКлиентскогоПриложения": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НастройкиКомандногоИнтерфейса": [
+"Server",
+"ExternalConnection"
+],
+"НастройкиКомпоновкиДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"НастройкиНачальнойСтраницы": [
+"Server",
+"ExternalConnection"
+],
+"НастройкиПроверкиРаскрытияПароля": [
+"Server",
+"ExternalConnection"
+],
+"НастройкиСериализацииJSON": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"НастройкиСоставаИнтерфейсаКлиентскогоПриложения": [
+"Server",
+"ExternalConnection"
+],
+"НастройкиТаблицыДинамическогоСписка": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ОбластьОформления": [
+"Server",
+"ExternalConnection"
+],
+"ОбрабатываемаяКартинка": [
+"Server",
+"ExternalConnection"
+],
+"ОбработкаКартинок": [
+"Server",
+"ExternalConnection"
+],
+"ОбработкаРасшифровкиКомпоновкиДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ОбработчикиWebSocketКлиентСоединения": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ОбходДереваDOM": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ОбъектМетаданныхКонфигурация": [
+"Server",
+"ExternalConnection"
+],
+"ОбъявлениеАтрибутаXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ОбъявлениеНотацииXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ОбъявлениеЭлементаXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ОписаниеЗащитыОтОпасныхДействий": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ОписаниеИспользованияСобытияДоступЖурналаРегистрации": [
+"Server",
+"ExternalConnection"
+],
+"ОписаниеИспользованияСобытияОтказВДоступеЖурналаРегистрации": [
+"Server",
+"ExternalConnection"
+],
+"ОписаниеИсточникаДанных": [
+"Server",
+"ExternalConnection"
+],
+"ОписаниеКомандыВходящегоЗапросаПоделиться": [
+"Server",
+"ExternalConnection"
+],
+"ОписаниеКомандыПланировщика": [
+"ThinClient",
+"WebClient"
+],
+"ОписаниеКомандыПоляВвода": [
+"ThinClient",
+"WebClient"
+],
+"ОписаниеКомандыПоляПланировщика": [
+"ThinClient",
+"WebClient"
+],
+"ОписаниеКомандыСистемыВзаимодействия": [
+"ThinClient",
+"WebClient"
+],
+"ОписаниеКонфигурации": [
+"Server",
+"ExternalConnection"
+],
+"ОписаниеНастроек": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ОписаниеОбновленияКонфигурации": [
+"Server",
+"ExternalConnection"
+],
+"ОписаниеОбработкиРасшифровкиКомпоновкиДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ОписаниеОповещения": [
+"ThinClient",
+"WebClient"
+],
+"ОписаниеОтображаемогоОбъектаPDF": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ОписаниеПередаваемогоФайла": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ОписаниеПодписиPDF": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ОписаниеТипов": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ОпределениеГруппыАтрибутовXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ОпределениеГруппыМоделиXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ОпределениеОграниченияИдентичностиXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ОпределениеПростогоТипаXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ОпределениеСоставногоТипаXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ОпределениеТипаДокументаDOM": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ОпределенияXPathXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ОтборКомпоновкиДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ОтборОбсужденийСистемыВзаимодействия": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ОтборСообщенийСистемыВзаимодействия": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ОтметкаНаФотоснимке": [
+"Server",
+"ExternalConnection"
+],
+"ОтчетОбОшибке": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПакетОтображаемыхДокументов": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПараметрВыбора": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПараметрКомпоновкиДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПараметрыАудиозаписи": [
+"Server",
+"ExternalConnection"
+],
+"ПараметрыВнешнегоПодключенияРаботыСРечью": [
+"Server",
+"ExternalConnection"
+],
+"ПараметрыВыбораЗапускаПриложенияМобильногоУстройства": [
+"Server",
+"ExternalConnection"
+],
+"ПараметрыДиалогаПолученияФайлов": [
+"ThinClient",
+"WebClient"
+],
+"ПараметрыДиалогаПомещенияФайлов": [
+"ThinClient",
+"WebClient"
+],
+"ПараметрыЗаписиJSON": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ПараметрыЗаписиXML": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ПараметрыМоделиРаспознаванияРечи": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПараметрыМонопольногоРежима": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ПараметрыПодключенияВнешнегоХранилищаДвоичныхДанных": [
+"Server",
+"ExternalConnection"
+],
+"ПараметрыПолученияАрхиваФайлов": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПараметрыПотоковогоРаспознаванияРечи": [
+"ThinClient",
+"WebClient"
+],
+"ПараметрыРегистрацииИнформационнойБазыСистемыВзаимодействия": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПараметрыСканированияДокументов": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ПараметрыЧтенияXML": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ПереопределениеXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ПланГлобальногоПоиска": [
+"ThinClient",
+"WebClient"
+],
+"Планировщик": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПолеАнализаДанных": [
+"Server",
+"ExternalConnection"
+],
+"ПолеГрафическойСхемы": [
+"ThinClient"
+],
+"ПолеКомпоновкиДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПользовательскиеНастройкиКомпоновкиДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ПостроительDOM": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ПостроительЗапроса": [
+"Server",
+"ExternalConnection"
+],
+"ПостроительОтчета": [
+"Server",
+"ExternalConnection"
+],
+"ПостроительОтчетаАнализаДанных": [
+"Server",
+"ExternalConnection"
+],
+"ПостроительСхемXML": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ПотокВПамяти": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Почта": [
+"ThinClient"
+],
+"ПочтовоеСообщение": [
+"ThinClient"
+],
+"ПреобразованиеXSL": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ПреобразованиеККаноническомуXML": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ПрикрепляемыеДанныеЗапускаПриложенияМобильногоУстройства": [
+"Server",
+"ExternalConnection"
+],
+"ПроцессорВыводаРезультатаКомпоновкиДанныхВКоллекциюЗначений": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ПроцессорВыводаРезультатаКомпоновкиДанныхВТабличныйДокумент": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ПроцессорКомпоновкиДанных": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"РазрешениеКамерыУстройства": [
+"Server",
+"ExternalConnection"
+],
+"РазыменовательПространствИменDOM": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"Рамка": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"РасписаниеРегламентногоЗадания": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"РасписаниеЭлементаПланировщика": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"РасчетСистемЛинейныхУравнений": [
+"Server",
+"ExternalConnection"
+],
+"РасширенноеИмяXML": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"РезультатГлобальногоПоиска": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"РеквизитФормы": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СводнаяДиаграмма": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"СвязьПараметраВыбора": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СвязьПоТипу": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СвязьПоТипуКомпоновкиДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СериализаторXDTO": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"СертификатКлиентаLinux": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"СертификатКлиентаMacOS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"СертификатКлиентаWindows": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"СертификатКлиентаОС": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"СертификатКлиентаФайл": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"СертификатКриптографии": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СертификатыУдостоверяющихЦентровLinux": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"СертификатыУдостоверяющихЦентровMacOS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"СертификатыУдостоверяющихЦентровWindows": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"СертификатыУдостоверяющихЦентровОС": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"СертификатыУдостоверяющихЦентровФайл": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"СжатиеДанных": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"СистемнаяИнформация": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СовместноеИспользованиеПриложенийСистемыВзаимодействия": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"СообщениеNDEF": [
+"Server",
+"ExternalConnection"
+],
+"СообщениеВнешнемуСайту": [
+"ThinClient",
+"WebClient"
+],
+"СообщениеПользователю": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Соответствие": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СоставФормНачальнойСтраницы": [
+"Server",
+"ExternalConnection"
+],
+"СоставХранимыхДанныхХранилищаДвоичныхДанных": [
+"Server",
+"ExternalConnection"
+],
+"СочетаниеКлавиш": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СписокЗначений": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СравнениеЗначений": [
+"Server",
+"ExternalConnection"
+],
+"СравнениеФайлов": [],
+"СтандартнаяДатаНачала": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СтандартныйПериод": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"Стиль": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"Структура": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"СхемаXML": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"СхемаЗапроса": [
+"Server",
+"ExternalConnection"
+],
+"СхемаКомпоновкиДанных": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"СхемаСистемыАналитики": [
+"Server",
+"ExternalConnection"
+],
+"ТаблицаЗначений": [
+"Server",
+"ExternalConnection"
+],
+"ТабличныйДокумент": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ТекстоваяЗаписьNDEF": [
+"Server",
+"ExternalConnection"
+],
+"ТекстовыйДокумент": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ТекстыСообщенияОбОшибке": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ТестируемоеПриложение": [
+"ThinClient"
+],
+"ТипДанныхXML": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ТокенДоступа": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"УдалениеОбъекта": [
+"Server",
+"ExternalConnection"
+],
+"УникальныйИдентификатор": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"УсловноеОформление": [
+"Server",
+"ExternalConnection"
+],
+"ФабрикаXDTO": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"Файл": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ФайловыйПоток": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ФасетДлиныXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ФасетКоличестваРазрядовДробнойЧастиXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ФасетМаксимальногоВключающегоЗначенияXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ФасетМаксимальногоИсключающегоЗначенияXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ФасетМаксимальнойДлиныXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ФасетМинимальногоВключающегоЗначенияXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ФасетМинимальногоИсключающегоЗначенияXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ФасетМинимальнойДлиныXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ФасетОбразцаXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ФасетОбщегоКоличестваРазрядовXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ФасетПеречисленияXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ФасетПробельныхСимволовXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ФиксированнаяСтруктура": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ФиксированноеСоответствие": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ФиксированныйМассив": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ФильтрУзловDOM": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ФлагиИнтернетПочтовогоСообщения": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ФорматированнаяСтрока": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ФорматированныйДокумент": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ФрагментXS": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ХешированиеДанных": [
+"Server",
+"ExternalConnection"
+],
+"ХранилищеЗначения": [
+"Server",
+"ExternalConnection"
+],
+"Цвет": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ЧтениеFastInfoset": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ЧтениеHTML": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ЧтениеJSON": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ЧтениеPDF": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ЧтениеXML": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ЧтениеZipФайла": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ЧтениеДанных": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ЧтениеТекста": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ЧтениеУзловDOM": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ЧтениеФайлаАрхива": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"Шрифт": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ЭлементБуфераОбмена": [
+"ThinClient",
+"WebClient"
+],
+"ЭлементДанныхКонтакта": [
+"Server",
+"ExternalConnection"
+],
+"ЭлементДанныхКонтактаМгновенныеСообщения": [
+"Server",
+"ExternalConnection"
+],
+"ЭлементИзбранногоРаботыПользователя": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ЭлементНастройкиСоставаИнтерфейсаКлиентскогоПриложения": [
+"Server",
+"ExternalConnection"
+],
+"ЭлементПланаГлобальногоПоиска": [
+"ThinClient",
+"WebClient"
+],
+"ЭлементПрикрепляемыхДанныхЗапускаПриложенияМобильногоУстройства": [
+"Server",
+"ExternalConnection"
+],
+"ЭлементРезультатаГлобальногоПоиска": [
+"Server",
+"ThinClient",
+"WebClient",
+"ExternalConnection"
+],
+"ЭлементРезультатаКомпоновкиДанных": [
+"Server",
+"ThinClient",
+"ExternalConnection"
+],
+"ЭлементСоставаТабличногоПространстваБазыДанных": [
+"Server",
+"ExternalConnection"
+]
+},
+"typesEnglish": {
+"COMSafeArray": "COMSafeArray",
+"COMОбъект": "COMObject",
+"FTPСоединение": "FTPConnection",
+"HTTPЗапрос": "HTTPRequest",
+"HTTPСервисОтвет": "HTTPServiceResponse",
+"HTTPСоединение": "HTTPConnection",
+"MMSВложение": "MMSAttachment",
+"SMSСообщение": "SMSMessage",
+"URIЗаписьNDEF": "URIRecordNDEF",
+"WSОпределения": "WSDefinitions",
+"WSПрокси": "WSProxy",
+"XBase": "XBase",
+"АдминистрированиеДиапазонПортов": "AdministrationPortRange",
+"АдминистрированиеСервера": "ServerAdministration",
+"АнализДанных": "DataAnalysis",
+"АннотацияXS": "XSAnnotation",
+"БлокировкаДанных": "DataLock",
+"БлокировкаСеансов": "SessionsLock",
+"БуферДвоичныхДанных": "BinaryDataBuffer",
+"ВключениеXS": "XSInclude",
+"ВыборНастроек": "SettingsChoice",
+"ВыражениеКомпоновкиДанных": "DataCompositionExpression",
+"ВыражениеСхемыЗапроса": "QuerySchemaExpression",
+"ГенераторСлучайныхПаролей": "RandomPasswordGenerator",
+"ГенераторСлучайныхЧисел": "RandomNumberGenerator",
+"ГеографическаяСхема": "GeographicalSchema",
+"ГеографическиеКоординаты": "GeographicCoordinates",
+"Геозона": "Geofence",
+"Граница": "Boundary",
+"ГрафическаяСхема": "GraphicalSchema",
+"ГруппаМоделиXS": "XSModelGroup",
+"ГруппаНастройкиСоставаИнтерфейсаКлиентскогоПриложения": "ClientApplicationInterfaceContentSettingsGroup",
+"ДанныеАдреса": "AddressData",
+"ДанныеКалендаря": "CalendarData",
+"ДанныеКалендаряУчетнойЗаписи": "AccountCalendarData",
+"ДанныеКонтакта": "ContactData",
+"ДанныеКонтактаУчетнойЗаписи": "AccountContactData",
+"ДанныеМультимедиа": "MultimediaData",
+"ДанныеРасшифровкиКомпоновкиДанных": "DataCompositionDetailsData",
+"ДанныеСобытияКалендаря": "CalendarEventData",
+"ДанныеСобытияКалендаряУчетнойЗаписи": "AccountCalendarEventData",
+"ДвоичныеДанные": "BinaryData",
+"Действие": "Action",
+"Дендрограмма": "Dendrogram",
+"ДеревоЗначений": "ValueTree",
+"Диаграмма": "Chart",
+"ДиаграммаГанта": "GanttChart",
+"ДиалогВыбораПользователейИсторииДанных": "DataHistoryUsersChooseDialog",
+"ДиалогВыбораТипаДиаграммы": "ChartTypeChooseDialog",
+"ДиалогВыбораФайла": "FileDialog",
+"ДиалогВыбораЦвета": "ColorChooseDialog",
+"ДиалогВыбораШрифта": "FontChooseDialog",
+"ДиалогОтбораВерсийИсторииДанных": "DataHistoryVersionsFilterDialog",
+"ДиалогРасписанияРегламентногоЗадания": "ScheduledJobDialog",
+"ДиалогРасписанияЭлементаПланировщика": "PlannerItemScheduleDialog",
+"ДиалогРедактированияСтандартногоПериода": "StandardPeriodEditDialog",
+"Диапазон": "Range",
+"ДокументDOM": "DOMDocument",
+"ДокументHTML": "HTMLDocument",
+"ДокументPDF": "PDFDocument",
+"ДокументацияXS": "XSDocumentation",
+"ДополнительныеДанныеЗапускаПриложенияМобильногоУстройства": "MobileDeviceApplicationRunAdditionalData",
+"ДоставляемоеУведомление": "DeliverableNotification",
+"ЗаписьDOM": "DOMWriter",
+"ЗаписьFastInfoset": "FastInfosetWriter",
+"ЗаписьHTML": "HTMLWriter",
+"ЗаписьJSON": "JSONWriter",
+"ЗаписьNDEFВнешнегоТипа": "ExternalTypeNDEFRecord",
+"ЗаписьPDF": "PDFWriter",
+"ЗаписьXML": "XMLWriter",
+"ЗаписьZipФайла": "ZipFileWriter",
+"ЗаписьДанных": "DataWriter",
+"ЗаписьТекста": "TextWriter",
+"ЗаписьУзловDOM": "DOMNodeWriter",
+"ЗаписьФайлаАрхива": "ArchiveFileWriter",
+"Запрос": "Query",
+"ЗапросНаПолучениеЛицензии": "LicenseAcquisitionRequest",
+"ЗапускПриложенияМобильногоУстройства": "MobileDeviceApplicationRun",
+"ЗащищенноеСоединениеOpenSSL": "OpenSSLSecureConnection",
+"ЗащищенноеСоединениеКриптоПро": "CryptoProSecureConnection",
+"ЗначенияПолейРасшифровкиКомпоновкиДанных": "DataCompositionDetailsFieldValues",
+"ИдентификаторВыгрузкиДанныхСистемыВзаимодействия": "CollaborationSystemDataDumpID",
+"ИдентификаторМоделиРаспознаванияРечи": "SpeechToTextModelID",
+"ИдентификаторОбсужденияСистемыВзаимодействия": "CollaborationSystemConversationID",
+"ИдентификаторОтложенногоРаспознаванияРечи": "SpeechToTextDelayedID",
+"ИдентификаторПользователяСистемыВзаимодействия": "CollaborationSystemUserID",
+"ИдентификаторПриложенияСистемыВзаимодействия": "CollaborationSystemApplicationID",
+"ИдентификаторСообщенияСистемыВзаимодействия": "CollaborationSystemMessageID",
+"ИдентификаторШаблонаСообщенияСистемыВзаимодействия": "CollaborationSystemMessageTemplateID",
+"ИзбранноеРаботыПользователя": "UserWorkFavorites",
+"ИзвлечениеТекста": "TextExtraction",
+"ИмпортXS": "XSImport",
+"ИнтернетПочта": "InternetMail",
+"ИнтернетПочтовоеСообщение": "InternetMailMessage",
+"ИнтернетПочтовыйПрофиль": "InternetMailProfile",
+"ИнтернетПрокси": "InternetProxy",
+"ИнтернетСоединение": "InternetConnection",
+"ИнформацияДляПриложенияXS": "XSAppInfo",
+"ИспользованиеАтрибутаXS": "XSAttributeUse",
+"ИспользованиеСобытияЖурналаРегистрации": "EventLogEventUse",
+"ИсточникДоступныхНастроекКомпоновкиДанных": "DataCompositionAvailableSettingsSource",
+"ИтераторУзловDOM": "DOMNodeIterator",
+"КаноническаяЗаписьXML": "XMLCanonicalizingWriter",
+"КаноническийDOM": "DOMCanonicalization",
+"Картинка": "Picture",
+"КвалификаторыДаты": "DateQualifiers",
+"КвалификаторыДвоичныхДанных": "BinaryDataQualifiers",
+"КвалификаторыСтроки": "StringQualifiers",
+"КвалификаторыЧисла": "NumberQualifiers",
+"КвитанцияВстроеннойПокупки": "InAppPurchaseReceipt",
+"КлючСтрокиДинамическогоСписка": "DynamicListRowKey",
+"КоллекцияВложенийPDF": "PDFAttachmentCollection",
+"КоллекцияИдентификаторовПользователейСистемыВзаимодействия": "CollaborationSystemUserIDCollection",
+"КоллекцияИдентификаторовПриложенийСистемыВзаимодействия": "CollaborationSystemApplicationIDCollection",
+"КомпоновщикМакетаКомпоновкиДанных": "DataCompositionTemplateComposer",
+"КомпоновщикНастроекКомпоновкиДанных": "DataCompositionSettingsComposer",
+"КонструкторЗапроса": "QueryWizard",
+"КонструкторМакетаОформленияКомпоновкиДанных": "DataCompositionAppearanceTemplateWizard",
+"КонструкторНастроекКомпоновкиДанных": "DataCompositionSettingsWizard",
+"КонструкторСхемыКомпоновкиДанных": "DataCompositionSchemaWizard",
+"КонструкторФорматнойСтроки": "FormatStringWizard",
+"КонтейнерКлючейКриптографии": "CryptoKeysContainer",
+"КонтекстОбсужденияСистемыВзаимодействия": "CollaborationSystemConversationContext",
+"Линия": "Line",
+"МакетЗаголовкаКоллекцииЗначенийОбластиКомпоновкиДанных": "DataCompositionAreaTemplateValueCollectionHeader",
+"МакетКоллекцииЗначенийОбластиКомпоновкиДанных": "DataCompositionAreaTemplateValueCollection",
+"МакетКомпоновкиДанных": "DataCompositionTemplate",
+"МакетОбластиКомпоновкиДанных": "DataCompositionAreaTemplate",
+"МакетОформленияКомпоновкиДанных": "DataCompositionAppearanceTemplate",
+"МаскаXS": "XSWildcard",
+"Массив": "Array",
+"МедиаЗаписьNDEF": "MediaRecordNDEF",
+"МенеджерВременныхТаблиц": "TempTablesManager",
+"МенеджерКалендарей": "CalendarsManager",
+"МенеджерКонтактов": "ContactManager",
+"МенеджерКриптографии": "CryptoManager",
+"МоментВремени": "PointInTime",
+"МоментВремениСУточнениемПериода": "PointInTimeWithPeriodAdjustment",
+"НаборСхемXML": "XMLSchemaSet",
+"НастройкаОформления": "AppearanceSetting",
+"НастройкаПериода": "PeriodSettings",
+"НастройкаПорядка": "OrderSetting",
+"НастройкиВосстановленияПароля": "PasswordRecoverySettings",
+"НастройкиИнтерфейсаКлиентскогоПриложения": "ClientApplicationInterfaceSettings",
+"НастройкиИсторииДанных": "DataHistorySettings",
+"НастройкиКлиентскогоПриложения": "ClientSettings",
+"НастройкиКомандногоИнтерфейса": "CommandInterfaceSettings",
+"НастройкиКомпоновкиДанных": "DataCompositionSettings",
+"НастройкиНачальнойСтраницы": "HomePageSettings",
+"НастройкиПроверкиРаскрытияПароля": "PasswordCompromiseCheckSettings",
+"НастройкиСериализацииJSON": "JSONSerializerSettings",
+"НастройкиСоставаИнтерфейсаКлиентскогоПриложения": "ClientApplicationInterfaceContentSettings",
+"НастройкиТаблицыДинамическогоСписка": "DynamicListTableSettings",
+"ОбластьОформления": "AppearanceArea",
+"ОбрабатываемаяКартинка": "ProcessingPicture",
+"ОбработкаКартинок": "PictureProcessor",
+"ОбработкаРасшифровкиКомпоновкиДанных": "DataCompositionDetailsProcess",
+"ОбработчикиWebSocketКлиентСоединения": "WebSocketClientConnectionHandlers",
+"ОбходДереваDOM": "DOMTreeWalker",
+"ОбъектМетаданныхКонфигурация": "ConfigurationMetadataObject",
+"ОбъявлениеАтрибутаXS": "XSAttributeDeclaration",
+"ОбъявлениеНотацииXS": "XSNotationDeclaration",
+"ОбъявлениеЭлементаXS": "XSElementDeclaration",
+"ОписаниеЗащитыОтОпасныхДействий": "UnsafeOperationProtectionDescription",
+"ОписаниеИспользованияСобытияДоступЖурналаРегистрации": "EventLogAccessEventUseDescription",
+"ОписаниеИспользованияСобытияОтказВДоступеЖурналаРегистрации": "EventLogAccessDeniedEventUseDescription",
+"ОписаниеИсточникаДанных": "DataSourceDescription",
+"ОписаниеКомандыВходящегоЗапросаПоделиться": "IncomingShareRequestCommandDescription",
+"ОписаниеКомандыПланировщика": "PlannerCommandDescription",
+"ОписаниеКомандыПоляВвода": "InputFieldCommandDescription",
+"ОписаниеКомандыПоляПланировщика": "PlannerFieldCommandDescription",
+"ОписаниеКомандыСистемыВзаимодействия": "CollaborationSystemCommandDescription",
+"ОписаниеКонфигурации": "ConfigurationDescription",
+"ОписаниеНастроек": "SettingsDescription",
+"ОписаниеОбновленияКонфигурации": "ConfigurationUpdateDescription",
+"ОписаниеОбработкиРасшифровкиКомпоновкиДанных": "DataCompositionDetailsProcessDescription",
+"ОписаниеОповещения": "CallbackDescription",
+"ОписаниеОтображаемогоОбъектаPDF": "PDFRepresentationObjectDescription",
+"ОписаниеПередаваемогоФайла": "TransferableFileDescription",
+"ОписаниеПодписиPDF": "PDFSignatureDescription",
+"ОписаниеТипов": "TypeDescription",
+"ОпределениеГруппыАтрибутовXS": "XSAttributeGroupDefinition",
+"ОпределениеГруппыМоделиXS": "XSModelGroupDefinition",
+"ОпределениеОграниченияИдентичностиXS": "XSIdentityConstraintDefinition",
+"ОпределениеПростогоТипаXS": "XSSimpleTypeDefinition",
+"ОпределениеСоставногоТипаXS": "XSComplexTypeDefinition",
+"ОпределениеТипаДокументаDOM": "DOMDocumentType",
+"ОпределенияXPathXS": "XSXPathDefinition",
+"ОтборКомпоновкиДанных": "DataCompositionFilter",
+"ОтборОбсужденийСистемыВзаимодействия": "CollaborationSystemConversationsFilter",
+"ОтборСообщенийСистемыВзаимодействия": "CollaborationSystemMessagesFilter",
+"ОтметкаНаФотоснимке": "PhotoStamp",
+"ОтчетОбОшибке": "ErrorReport",
+"ПакетОтображаемыхДокументов": "RepresentableDocumentBatch",
+"ПараметрВыбора": "ChoiceParameter",
+"ПараметрКомпоновкиДанных": "DataCompositionParameter",
+"ПараметрыАудиозаписи": "AudioRecordingParameters",
+"ПараметрыВнешнегоПодключенияРаботыСРечью": "SpeechProcessingExternalConnectionParameters",
+"ПараметрыВыбораЗапускаПриложенияМобильногоУстройства": "MobileDeviceApplicationRunChoiceParameters",
+"ПараметрыДиалогаПолученияФайлов": "GetFilesDialogParameters",
+"ПараметрыДиалогаПомещенияФайлов": "PutFilesDialogParameters",
+"ПараметрыЗаписиJSON": "JSONWriterSettings",
+"ПараметрыЗаписиXML": "XMLWriterSettings",
+"ПараметрыМоделиРаспознаванияРечи": "SpeechToTextModelParameters",
+"ПараметрыМонопольногоРежима": "ExclusiveModeParameters",
+"ПараметрыПодключенияВнешнегоХранилищаДвоичныхДанных": "BinaryDataExternalStorageConnectionParameters",
+"ПараметрыПолученияАрхиваФайлов": "GetFilesArchiveParameters",
+"ПараметрыПотоковогоРаспознаванияРечи": "SpeechToTextStreamingParameters",
+"ПараметрыРегистрацииИнформационнойБазыСистемыВзаимодействия": "CollaborationSystemInfoBaseRegistrationParameters",
+"ПараметрыСканированияДокументов": "DocumentScanningParameters",
+"ПараметрыЧтенияXML": "XMLReaderSettings",
+"ПереопределениеXS": "XSRedefine",
+"ПланГлобальногоПоиска": "GlobalSearchPlan",
+"Планировщик": "Planner",
+"ПолеАнализаДанных": "DataAnalysisField",
+"ПолеГрафическойСхемы": "GraphicalSchemaField",
+"ПолеКомпоновкиДанных": "DataCompositionField",
+"ПользовательскиеНастройкиКомпоновкиДанных": "DataCompositionUserSettings",
+"ПостроительDOM": "DOMBuilder",
+"ПостроительЗапроса": "QueryBuilder",
+"ПостроительОтчета": "ReportBuilder",
+"ПостроительОтчетаАнализаДанных": "DataAnalysisReportBuilder",
+"ПостроительСхемXML": "XMLSchemaBuilder",
+"ПотокВПамяти": "MemoryStream",
+"Почта": "Mail",
+"ПочтовоеСообщение": "MailMessage",
+"ПреобразованиеXSL": "XSLTransform",
+"ПреобразованиеККаноническомуXML": "ConversionToCanonicalXML",
+"ПрикрепляемыеДанныеЗапускаПриложенияМобильногоУстройства": "MobileDeviceApplicationRunClipData",
+"ПроцессорВыводаРезультатаКомпоновкиДанныхВКоллекциюЗначений": "DataCompositionResultValueCollectionOutputProcessor",
+"ПроцессорВыводаРезультатаКомпоновкиДанныхВТабличныйДокумент": "DataCompositionResultSpreadsheetDocumentOutputProcessor",
+"ПроцессорКомпоновкиДанных": "DataCompositionProcessor",
+"РазрешениеКамерыУстройства": "DeviceCameraResolution",
+"РазыменовательПространствИменDOM": "DOMNamespaceResolver",
+"Рамка": "Border",
+"РасписаниеРегламентногоЗадания": "JobSchedule",
+"РасписаниеЭлементаПланировщика": "PlannerItemSchedule",
+"РасчетСистемЛинейныхУравнений": "SystemOfLinearEquationsCalculation",
+"РасширенноеИмяXML": "XMLExpandedName",
+"РезультатГлобальногоПоиска": "GlobalSearchResult",
+"РеквизитФормы": "FormAttribute",
+"СводнаяДиаграмма": "PivotChart",
+"СвязьПараметраВыбора": "ChoiceParameterLink",
+"СвязьПоТипу": "TypeLink",
+"СвязьПоТипуКомпоновкиДанных": "DataCompositionTypeLink",
+"СериализаторXDTO": "XDTOSerializer",
+"СертификатКлиентаLinux": "LinuxClientCertificate",
+"СертификатКлиентаMacOS": "MacOSClientCertificate",
+"СертификатКлиентаWindows": "WindowsClientCertificate",
+"СертификатКлиентаОС": "OSClientCertificate",
+"СертификатКлиентаФайл": "FileClientCertificate",
+"СертификатКриптографии": "CryptoCertificate",
+"СертификатыУдостоверяющихЦентровLinux": "LinuxCertificationAuthorityCertificates",
+"СертификатыУдостоверяющихЦентровMacOS": "MacOSCertificationAuthorityCertificates",
+"СертификатыУдостоверяющихЦентровWindows": "WindowsCertificationAuthorityCertificates",
+"СертификатыУдостоверяющихЦентровОС": "OSCertificationAuthorityCertificates",
+"СертификатыУдостоверяющихЦентровФайл": "FileCertificationAuthorityCertificates",
+"СжатиеДанных": "Deflation",
+"СистемнаяИнформация": "SystemInfo",
+"СовместноеИспользованиеПриложенийСистемыВзаимодействия": "CollaborationSystemApplicationLinks",
+"СообщениеNDEF": "MessageNDEF",
+"СообщениеВнешнемуСайту": "MessageToExternalSite",
+"СообщениеПользователю": "UserMessage",
+"Соответствие": "Map",
+"СоставФормНачальнойСтраницы": "HomePageForms",
+"СоставХранимыхДанныхХранилищаДвоичныхДанных": "BinaryDataStorageDataContent",
+"СочетаниеКлавиш": "Shortcut",
+"СписокЗначений": "ValueList",
+"СравнениеЗначений": "CompareValues",
+"СравнениеФайлов": "FileCompare",
+"СтандартнаяДатаНачала": "StandardBeginningDate",
+"СтандартныйПериод": "StandardPeriod",
+"Стиль": "Style",
+"Структура": "Structure",
+"СхемаXML": "XMLSchema",
+"СхемаЗапроса": "QuerySchema",
+"СхемаКомпоновкиДанных": "DataCompositionSchema",
+"СхемаСистемыАналитики": "AnalyticsSystemSchema",
+"ТаблицаЗначений": "ValueTable",
+"ТабличныйДокумент": "SpreadsheetDocument",
+"ТекстоваяЗаписьNDEF": "TextRecordNDEF",
+"ТекстовыйДокумент": "TextDocument",
+"ТекстыСообщенияОбОшибке": "ErrorMessageTexts",
+"ТестируемоеПриложение": "TestedApplication",
+"ТипДанныхXML": "XMLDataType",
+"ТокенДоступа": "AccessToken",
+"УдалениеОбъекта": "ObjectDeletion",
+"УникальныйИдентификатор": "UUID",
+"УсловноеОформление": "ConditionalAppearance",
+"ФабрикаXDTO": "XDTOFactory",
+"Файл": "File",
+"ФайловыйПоток": "FileStream",
+"ФасетДлиныXS": "XSLengthFacet",
+"ФасетКоличестваРазрядовДробнойЧастиXS": "XSFractionDigitsFacet",
+"ФасетМаксимальногоВключающегоЗначенияXS": "XSMaxInclusiveFacet",
+"ФасетМаксимальногоИсключающегоЗначенияXS": "XSMaxExclusiveFacet",
+"ФасетМаксимальнойДлиныXS": "XSMaxLengthFacet",
+"ФасетМинимальногоВключающегоЗначенияXS": "XSMinInclusiveFacet",
+"ФасетМинимальногоИсключающегоЗначенияXS": "XSMinExclusiveFacet",
+"ФасетМинимальнойДлиныXS": "XSMinLengthFacet",
+"ФасетОбразцаXS": "XSPatternFacet",
+"ФасетОбщегоКоличестваРазрядовXS": "XSTotalDigitsFacet",
+"ФасетПеречисленияXS": "XSEnumerationFacet",
+"ФасетПробельныхСимволовXS": "XSWhitespaceFacet",
+"ФиксированнаяСтруктура": "FixedStructure",
+"ФиксированноеСоответствие": "FixedMap",
+"ФиксированныйМассив": "FixedArray",
+"ФильтрУзловDOM": "DOMNodeFilter",
+"ФлагиИнтернетПочтовогоСообщения": "InternetMailMessageFlags",
+"ФорматированнаяСтрока": "FormattedString",
+"ФорматированныйДокумент": "FormattedDocument",
+"ФрагментXS": "XSParticle",
+"ХешированиеДанных": "DataHashing",
+"ХранилищеЗначения": "ValueStorage",
+"Цвет": "Color",
+"ЧтениеFastInfoset": "FastInfosetReader",
+"ЧтениеHTML": "HTMLReader",
+"ЧтениеJSON": "JSONReader",
+"ЧтениеPDF": "PDFReader",
+"ЧтениеXML": "XMLReader",
+"ЧтениеZipФайла": "ZipFileReader",
+"ЧтениеДанных": "DataReader",
+"ЧтениеТекста": "TextReader",
+"ЧтениеУзловDOM": "DOMNodeReader",
+"ЧтениеФайлаАрхива": "ArchiveFileReader",
+"Шрифт": "Font",
+"ЭлементБуфераОбмена": "ClipboardItem",
+"ЭлементДанныхКонтакта": "ContactDataItem",
+"ЭлементДанныхКонтактаМгновенныеСообщения": "ContactDataItemInstantMessaging",
+"ЭлементИзбранногоРаботыПользователя": "UserWorkFavoritesItem",
+"ЭлементНастройкиСоставаИнтерфейсаКлиентскогоПриложения": "ClientApplicationInterfaceContentSettingsItem",
+"ЭлементПланаГлобальногоПоиска": "GlobalSearchPlanItem",
+"ЭлементПрикрепляемыхДанныхЗапускаПриложенияМобильногоУстройства": "MobileDeviceApplicationRunClipDataItem",
+"ЭлементРезультатаГлобальногоПоиска": "GlobalSearchResultItem",
+"ЭлементРезультатаКомпоновкиДанных": "DataCompositionResultItem",
+"ЭлементСоставаТабличногоПространстваБазыДанных": "DatabaseTablespaceContentItem"
+},
+"typesWebClient": "замер веб-клиента 8.3.27"
+}

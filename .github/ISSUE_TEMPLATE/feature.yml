@@ -1,0 +1,20 @@
+name: Предложение
+description: Новая проверка, интеграция или улучшение
+labels: ["kind/feature"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Какую задачу это решает
+      description: Что сейчас приходится делать вручную или какую ошибку ОТК не ловит.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Как это могло бы работать
+  - type: textarea
+    id: example
+    attributes:
+      label: Пример кода 1С или сценария
+      render: bsl

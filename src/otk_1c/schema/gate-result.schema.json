@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmapnep-tools.github.io/otk-1c/schema/gate-result.v1.json",
+  "title": "Итог otk gate --json (otk.gate-result.v1)",
+  "description": "Один объект в stdout; журнал прогона — в stderr. Код выхода — как без --json",
+  "type": "object",
+  "required": ["schema", "version", "code", "status", "verdict", "runDir", "summaryPath", "findings", "notChecked",
+               "infra", "uncovered", "notes"],
+  "properties": {
+    "schema": {"const": "otk.gate-result.v1"},
+    "version": {"type": "string", "description": "версия ОТК"},
+    "code": {"enum": [0, 1, 2], "description": "код выхода: 0 — можно отправлять, 1 — есть ошибки, 2 — сбой инфраструктуры или ничего не проверено"},
+    "status": {"anyOf": [{"enum": ["ok", "nothing", "errors", "infra", "not-checked"]}, {"type": "string"}], "description": "ok — можно отправлять, nothing — нечего проверять, errors — есть ошибки, infra — сбой инфраструктуры, not-checked — ничего не проверено"},
+    "verdict": {"type": "string"},
+    "runDir": {"type": ["string", "null"], "description": "каталог прогона; null — прогон оборвался до сводки"},
+    "summaryPath": {"type": ["string", "null"], "description": "путь к summary.json"},
+    "findings": {"type": "array", "items": {"type": "object"}, "description": "как findings в summary.schema.json"},
+    "notChecked": {"type": "array", "items": {"$ref": "#/$defs/reason"}},
+    "infra": {"type": "array", "items": {"$ref": "#/$defs/reason"}},
+    "uncovered": {"type": "array", "items": {"type": "object"}, "description": "как uncovered в summary.schema.json"},
+    "notes": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "reason": {"type": "object", "required": ["status", "reasonCode", "remediation", "message"],
+               "properties": {"status": {"anyOf": [{"enum": ["not-checked", "infra"]}, {"type": "string"}]},
+                              "reasonCode": {"anyOf": [{"enum": ["ib-busy", "ib-auth", "ib-invalid", "no-ib", "no-platform", "no-ibcmd",
+                                                       "no-license", "no-yaxunit", "no-com", "no-display", "no-analyzer",
+                                                       "no-edtcli", "no-help", "no-availability", "no-git", "no-python",
+                                                       "no-source", "no-parent", "no-plan", "timeout", "platform-failed", "restore-failed",
+                                                       "edt-failed", "config-invalid", "probe-failed", "query-incomplete",
+                                                       "internal", "other"]}, {"type": "string"}],
+                                              "description": "стабильный код причины: список — docs/agents.md; незнакомый читать как other"},
+                              "remediation": {"type": "string", "description": "что сделать"},
+                              "message": {"type": "string", "description": "текст причины, как в сводке"},
+                              "what": {"type": "string"}, "check": {"type": "string"},
+                              "file": {"type": ["string", "null"]}, "line": {"type": ["integer", "null"]},
+                              "needs": {"type": "string"}}}
+  }
+}

@@ -1,0 +1,17 @@
+# Python, документация, CI — LF
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+# Тестовое расширение и фикстуры в формате выгрузки Конфигуратора: UTF-8 с BOM + CRLF
+*.bsl text eol=crlf
+*.xml text eol=crlf
+*.os  text eol=crlf
+# Двоичные
+*.bin binary
+*.png binary
+*.mxl binary
+*.zip binary
+*.cf  binary
+*.cfe binary
+*.epf binary

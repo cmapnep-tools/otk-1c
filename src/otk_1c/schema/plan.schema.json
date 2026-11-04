@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmapnep-tools.github.io/otk-1c/schema/plan.v1.json",
+  "title": "План проверки ОТК (otk.json)",
+  "type": "object",
+  "required": ["schema", "version", "base", "baseSha", "head", "headSha", "sourceFormat", "source", "scriptVariant",
+               "contextsAvailable", "modules", "removedModules", "metadata", "queries", "scenarios"],
+  "properties": {
+    "schema": {"const": "otk.plan.v1"},
+    "version": {"type": "string", "description": "версия ОТК"},
+    "base": {"type": ["string", "null"], "description": "ревизия git или каталог «было» (null — все модули)"},
+    "baseSha": {"type": ["string", "null"]},
+    "baseDir": {"type": ["string", "null"], "description": "без git: выгрузка «было»"},
+    "headDir": {"type": ["string", "null"], "description": "без git: проверяемая выгрузка"},
+    "vendor": {"type": "object", "description": "gate --vendor: состояние поддержки ИБ (state, name, version), время шагов, сведения об отчёте /CompareCfg и восстановленных модулях поставщика (restored, whole, added, skipped)"},
+    "head": {"type": "string", "description": "ревизия или WORKTREE"},
+    "headSha": {"type": ["string", "null"]},
+    "sourceFormat": {"enum": ["designer-xml", "edt"]},
+    "source": {"type": "string"},
+    "scriptVariant": {"enum": ["Russian", "English"]},
+    "contextsAvailable": {"type": "array", "items": {"$ref": "#/$defs/context"}},
+    "modules": {"type": "array", "items": {"$ref": "#/$defs/module"}},
+    "removedModules": {
+      "type": "array",
+      "items": {"type": "object", "required": ["path", "kind", "owner", "exports"],
+                "properties": {"exports": {"type": "array", "items": {"type": "string"}}}}
+    },
+    "metadata": {
+      "type": "array",
+      "items": {"type": "object", "required": ["path", "status"],
+                "properties": {"status": {"enum": ["A", "M", "D", "R"]}, "renamedFrom": {"type": "string"}}}
+    },
+    "queries": {
+      "type": "array",
+      "items": {"type": "object", "required": ["id", "module", "line", "complete", "text"],
+                "properties": {"complete": {"type": "boolean", "description": "false — текст не восстановлен (<?>), не разбирается"},
+                               "assembled": {"type": "boolean", "description": "текст восстановлен подстановкой переменных частей и заглушек; ошибка разбора — предупреждение"},
+                               "unchanged": {"type": "boolean", "description": "тот же текст есть в базовой версии модуля; если метаданные не менялись, ошибка разбора — предупреждение"},
+                               "reason": {"type": "string", "description": "почему текст не восстановлен"},
+                               "resolver": {"type": "string", "description": "имя внешнего восстановителя [[queries.resolvers]], вернувшего текст; ошибка разбора — предупреждение"},
+                               "rationale": {"type": "string", "description": "обоснование внешнего восстановителя: откуда взят фрагмент"}}}
+    },
+    "scenarios": {"type": "array", "description": "выбранные сценарные тесты (tests/cfe): по тегам изменённых методов или все",
+                  "items": {"type": "object", "required": ["extension", "module", "name", "tags", "matched"],
+                            "properties": {"extension": {"type": "string"}, "module": {"type": "string"},
+                                           "name": {"type": "string"},
+                                           "tags": {"type": "array", "items": {"type": "string"}},
+                                           "matched": {"type": "array", "items": {"type": "string"}}}}},
+    "scenarioExtensions": {"type": "array", "description": "тестовые расширения проекта",
+                           "items": {"type": "object", "properties": {"name": {"type": "string"},
+                                                                      "dir": {"type": "string"}}}},
+    "allScenarios": {"type": "boolean"},
+    "notes": {"type": "array", "items": {"type": "string"},
+              "description": "примечания сценария gate до шагов: настройки [checks], расширение без parent, неотслеживаемые файлы"},
+    "forms": {"type": "array", "description": "изменённые управляемые формы: изменён модуль (module) или Form.xml (layout)",
+              "items": {"$ref": "#/$defs/form"}},
+    "smoke": {"type": "array", "description": "формы дымового теста открытия ([smoke]: без исключённых; пусто — выключен)",
+              "items": {"$ref": "#/$defs/form"}}
+  },
+  "$defs": {
+    "context": {"enum": ["Server", "ThinClient", "OrdinaryClient", "ExternalConnection"]},
+    "form": {"type": "object", "required": ["form", "path", "reason"],
+             "properties": {"form": {"type": "string", "description": "полное имя: Справочник.Клиенты.Форма.ФормаСписка"},
+                            "path": {"type": "string"}, "reason": {"enum": ["module", "layout"]}}},
+    "module": {
+      "type": "object",
+      "required": ["path", "status", "kind", "owner", "reason", "contexts", "preprocessorConditions",
+                   "preprocessorContexts", "needsPlainServerProbe", "changedMethods", "removedMethods",
+                   "probe", "uncovered"],
+      "properties": {
+        "status": {"enum": ["A", "M", "R"]},
+        "kind": {"enum": ["CommonModule", "ObjectModule", "ManagerModule", "RecordSetModule", "ValueManagerModule",
+                          "FormModule", "CommandModule", "SessionModule", "ManagedApplicationModule",
+                          "OrdinaryApplicationModule", "ExternalConnectionModule", "HTTPService", "WebService",
+                          "Unknown"]},
+        "reason": {"enum": ["changed"], "description": "зависимые модули — в static.json (dependents), план после collect не меняется"},
+        "contexts": {"type": "array", "items": {"$ref": "#/$defs/context"}},
+        "needsPlainServerProbe": {"type": "boolean", "description": "изменения в ветке «НЕ ВнешнееСоединение»: COM-пробы недостаточно"},
+        "changedMethods": {"type": "array"},
+        "removedMethods": {"type": "array"},
+        "probe": {
+          "type": "object", "required": ["strategy"],
+          "properties": {"strategy": {"enum": ["missing-method", "create-object", "get-form", "session-start", "none"]}}
+        },
+        "uncovered": {"type": "array", "description": "не покрыто этим прогоном",
+                      "items": {"type": "object", "required": ["context", "needs", "reason"],
+                                "properties": {"context": {"type": "string"}, "needs": {"type": "string", "pattern": "^(designer:.+|ui|publication)$", "description": "чем закрыть: designer:<контекст> — полная проверка Конфигуратором в режиме (* — во всех), ui — UI/сценарные тесты, publication — проверка с публикацией сервиса"},
+                                               "reason": {"type": "string"}}}},
+        "loadWith": {"type": "array", "items": {"type": "string"}, "description": "файлы, загружаемые вместе с модулем (Form.xml)"}
+      }
+    }
+  }
+}
