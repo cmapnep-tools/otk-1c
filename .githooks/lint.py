@@ -42,12 +42,13 @@ def main():
             out = "\n".join(ln for ln in (r.stdout + r.stderr).splitlines() if "[INFO]" not in ln and "✓" not in ln)
             print(f"pre-push: {name} — ошибки:\n{out.strip()}", file=sys.stderr)
     guard = os.environ.get("OTK_GUARD") or subprocess.run(
-        ["git", "-C", str(ROOT), "config", "otk.guard"], capture_output=True, text=True).stdout.strip()
+        ["git", "-C", str(ROOT), "config", "otk.guard"], capture_output=True, text=True, encoding="utf-8",
+        errors="replace").stdout.strip()
     if guard and not os.path.isfile(guard):
         print(f"pre-push: своя проверка {guard} не найдена — пропущена", file=sys.stderr)
     elif guard:
         r = subprocess.run([sys.executable, guard, "check"], cwd=ROOT, capture_output=True, text=True,
-                           encoding="utf-8", errors="replace", env={**os.environ, "OTK_PUBLIC": str(ROOT)})
+                           encoding="utf-8", errors="replace", env={**os.environ, "OTK_PUBLIC": str(ROOT), "PYTHONIOENCODING": "utf-8"})
         if r.returncode:
             failed.append("guard")
             print(f"pre-push: своя проверка — находки:\n{(r.stdout + r.stderr).strip()}", file=sys.stderr)
