@@ -156,7 +156,8 @@ class TestSources(unittest.TestCase):
                 workspace.materialize(r, gitdiff.rev(r, "HEAD"), ".", self.tmp / "trees")
 
     def test_done_marker_error(self):
-        """Маркер готовности не снялся или не записался — GitError с путём маркера, а не трассировка."""
+        """Ошибки окружения вокруг извлечения (маркер готовности, проверка дерева, временный файл) — GitError
+        с путём, а не трассировка."""
         r = self._repo()
         sha = gitdiff.rev(r, "HEAD")
         for method in ("unlink", "touch"):
@@ -167,6 +168,10 @@ class TestSources(unittest.TestCase):
         denied = PermissionError(13, "Access is denied", str(self.tmp / "trees" / "x.done"))
         with mock.patch.object(workspace.Path, "is_file", side_effect=denied):   # проверка готового дерева
             with self.assertRaisesRegex(gitdiff.GitError, r"готовая редакция .+x\.done: .*Access is denied"):
+                workspace.materialize(r, sha, ".", self.tmp / "trees")
+        full = OSError(errno.ENOSPC, "No space left on device")
+        with mock.patch.object(workspace.tempfile, "TemporaryFile", side_effect=full):  # файл для stderr git
+            with self.assertRaisesRegex(gitdiff.GitError, "временный файл в .+No space left"):
                 workspace.materialize(r, sha, ".", self.tmp / "trees")
 
     def test_run_dir_inside_worktree_warning(self):
