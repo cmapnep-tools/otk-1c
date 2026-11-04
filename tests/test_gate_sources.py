@@ -155,6 +155,16 @@ class TestSources(unittest.TestCase):
             with self.assertRaisesRegex(gitdiff.GitError, "каталог редакции .+OTK_RUN_DIR"):
                 workspace.materialize(r, gitdiff.rev(r, "HEAD"), ".", self.tmp / "trees")
 
+    def test_done_marker_error(self):
+        """Маркер готовности не снялся или не записался — GitError с путём маркера, а не трассировка."""
+        r = self._repo()
+        sha = gitdiff.rev(r, "HEAD")
+        for method in ("unlink", "touch"):
+            with self.subTest(method=method), \
+                    mock.patch.object(workspace.Path, method, side_effect=PermissionError(13, "Access is denied")):
+                with self.assertRaisesRegex(gitdiff.GitError, r"маркер редакции .+\.done: .*Access is denied"):
+                    workspace.materialize(r, sha, ".", self.tmp / "trees")
+
     def test_run_dir_inside_worktree_warning(self):
         r = self._repo()
         workspace._warned_inside.clear()
