@@ -21,8 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
       - name: ruff
@@ -34,7 +34,7 @@ jobs:
         run: |
           pip install mypy==1.18.2
           mypy
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
       - name: openspec
@@ -45,8 +45,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
       - run: |
@@ -63,8 +63,8 @@ jobs:
         os: [windows-latest, ubuntu-latest]
         python: ["3.11", "3.14"]
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
       - name: unittest
@@ -77,8 +77,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
       - name: build
@@ -100,7 +100,7 @@ jobs:
               print(f"{d}: {n}")
               assert n, f"в пакете нет файлов {d}"
           EOF
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/
