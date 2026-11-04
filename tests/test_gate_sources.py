@@ -169,9 +169,11 @@ class TestSources(unittest.TestCase):
         with mock.patch.object(workspace.Path, "is_file", side_effect=denied):   # проверка готового дерева
             with self.assertRaisesRegex(gitdiff.GitError, r"готовая редакция .+x\.done: .*Access is denied"):
                 workspace.materialize(r, sha, ".", self.tmp / "trees")
-        full = OSError(errno.ENOSPC, "No space left on device")
-        with mock.patch.object(workspace.tempfile, "TemporaryFile", side_effect=full):  # файл для stderr git
-            with self.assertRaisesRegex(gitdiff.GitError, "временный файл в .+No space left"):
+        # каталог временных файлов не найден: и TemporaryFile, и gettempdir бросают FileNotFoundError
+        none = FileNotFoundError(errno.ENOENT, "No usable temporary directory found")
+        with mock.patch.object(workspace.tempfile, "TemporaryFile", side_effect=none), \
+                mock.patch.object(workspace.tempfile, "gettempdir", side_effect=none):
+            with self.assertRaisesRegex(gitdiff.GitError, "временный файл для git archive: .+No usable"):
                 workspace.materialize(r, sha, ".", self.tmp / "trees")
 
     def test_run_dir_inside_worktree_warning(self):
