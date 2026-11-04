@@ -50,7 +50,11 @@ def materialize(repo, sha, src, trees_dir):
     <начало sha>.done рядом с деревом: остаток неудачного извлечения (не удалился целиком) не принимается."""
     target = Path(trees_dir) / sha[:TREE_SHA]
     done = target.with_name(f"{target.name}.done")
-    if done.is_file() and layout.detect(target / src):
+    try:                                            # is_file() до Python 3.12 пропускает PermissionError
+        ready = done.is_file() and layout.detect(target / src)
+    except OSError as e:
+        raise _env_error("готовая редакция", Path(e.filename or target), e) from e
+    if ready:
         return target
     try:
         done.unlink(missing_ok=True)                # до очистки: оборвётся — остаток без маркера
