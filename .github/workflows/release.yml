@@ -30,6 +30,9 @@ jobs:
           changelog = open("CHANGELOG.md", encoding="utf-8").read()
           if version != tag:
               sys.exit(f"тег v{tag}, а в pyproject.toml версия {version}")
+          init = open("src/otk_1c/__init__.py", encoding="utf-8").read()
+          if f'__version__ = "{tag}"' not in init:
+              sys.exit(f"тег v{tag}, а в src/otk_1c/__init__.py другая версия")
           if f"## [{tag}]" not in changelog:
               sys.exit(f"в CHANGELOG.md нет раздела [{tag}]")
       - name: build

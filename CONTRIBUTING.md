@@ -40,7 +40,8 @@ git config core.hooksPath .githooks                     # ruff, mypy и openspec
 3. Исправление ошибки — вместе с тестом, который её воспроизводит (до правки падает).
 4. Новый код находки — раздел в [справочнике находок](docs/findings.md); новая проверка —
    [docs/adding-a-check.md](docs/adding-a-check.md).
-5. Строка в разделе «Не выпущено» [CHANGELOG.md](CHANGELOG.md). Версию в PR не поднимать — она меняется при выпуске.
+5. Строка в разделе «Не выпущено» [CHANGELOG.md](CHANGELOG.md). Версию в PR не поднимать — она меняется при выпуске
+   (когда и какой — [docs/development.md](docs/development.md#выпуск)).
 6. PR в `master`: зелёный CI, одобрение сопровождающего; история линейная (rebase). Ревью CodeRabbit —
    советы, а не условие слияния.
 
