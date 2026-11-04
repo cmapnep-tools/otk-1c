@@ -152,15 +152,20 @@ class TestSources(unittest.TestCase):
         (target / "ext/ТестыБ/Configuration.xml").write_text("оборвано", encoding="utf-8")
         workspace.materialize(r, sha, "ext/ТестыБ", trees)
         self.assertEqual((target / "ext/ТестыБ/Configuration.xml").read_text(encoding="utf-8-sig"), CONFIG)
-        # источник «.» содержит расширение: сбой расширения мог задеть дерево «.» — его маркер снят
         workspace.materialize(r, sha, ".", trees)   # «.» пересекается со всеми — их маркеры сняты
         self.assertFalse(workspace.done_marker(target, "ext/ТестыА").exists())
-        workspace.materialize(r, sha, "ext/ТестыА", trees)
+        # расширение внутри извлечённого источника готово по его маркеру: без извлечения и снятия маркера
+        with mock.patch.object(workspace.tarfile.TarFile, "extractall", side_effect=AssertionError("извлечение")):
+            self.assertEqual(workspace.materialize(r, sha, "ext/ТестыА", trees), target)
+        self.assertTrue(workspace.done_marker(target, ".").is_file())
+        # неполное расширение внутри «.» извлекается заново; сбой мог задеть дерево «.» — его маркер снят
+        (target / "ext/ТестыБ/Configuration.xml").unlink()
         with mock.patch.object(workspace.tarfile.TarFile, "extractall", side_effect=OSError(errno.EIO, "I/O")):
             with self.assertRaises(gitdiff.GitError):
                 workspace.materialize(r, sha, "ext/ТестыБ", trees)
         self.assertFalse(workspace.done_marker(target, ".").exists())
-        self.assertTrue(workspace.done_marker(target, "ext/ТестыА").is_file())     # не пересекается — остался
+        workspace.materialize(r, sha, "ext/ТестыА", trees)       # без «.» — свой маркер
+        self.assertTrue(workspace.done_marker(target, "ext/ТестыА").is_file())
         # маркер, оборванный посреди символа UTF-8, — нечитаемый: снимается, а не трассировка
         workspace.done_marker(target, "ext/ТестыА").write_bytes("ext/Т".encode("utf-8")[:-1])
         workspace.materialize(r, sha, "CommonModules", trees)
@@ -227,7 +232,7 @@ class TestSources(unittest.TestCase):
         sha = gitdiff.rev(r, "HEAD")
         trees = self.tmp / "trees"
         denied13 = PermissionError(13, "Access is denied")
-        with mock.patch.object(workspace.Path, "write_text", side_effect=denied13):     # запись маркера
+        with mock.patch.object(workspace.tempfile, "mkstemp", side_effect=denied13):    # запись маркера
             with self.assertRaisesRegex(gitdiff.GitError, r"маркер редакции .+\.done: .*Access is denied"):
                 workspace.materialize(r, sha, ".", trees)
         with mock.patch.object(workspace.Path, "replace", side_effect=denied13):        # маркер — атомарно
@@ -240,7 +245,7 @@ class TestSources(unittest.TestCase):
             with self.assertRaisesRegex(gitdiff.GitError, r"маркер редакции .+\.done: .*Access is denied"):
                 workspace.materialize(r, sha, ".", trees)
         denied = PermissionError(13, "Access is denied", str(self.tmp / "trees" / "x.done"))
-        with mock.patch.object(workspace.Path, "is_file", side_effect=denied):   # проверка готового дерева
+        with mock.patch.object(workspace.Path, "read_text", side_effect=denied):  # проверка готового дерева
             with self.assertRaisesRegex(gitdiff.GitError, r"готовая редакция .+x\.done: .*Access is denied"):
                 workspace.materialize(r, sha, ".", self.tmp / "trees")
         # каталог временных файлов не найден: и TemporaryFile, и gettempdir бросают FileNotFoundError

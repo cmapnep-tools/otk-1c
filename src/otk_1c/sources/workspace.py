@@ -50,9 +50,10 @@ def _warn_inside(base, repo):
 def materialize(repo, sha, src, trees_dir):
     """Источник src в редакции sha (git archive) в общем дереве редакции trees/<начало sha>: источник плана и
     расширения сценариев извлекаются в одно дерево, каждый — один раз. Готовность — маркер на пару редакция +
-    src рядом с деревом (done_marker): остаток неудачного извлечения не принимается, а извлекается заново поверх —
-    содержимое редакции неизменно, перезапись даёт полное дерево, поэтому ничего не удаляется. Сбой извлечения
-    снимает и маркеры пересекающихся источников: недописанный файл мог попасть в их поддерево."""
+    src рядом с деревом (done_marker) или маркер объемлющего источника: остаток неудачного извлечения не
+    принимается, а извлекается заново поверх — содержимое редакции неизменно, перезапись даёт полное дерево,
+    поэтому ничего не удаляется. Сбой извлечения снимает и маркеры пересекающихся источников: недописанный файл
+    мог попасть в их поддерево."""
     if not re.fullmatch(r"[0-9a-fA-F]{7,64}", sha or ""):
         raise gitdiff.GitError(f"редакция {sha}: нужен sha коммита")
     rel = PurePosixPath(Path(src).as_posix())
@@ -60,8 +61,8 @@ def materialize(repo, sha, src, trees_dir):
         raise gitdiff.GitError(f"источник {src}: нужен относительный путь внутри репозитория")
     target = Path(trees_dir) / sha[:TREE_SHA]
     done = done_marker(target, src)
-    try:                                            # is_file() до Python 3.12 пропускает PermissionError
-        ready = done.is_file() and layout.detect(target / src)
+    try:
+        ready = _covered(target, rel) and layout.detect(target / src)
     except OSError as e:
         raise _env_error("готовая редакция", Path(e.filename or target), e) from e
     if ready:
@@ -111,9 +112,16 @@ def materialize(repo, sha, src, trees_dir):
         raise gitdiff.GitError(f"git archive {sha} -- {src}: {stderr[-500:]}" + _lfs_hint(stderr, sha))
     if tar_error:
         raise gitdiff.GitError(f"извлечение редакции {sha[:TREE_SHA]} в {target}: {tar_error}")
-    tmp = done.with_name(done.name + ".tmp")   # атомарно: оборванная запись не оставит маркер с префиксом src
+    # атомарно: оборванная запись не оставит маркер с префиксом src; временный файл свой у каждого вызова —
+    # параллельные прогоны не подменяют и не удаляют его друг у друга
     try:
-        tmp.write_text(rel.as_posix(), encoding="utf-8")    # src в маркере — для поиска пересечений
+        fd, tmp = tempfile.mkstemp(prefix=done.name + ".", suffix=".tmp", dir=done.parent)
+    except OSError as e:
+        raise _env_error("маркер редакции", done, e) from e
+    tmp = Path(tmp)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(rel.as_posix())                 # src в маркере — для поиска пересечений
         tmp.replace(done)
     except OSError as e:                      # дерево готово, но без маркера следующий прогон извлечёт заново
         try:
@@ -128,6 +136,20 @@ def done_marker(target, src):
     """Маркер готовности источника src в дереве редакции target: <начало sha>-<хеш src>.done рядом с деревом."""
     key = hashlib.sha1(Path(src).as_posix().encode("utf-8"), usedforsecurity=False).hexdigest()  # полный: без коллизий
     return target.with_name(f"{target.name}-{key}.done")
+
+
+def _covered(target, rel):
+    """Источник rel извлечён целиком: есть его маркер или маркер объемлющего источника (расширение сценариев
+    внутри источника плана готово вместе с ним — без повторного извлечения и снятия маркера источника)."""
+    mine = _parts(rel.as_posix())
+    for m in target.parent.glob(f"{target.name}-*.done"):
+        try:
+            other = _parts(m.read_text(encoding="utf-8").strip())
+        except (FileNotFoundError, ValueError):     # снят параллельным прогоном или оборван посреди символа
+            continue
+        if mine[:len(other)] == other:
+            return True
+    return False
 
 
 def _drop_markers(target, rel):
