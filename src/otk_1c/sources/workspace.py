@@ -8,7 +8,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from . import gitdiff, layout
 
@@ -35,7 +35,10 @@ def run_dir(cfg, repo):
 def _warn_inside(base, repo):
     """Предупреждение (раз за процесс), если runDir внутри рабочего дерева: пути извлечённых редакций длиннее
     на путь репозитория, а каталог прогона виден git как неотслеживаемый."""
-    base = base.resolve()
+    try:
+        base = base.resolve()
+    except (OSError, RuntimeError):         # цикл ссылок (RuntimeError до Python 3.13) — без предупреждения
+        return
     if base in _warned_inside or not base.is_relative_to(repo):
         return
     _warned_inside.add(base)
@@ -48,7 +51,10 @@ def materialize(repo, sha, src, trees_dir):
     """Источник src в редакции sha (git archive) в общем дереве редакции trees/<начало sha>: источник плана и
     расширения сценариев извлекаются в одно дерево, каждый — один раз. Готовность — маркер на пару редакция +
     src рядом с деревом (done_marker): остаток неудачного извлечения (не удалился целиком) не принимается,
-    очищается только поддерево этого src."""
+    очищается только поддерево этого src; маркеры пересекающихся с ним источников снимаются."""
+    rel = PurePosixPath(Path(src).as_posix())
+    if Path(src).anchor or rel.is_absolute() or ".." in rel.parts:   # поддерево удаляется: только внутри дерева
+        raise gitdiff.GitError(f"источник {src}: нужен относительный путь внутри репозитория")
     target = Path(trees_dir) / sha[:TREE_SHA]
     sub = target / src
     done = done_marker(target, src)
@@ -58,10 +64,7 @@ def materialize(repo, sha, src, trees_dir):
         raise _env_error("готовая редакция", Path(e.filename or target), e) from e
     if ready:
         return target
-    try:
-        done.unlink(missing_ok=True)                # до очистки: оборвётся — остаток без маркера
-    except OSError as e:
-        raise _env_error("маркер редакции", done, e) from e
+    _drop_markers(target, rel)                      # до очистки: оборвётся — остаток без маркера
     shutil.rmtree(sub, ignore_errors=True)          # остаток прошлого извлечения этого src — заново
     try:
         target.mkdir(parents=True, exist_ok=True)
@@ -95,8 +98,12 @@ def materialize(repo, sha, src, trees_dir):
         rc = proc.wait()
         err.seek(0)
         stderr = err.read().decode("utf-8", "replace").strip()
-    if rc or extract_error or tar_error:
-        shutil.rmtree(sub, ignore_errors=True)      # маркера нет — остаток следующий прогон извлечёт заново
+    if rc or extract_error or tar_error:            # маркера нет — остаток следующий прогон извлечёт заново
+        try:
+            _drop_markers(target, rel)              # извлечение могло задеть поддерево соседнего источника
+        except gitdiff.GitError:
+            pass                                    # не скрывать причину сбоя извлечения
+        shutil.rmtree(sub, ignore_errors=True)
     if extract_error:
         raise gitdiff.GitError(f"извлечение редакции {sha[:TREE_SHA]} в {target}: {extract_error}"
                                + _long_path_hint(extract_error, target))
@@ -105,7 +112,7 @@ def materialize(repo, sha, src, trees_dir):
     if tar_error:
         raise gitdiff.GitError(f"извлечение редакции {sha[:TREE_SHA]} в {target}: {tar_error}")
     try:
-        done.touch()
+        done.write_text(rel.as_posix(), encoding="utf-8")   # src в маркере — для поиска пересечений
     except OSError as e:                      # дерево готово, но без маркера следующий прогон извлечёт заново
         raise _env_error("маркер редакции", done, e) from e
     return target
@@ -115,6 +122,26 @@ def done_marker(target, src):
     """Маркер готовности источника src в дереве редакции target: <начало sha>-<хеш src>.done рядом с деревом."""
     key = hashlib.sha1(Path(src).as_posix().encode("utf-8"), usedforsecurity=False).hexdigest()[:8]
     return target.with_name(f"{target.name}-{key}.done")
+
+
+def _drop_markers(target, rel):
+    """Снять маркеры готовности источника rel и пересекающихся с ним (один внутри другого, «.» — со всеми):
+    очистка или неудачное извлечение rel меняет и их поддеревья. Нечитаемый маркер снимается тоже."""
+    try:
+        markers = list(target.parent.glob(f"{target.name}-*.done"))
+    except OSError as e:
+        raise _env_error("маркеры редакции в", target.parent, e) from e
+    for m in markers:
+        try:
+            other = PurePosixPath(m.read_text(encoding="utf-8").strip() or ".").parts
+        except OSError:
+            other = ()
+        n = min(len(other), len(rel.parts))
+        if other[:n] == rel.parts[:n]:
+            try:
+                m.unlink(missing_ok=True)
+            except OSError as e:
+                raise _env_error("маркер редакции", m, e) from e
 
 
 def _env_error(what, path, e):
