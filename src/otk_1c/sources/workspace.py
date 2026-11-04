@@ -111,16 +111,22 @@ def materialize(repo, sha, src, trees_dir):
         raise gitdiff.GitError(f"git archive {sha} -- {src}: {stderr[-500:]}" + _lfs_hint(stderr, sha))
     if tar_error:
         raise gitdiff.GitError(f"извлечение редакции {sha[:TREE_SHA]} в {target}: {tar_error}")
+    tmp = done.with_name(done.name + ".tmp")   # атомарно: оборванная запись не оставит маркер с префиксом src
     try:
-        done.write_text(rel.as_posix(), encoding="utf-8")   # src в маркере — для поиска пересечений
+        tmp.write_text(rel.as_posix(), encoding="utf-8")    # src в маркере — для поиска пересечений
+        tmp.replace(done)
     except OSError as e:                      # дерево готово, но без маркера следующий прогон извлечёт заново
+        try:
+            tmp.unlink(missing_ok=True)
+        except OSError:
+            pass                              # не скрывать исходную ошибку
         raise _env_error("маркер редакции", done, e) from e
     return target
 
 
 def done_marker(target, src):
     """Маркер готовности источника src в дереве редакции target: <начало sha>-<хеш src>.done рядом с деревом."""
-    key = hashlib.sha1(Path(src).as_posix().encode("utf-8"), usedforsecurity=False).hexdigest()[:8]
+    key = hashlib.sha1(Path(src).as_posix().encode("utf-8"), usedforsecurity=False).hexdigest()  # полный: без коллизий
     return target.with_name(f"{target.name}-{key}.done")
 
 

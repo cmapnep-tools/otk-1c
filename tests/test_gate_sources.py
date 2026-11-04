@@ -230,6 +230,10 @@ class TestSources(unittest.TestCase):
         with mock.patch.object(workspace.Path, "write_text", side_effect=denied13):     # запись маркера
             with self.assertRaisesRegex(gitdiff.GitError, r"маркер редакции .+\.done: .*Access is denied"):
                 workspace.materialize(r, sha, ".", trees)
+        with mock.patch.object(workspace.Path, "replace", side_effect=denied13):        # маркер — атомарно
+            with self.assertRaisesRegex(gitdiff.GitError, r"маркер редакции .+\.done: .*Access is denied"):
+                workspace.materialize(r, sha, ".", trees)
+        self.assertEqual(list(trees.glob("*.done*")), [])                # ни маркера, ни временного файла
         target = workspace.materialize(r, sha, ".", trees)
         (target / "Configuration.xml").unlink()                     # дерево не готово, маркер есть — снимается
         with mock.patch.object(workspace.Path, "unlink", side_effect=denied13):
