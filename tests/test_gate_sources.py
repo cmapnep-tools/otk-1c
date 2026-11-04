@@ -8,6 +8,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import _faults
 from _fs import rmtree_force
 from otk_1c import config
 from otk_1c.errors import InfraError
@@ -172,6 +173,58 @@ class TestSources(unittest.TestCase):
         self.assertFalse(workspace.done_marker(target, "ext/ТестыА").exists())
         if os.name == "nt":                         # пересечение источников на Windows — без учёта регистра
             self.assertEqual(workspace._parts("Src/Objects"), workspace._parts("src/objects"))
+
+    def test_materialize_fault_injection(self):
+        """Сбой любой файловой операции на любом шаге — один источник и общее дерево плана и расширений: наружу
+        только GitError, маркер не стоит на неполном источнике, следующий прогон даёт полное дерево."""
+        r = self._repo()
+        for ext in ("ТестыА", "ТестыБ"):
+            write(r, f"ext/{ext}/Configuration.xml", CONFIG)
+        run(r, "add", "-A")
+        run(r, "commit", "-q", "-m", "ext")
+        sha = gitdiff.rev(r, "HEAD")
+        expected = set(filter(None, gitdiff.git(r, "ls-tree", "-r", "-z", "--name-only", sha).split("\0")))
+
+        def files(root):
+            return {p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file()}
+
+        def want(src):
+            return {f for f in expected if src == "." or f.startswith(src + "/")}
+
+        def assert_markers_honest(trees, steps):
+            """Маркер стоит только на полностью извлечённом источнике: свой и объемлющий (src в маркере)."""
+            target = trees / sha[:workspace.TREE_SHA]
+            have = files(target) if target.is_dir() else set()
+            for s in steps:
+                if workspace.done_marker(target, s).is_file():
+                    self.assertEqual(want(s) - have, set(), f"маркер {s} на неполном дереве")
+            for m in trees.glob("*.done"):
+                src = m.read_text(encoding="utf-8").strip()
+                self.assertEqual(want(src) - have, set(), f"маркер {src} на неполном дереве")
+
+        # один источник; источник плана и расширения рядом (как у сценариев); вложенные и объемлющий
+        for steps in ((".",), ("CommonModules", "ext/ТестыА", "ext/ТестыБ"), ("ext/ТестыА", "ext", ".")):
+            def scenario(trees, steps=steps):
+                for s in steps:
+                    workspace.materialize(r, sha, s, trees)
+            clean = self.tmp / f"чисто{len(steps)}"
+            found = _faults.points(lambda: scenario(clean))  # noqa: B023 — вызывается здесь же
+            self.assertTrue(found)
+            for i, (owner, name, nth) in enumerate(found):
+                with self.subTest(steps=steps, fault=_faults.label(owner, name, nth)):
+                    trees = self.tmp / f"сбой{len(steps)}-{i}"
+                    with _faults.fail_at(owner, name, nth):
+                        try:
+                            scenario(trees)
+                        except gitdiff.GitError:
+                            pass                            # понятная ошибка; любая другая — провал теста
+                    assert_markers_honest(trees, steps)
+                    target = trees / sha[:workspace.TREE_SHA]
+                    for k, s in enumerate(steps):           # следующий прогон: каждый шаг не портит прежние
+                        workspace.materialize(r, sha, s, trees)
+                        have = files(target)
+                        for p in steps[:k + 1]:
+                            self.assertEqual(want(p) - have, set(), f"после {s} неполон {p}")
 
     def test_bad_head_sha_rejected(self):
         """headSha плана — не sha коммита (путь и т. п.): отказ до построения каталога редакции."""
