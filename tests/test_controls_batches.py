@@ -41,9 +41,12 @@ class BatchesTest(unittest.TestCase):
 
 class FakeIndex:
     """Индекс справки в памяти: таблица entries с теми полями, что читает controls._newer_api."""
+    opened = []                                          # закрывает NewerApiTest.tearDown
+
     def __init__(self, rows):
         from otk_1c.probes.syntax.index import GLOBAL, version_key
         self.db = sqlite3.connect(":memory:")
+        self.opened.append(self.db)
         self.db.row_factory = sqlite3.Row
         self.db.execute("CREATE TABLE entries(kind, owner, name, syntax, availability, since, since_key)")
         for kind, name, syntax, avail, since in rows:
@@ -55,6 +58,10 @@ class FakeIndex:
 
 
 class NewerApiTest(unittest.TestCase):
+    def tearDown(self):
+        while FakeIndex.opened:
+            FakeIndex.opened.pop().close()
+
     ROWS = [("method", "СтарыйМетод", "СтарыйМетод()", "Сервер.", "8.3.20"),
             ("method", "КлиентскийНовый", "КлиентскийНовый()", "Тонкий клиент, мобильное приложение (сервер).",
              "8.3.25"),

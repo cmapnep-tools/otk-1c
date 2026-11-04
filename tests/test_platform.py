@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest import mock
 
 from _fs import rmtree_force
-from otk_1c.probes import designer_check, platform as pf
+from otk_1c.probes import designer_check, iblock, platform as pf
 
 
 class PlatformTest(unittest.TestCase):
@@ -14,6 +14,7 @@ class PlatformTest(unittest.TestCase):
         self.tmp = Path(tempfile.mkdtemp())
 
     def tearDown(self):
+        iblock.release_all()                             # блокировки ИБ из Platform.lock держатся до конца процесса
         rmtree_force(self.tmp)
 
     def _install(self, version, layout_bin=True):
@@ -67,7 +68,8 @@ class PlatformTest(unittest.TestCase):
         s = pf.Platform({"connection": r"/Ssrv01\demo_prod", "platform": str(exe)}, self.tmp)
         self.assertEqual(s.com_connection(), 'Srvr="srv01";Ref="demo_prod";')
         self.assertIsNone(s.ib)
-        s.unlock()                                       # серверная база: файловых блокировок нет
+        with mock.patch.object(iblock.tempfile, "gettempdir", return_value=str(self.tmp)):
+            s.unlock()                                   # серверная база: файловых блокировок нет
 
     def test_hidden_desktop_setting(self):
         exe = self._install("8.3.27.2342")
