@@ -3,6 +3,7 @@ import contextlib
 import io
 import json
 import tempfile
+import tomllib
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -33,6 +34,11 @@ class TestVersion(unittest.TestCase):
             cli.main(["--version"])
         self.assertEqual(e.exception.code, 0)
         self.assertEqual(out.getvalue().strip(), f"otk {otk_1c.__version__}")
+
+    def test_version_matches_pyproject(self):
+        """Версия пакета и __version__ меняются вместе (выпуск и версия разработки .dev0)."""
+        with open(Path(__file__).resolve().parents[1] / "pyproject.toml", "rb") as f:
+            self.assertEqual(tomllib.load(f)["project"]["version"], otk_1c.__version__)
 
 
 class TestApplyArgs(unittest.TestCase):
