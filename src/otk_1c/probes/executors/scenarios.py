@@ -121,8 +121,9 @@ class Scenarios:
         ctx.ensure_tools()
         # тестовые расширения — из той же редакции, что и выгрузка (в извлечённом дереве только source)
         head = plan.get("headSha")
+        extracted = tree_root.parent == run_dir / "trees"     # дерево редакции: готовность — по маркеру materialize
         for ext in plan["scenarioExtensions"]:
-            if head and not (tree_root / ext["dir"] / "Configuration.xml").exists():
+            if head and (extracted or not (tree_root / ext["dir"] / "Configuration.xml").exists()):
                 workspace.materialize(ctx.repo, head, ext["dir"], run_dir / "trees")
         if ctx.session:                   # рабочая база: тестовые расширения — на время проверки
             for ext in plan["scenarioExtensions"]:
