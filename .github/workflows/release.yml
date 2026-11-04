@@ -30,9 +30,12 @@ jobs:
           changelog = open("CHANGELOG.md", encoding="utf-8").read()
           if version != tag:
               sys.exit(f"тег v{tag}, а в pyproject.toml версия {version}")
-          init = open("src/otk_1c/__init__.py", encoding="utf-8").read()
-          if f'__version__ = "{tag}"' not in init:
-              sys.exit(f"тег v{tag}, а в src/otk_1c/__init__.py другая версия")
+          import ast
+          tree = ast.parse(open("src/otk_1c/__init__.py", encoding="utf-8").read())
+          init = [n.value.value for n in tree.body if isinstance(n, ast.Assign)
+                  and any(getattr(t, "id", None) == "__version__" for t in n.targets)]
+          if init != [tag]:
+              sys.exit(f"тег v{tag}, а в src/otk_1c/__init__.py __version__ = {init}")
           if f"## [{tag}]" not in changelog:
               sys.exit(f"в CHANGELOG.md нет раздела [{tag}]")
       - name: build
