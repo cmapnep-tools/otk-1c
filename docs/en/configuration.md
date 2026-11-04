@@ -38,7 +38,7 @@ infobase file of `otk console`.
 | | `webClient` | the configuration works in the web client: a platform method, property or type that is unavailable in the web client is an error, not a warning |
 | | `minPlatform`, `compatWarnings` | warnings “newer than the compatibility mode” for the same line: only newer than the minimum platform (`--min-platform 8.3.24`) or none at all (`false`, `--no-compat-warnings`); hidden ones are counted in the notes, errors of the newer line remain |
 | | `executors.server` | `auto` (COM, otherwise YAxUnit) or `yaxunit` |
-| | `runDir` | run directory (`%TEMP%/otk`, `OTK_RUN_DIR`) |
+| | `runDir` | run directory (`%TEMP%/otk`, `OTK_RUN_DIR`); on Windows — short and outside the repository (see [troubleshooting.md](troubleshooting.md)) |
 | `checks` | check name | `on` / `auto` / `off` — see [“Checks and dependencies”](checks.md#checks-and-dependencies) |
 | `platformNames` | `methods`, `constructors`, `globals`, `forms`, `managerMethods` | additions to the platform name dictionary — see [“Platform names dictionary”](#platform-names-dictionary) |
 | `analyzerSeverity` | `bslls`, `bsl-analyzer` | which BSL analyzer rules are errors: `error` — add, `warning` — remove — see [“Analyzer finding level”](#analyzer-finding-level) |
