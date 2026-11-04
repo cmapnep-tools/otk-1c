@@ -3,7 +3,7 @@ import errno
 import hashlib
 import json
 import os
-import shutil
+import re
 import subprocess
 import sys
 import tarfile
@@ -50,22 +50,23 @@ def _warn_inside(base, repo):
 def materialize(repo, sha, src, trees_dir):
     """Источник src в редакции sha (git archive) в общем дереве редакции trees/<начало sha>: источник плана и
     расширения сценариев извлекаются в одно дерево, каждый — один раз. Готовность — маркер на пару редакция +
-    src рядом с деревом (done_marker): остаток неудачного извлечения (не удалился целиком) не принимается,
-    очищается только поддерево этого src; маркеры пересекающихся с ним источников снимаются."""
+    src рядом с деревом (done_marker): остаток неудачного извлечения не принимается, а извлекается заново поверх —
+    содержимое редакции неизменно, перезапись даёт полное дерево, поэтому ничего не удаляется. Сбой извлечения
+    снимает и маркеры пересекающихся источников: недописанный файл мог попасть в их поддерево."""
+    if not re.fullmatch(r"[0-9a-fA-F]{7,64}", sha or ""):
+        raise gitdiff.GitError(f"редакция {sha}: нужен sha коммита")
     rel = PurePosixPath(Path(src).as_posix())
-    if Path(src).anchor or rel.is_absolute() or ".." in rel.parts:   # поддерево удаляется: только внутри дерева
+    if Path(src).anchor or rel.is_absolute() or ".." in rel.parts:
         raise gitdiff.GitError(f"источник {src}: нужен относительный путь внутри репозитория")
     target = Path(trees_dir) / sha[:TREE_SHA]
-    sub = target / src
     done = done_marker(target, src)
     try:                                            # is_file() до Python 3.12 пропускает PermissionError
-        ready = done.is_file() and layout.detect(sub)
+        ready = done.is_file() and layout.detect(target / src)
     except OSError as e:
         raise _env_error("готовая редакция", Path(e.filename or target), e) from e
     if ready:
         return target
-    _drop_markers(target, rel)                      # до очистки: оборвётся — остаток без маркера
-    shutil.rmtree(sub, ignore_errors=True)          # остаток прошлого извлечения этого src — заново
+    _drop_markers(target, rel)                      # до извлечения: оборвётся — остаток без маркера
     try:
         target.mkdir(parents=True, exist_ok=True)
     except OSError as e:
@@ -100,10 +101,9 @@ def materialize(repo, sha, src, trees_dir):
         stderr = err.read().decode("utf-8", "replace").strip()
     if rc or extract_error or tar_error:            # маркера нет — остаток следующий прогон извлечёт заново
         try:
-            _drop_markers(target, rel)              # извлечение могло задеть поддерево соседнего источника
+            _drop_markers(target, rel)              # пересекающиеся маркеры могли появиться во время извлечения
         except gitdiff.GitError:
             pass                                    # не скрывать причину сбоя извлечения
-        shutil.rmtree(sub, ignore_errors=True)
     if extract_error:
         raise gitdiff.GitError(f"извлечение редакции {sha[:TREE_SHA]} в {target}: {extract_error}"
                                + _long_path_hint(extract_error, target))
@@ -125,23 +125,30 @@ def done_marker(target, src):
 
 
 def _drop_markers(target, rel):
-    """Снять маркеры готовности источника rel и пересекающихся с ним (один внутри другого, «.» — со всеми):
-    очистка или неудачное извлечение rel меняет и их поддеревья. Нечитаемый маркер снимается тоже."""
+    """Снять маркеры готовности источника rel и пересекающихся с ним (один внутри другого, «.» — со всеми; на
+    Windows — без учёта регистра): извлечение rel пишет и в их поддеревья. Нечитаемый маркер снимается тоже."""
     try:
         markers = list(target.parent.glob(f"{target.name}-*.done"))
     except OSError as e:
         raise _env_error("маркеры редакции в", target.parent, e) from e
+    mine = _parts(rel.as_posix())
     for m in markers:
         try:
-            other = PurePosixPath(m.read_text(encoding="utf-8").strip() or ".").parts
-        except OSError:
+            other = _parts(m.read_text(encoding="utf-8").strip())
+        except (OSError, ValueError):               # ValueError — оборванная запись посреди символа UTF-8
             other = ()
-        n = min(len(other), len(rel.parts))
-        if other[:n] == rel.parts[:n]:
+        n = min(len(other), len(mine))
+        if other[:n] == mine[:n]:
             try:
                 m.unlink(missing_ok=True)
             except OSError as e:
                 raise _env_error("маркер редакции", m, e) from e
+
+
+def _parts(src):
+    """Сегменты пути источника для сравнения: «.» — пусто, на Windows — без учёта регистра."""
+    src = src or "."
+    return PurePosixPath(src.casefold() if os.name == "nt" else src).parts
 
 
 def _env_error(what, path, e):

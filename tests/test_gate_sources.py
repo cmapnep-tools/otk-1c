@@ -2,6 +2,7 @@
 import contextlib
 import errno
 import io
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -138,27 +139,46 @@ class TestSources(unittest.TestCase):
             self.assertEqual(workspace.materialize(r, sha, f"ext/{ext}", trees), target)
         self.assertTrue((target / "CommonModules/М/Ext/Module.bsl").is_file())
         self.assertTrue((target / "ext/ТестыА/Configuration.xml").is_file())
-        # неудачное извлечение одного src очищает только его поддерево
+        # неудачное извлечение одного src снимает только его маркер, ничего не удаляет
         workspace.done_marker(target, "ext/ТестыБ").unlink()
         with mock.patch.object(workspace.tarfile.TarFile, "extractall", side_effect=OSError(errno.EIO, "I/O")):
             with self.assertRaises(gitdiff.GitError):
                 workspace.materialize(r, sha, "ext/ТестыБ", trees)
-        self.assertFalse((target / "ext/ТестыБ").exists())
+        self.assertFalse(workspace.done_marker(target, "ext/ТестыБ").exists())
         self.assertTrue((target / "ext/ТестыА/Configuration.xml").is_file())
         self.assertTrue((target / "CommonModules/М/Ext/Module.bsl").is_file())
         self.assertTrue(workspace.done_marker(target, "ext/ТестыА").is_file())
-        # источник «.» содержит расширение: сбой расширения задел дерево «.» — его маркер снят
-        workspace.materialize(r, sha, ".", trees)
+        # остаток извлекается заново поверх: файлы редакции неизменны
+        (target / "ext/ТестыБ/Configuration.xml").write_text("оборвано", encoding="utf-8")
+        workspace.materialize(r, sha, "ext/ТестыБ", trees)
+        self.assertEqual((target / "ext/ТестыБ/Configuration.xml").read_text(encoding="utf-8-sig"), CONFIG)
+        # источник «.» содержит расширение: сбой расширения мог задеть дерево «.» — его маркер снят
+        workspace.materialize(r, sha, ".", trees)   # «.» пересекается со всеми — их маркеры сняты
+        self.assertFalse(workspace.done_marker(target, "ext/ТестыА").exists())
+        workspace.materialize(r, sha, "ext/ТестыА", trees)
         with mock.patch.object(workspace.tarfile.TarFile, "extractall", side_effect=OSError(errno.EIO, "I/O")):
             with self.assertRaises(gitdiff.GitError):
                 workspace.materialize(r, sha, "ext/ТестыБ", trees)
         self.assertFalse(workspace.done_marker(target, ".").exists())
-        self.assertFalse(workspace.done_marker(target, "ext/ТестыА").exists())     # очистка «.» задела и его
-        workspace.materialize(r, sha, ".", trees)
-        self.assertTrue((target / "ext/ТестыБ/Configuration.xml").is_file())
+        self.assertTrue(workspace.done_marker(target, "ext/ТестыА").is_file())     # не пересекается — остался
+        # маркер, оборванный посреди символа UTF-8, — нечитаемый: снимается, а не трассировка
+        workspace.done_marker(target, "ext/ТестыА").write_bytes("ext/Т".encode("utf-8")[:-1])
+        workspace.materialize(r, sha, "CommonModules", trees)
+        self.assertFalse(workspace.done_marker(target, "ext/ТестыА").exists())
+        if os.name == "nt":                         # пересечение источников на Windows — без учёта регистра
+            self.assertEqual(workspace._parts("Src/Objects"), workspace._parts("src/objects"))
+
+    def test_bad_head_sha_rejected(self):
+        """headSha плана — не sha коммита (путь и т. п.): отказ до построения каталога редакции."""
+        r = self._repo()
+        for sha in (str(self.tmp / "чужое"), "../x", "", None):
+            with self.subTest(sha=sha):
+                with self.assertRaisesRegex(gitdiff.GitError, "нужен sha коммита"):
+                    workspace.materialize(r, sha, ".", self.tmp / "trees")
+        self.assertFalse((self.tmp / "trees").exists())
 
     def test_source_outside_tree_rejected(self):
-        """Источник плана — абсолютный путь или с «..»: отказ до очистки, вне дерева редакции ничего не удаляется."""
+        """Источник плана — абсолютный путь или с «..»: отказ до извлечения, вне дерева редакции ничего не трогается."""
         r = self._repo()
         sha = gitdiff.rev(r, "HEAD")
         keep = self.tmp / "чужое"
@@ -170,7 +190,7 @@ class TestSources(unittest.TestCase):
         self.assertTrue(keep.is_dir())
 
     def test_extract_long_path_error(self):
-        """Файл редакции не записался — GitError с длиной пути и советом, неполное дерево удалено."""
+        """Файл редакции не записался — GitError с длиной пути и советом, неполное дерево без маркера."""
         r = self._repo()
         sha = gitdiff.rev(r, "HEAD")
         long = str(self.tmp / ("д" * 300))
@@ -178,7 +198,7 @@ class TestSources(unittest.TestCase):
         with mock.patch.object(workspace.tarfile.TarFile, "extractall", side_effect=failure):
             with self.assertRaisesRegex(gitdiff.GitError, r"извлечение редакции .+ символов: .+OTK_RUN_DIR"):
                 workspace.materialize(r, sha, ".", self.tmp / "trees")
-        self.assertFalse((self.tmp / "trees" / sha[:workspace.TREE_SHA]).exists())
+        self.assertFalse(workspace.done_marker(self.tmp / "trees" / sha[:workspace.TREE_SHA], ".").exists())
         self.assertEqual(workspace._long_path_hint(OSError(errno.EACCES, "denied", "C:/x"), "C:/x"), "")
 
     def test_extract_rejected_not_marked_done(self):
