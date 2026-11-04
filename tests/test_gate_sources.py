@@ -1,4 +1,7 @@
 """Источник проверки: выгрузка в корне репозитория, указатели Git LFS вместо содержимого, BSL LS из VS Code."""
+import contextlib
+import errno
+import io
 import tempfile
 import unittest
 from pathlib import Path
@@ -107,6 +110,38 @@ class TestSources(unittest.TestCase):
             workspace.materialize(r, "0" * 40, ".", self.tmp / "trees")
         self.assertIn("git lfs fetch", workspace._lfs_hint("fatal: smudge filter lfs failed", "abc"))
         self.assertEqual(workspace._lfs_hint("fatal: not a tree", "abc"), "")
+
+    def test_tree_dir_short_sha(self):
+        """Каталог редакции — начало sha: путь выгрузки ERP короче на 28 символов."""
+        r = self._repo()
+        sha = gitdiff.rev(r, "HEAD")
+        target = workspace.materialize(r, sha, ".", self.tmp / "trees")
+        self.assertEqual(target, self.tmp / "trees" / sha[:workspace.TREE_SHA])
+        self.assertTrue((target / "CommonModules/М/Ext/Module.bsl").is_file())
+
+    def test_extract_long_path_error(self):
+        """Файл редакции не записался — GitError с длиной пути и советом, неполное дерево удалено."""
+        r = self._repo()
+        sha = gitdiff.rev(r, "HEAD")
+        long = str(self.tmp / ("д" * 300))
+        failure = OSError(errno.ENAMETOOLONG, "File name too long", long)
+        with mock.patch.object(workspace.tarfile.TarFile, "extractall", side_effect=failure):
+            with self.assertRaisesRegex(gitdiff.GitError, r"извлечение редакции .+ символов: .+OTK_RUN_DIR"):
+                workspace.materialize(r, sha, ".", self.tmp / "trees")
+        self.assertFalse((self.tmp / "trees" / sha[:workspace.TREE_SHA]).exists())
+        self.assertEqual(workspace._long_path_hint(OSError(errno.EACCES, "denied", "C:/x"), "C:/x"), "")
+
+    def test_run_dir_inside_worktree_warning(self):
+        r = self._repo()
+        workspace._warned_inside.clear()
+        out = io.StringIO()
+        with contextlib.redirect_stderr(out):
+            workspace.run_dir({"environment": {"runDir": str(self.tmp / "прогоны")}}, r)
+            self.assertEqual(out.getvalue(), "")
+            for _ in range(2):                                      # предупреждение — раз за процесс
+                workspace.run_dir({"environment": {"runDir": str(r / ".agents" / ".artifacts")}}, r)
+        self.assertEqual(out.getvalue().count("внутри рабочего дерева"), 1)
+        self.assertIn("OTK_RUN_DIR", out.getvalue())
 
     def test_bslls_from_vscode(self):
         storage = self.tmp / "globalStorage"
