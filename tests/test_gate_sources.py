@@ -118,6 +118,11 @@ class TestSources(unittest.TestCase):
         target = workspace.materialize(r, sha, ".", self.tmp / "trees")
         self.assertEqual(target, self.tmp / "trees" / sha[:workspace.TREE_SHA])
         self.assertTrue((target / "CommonModules/М/Ext/Module.bsl").is_file())
+        # остаток неудачного извлечения без маркера не принимается за готовое дерево
+        (target.with_name(f"{target.name}.done")).unlink()
+        (target / "CommonModules/М/Ext/Module.bsl").unlink()
+        workspace.materialize(r, sha, ".", self.tmp / "trees")
+        self.assertTrue((target / "CommonModules/М/Ext/Module.bsl").is_file())
 
     def test_extract_long_path_error(self):
         """Файл редакции не записался — GitError с длиной пути и советом, неполное дерево удалено."""

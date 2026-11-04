@@ -46,10 +46,13 @@ def _warn_inside(base, repo):
 
 
 def materialize(repo, sha, src, trees_dir):
-    """Выгрузка в редакции sha (git archive) в каталоге прогона; повторно не извлекается."""
+    """Выгрузка в редакции sha (git archive) в каталоге прогона; повторно не извлекается. Готовность — маркер
+    <начало sha>.done рядом с деревом: остаток неудачного извлечения (не удалился целиком) не принимается."""
     target = Path(trees_dir) / sha[:TREE_SHA]
-    if layout.detect(target / src):
+    done = target.with_name(f"{target.name}.done")
+    if done.is_file() and layout.detect(target / src):
         return target
+    shutil.rmtree(target, ignore_errors=True)       # остаток прошлого извлечения — заново
     target.mkdir(parents=True, exist_ok=True)
     # проект EDT: экспорт 1cedtcli требует ещё .project и DT-INF рядом с src
     proj = Path(src).parent.as_posix()
@@ -76,12 +79,13 @@ def materialize(repo, sha, src, trees_dir):
         err.seek(0)
         stderr = err.read().decode("utf-8", "replace").strip()
     if rc or extract_error:
-        shutil.rmtree(target, ignore_errors=True)   # неполное дерево следующий прогон принял бы за готовое
+        shutil.rmtree(target, ignore_errors=True)   # маркера нет — остаток следующий прогон извлечёт заново
     if extract_error:
         raise gitdiff.GitError(f"извлечение редакции {sha[:TREE_SHA]} в {target}: {extract_error}"
                                + _long_path_hint(extract_error, target))
     if rc:
         raise gitdiff.GitError(f"git archive {sha} -- {src}: {stderr[-500:]}" + _lfs_hint(stderr, sha))
+    done.touch()
     return target
 
 
