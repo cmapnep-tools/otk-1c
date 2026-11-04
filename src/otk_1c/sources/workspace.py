@@ -52,12 +52,15 @@ def materialize(repo, sha, src, trees_dir):
     done = target.with_name(f"{target.name}.done")
     if done.is_file() and layout.detect(target / src):
         return target
-    done.unlink(missing_ok=True)                    # до очистки: оборвётся — остаток без маркера
+    try:
+        done.unlink(missing_ok=True)                # до очистки: оборвётся — остаток без маркера
+    except OSError as e:
+        raise _env_error("маркер редакции", done, e) from e
     shutil.rmtree(target, ignore_errors=True)       # остаток прошлого извлечения — заново
     try:
         target.mkdir(parents=True, exist_ok=True)
     except OSError as e:
-        raise gitdiff.GitError(f"каталог редакции {target}: {e}" + _long_path_hint(e, target)) from e
+        raise _env_error("каталог редакции", target, e) from e
     # проект EDT: экспорт 1cedtcli требует ещё .project и DT-INF рядом с src
     proj = Path(src).parent.as_posix()
     extra = [p for p in ((f"{proj}/{n}" if proj != "." else n) for n in (".project", "DT-INF"))
@@ -91,8 +94,16 @@ def materialize(repo, sha, src, trees_dir):
         raise gitdiff.GitError(f"git archive {sha} -- {src}: {stderr[-500:]}" + _lfs_hint(stderr, sha))
     if tar_error:
         raise gitdiff.GitError(f"извлечение редакции {sha[:TREE_SHA]} в {target}: {tar_error}")
-    done.touch()
+    try:
+        done.touch()
+    except OSError as e:                      # дерево готово, но без маркера следующий прогон извлечёт заново
+        raise _env_error("маркер редакции", done, e) from e
     return target
+
+
+def _env_error(what, path, e):
+    """Ошибка окружения при подготовке редакции — сообщение с путём и подсказкой вместо трассировки."""
+    return gitdiff.GitError(f"{what} {path}: {e}" + _long_path_hint(e, path))
 
 
 def _long_path_hint(e, target):
