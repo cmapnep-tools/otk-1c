@@ -48,7 +48,8 @@ def main():
         print(f"pre-push: своя проверка {guard} не найдена — пропущена", file=sys.stderr)
     elif guard:
         r = subprocess.run([sys.executable, guard, "check"], cwd=ROOT, capture_output=True, text=True,
-                           encoding="utf-8", errors="replace", env={**os.environ, "OTK_PUBLIC": str(ROOT), "PYTHONIOENCODING": "utf-8"})
+                           encoding="utf-8", errors="replace",
+                           env={**os.environ, "OTK_PUBLIC": str(ROOT), "PYTHONIOENCODING": "utf-8"})
         if r.returncode:
             failed.append("guard")
             print(f"pre-push: своя проверка — находки:\n{(r.stdout + r.stderr).strip()}", file=sys.stderr)
