@@ -119,9 +119,32 @@ class TestSources(unittest.TestCase):
         self.assertEqual(target, self.tmp / "trees" / sha[:workspace.TREE_SHA])
         self.assertTrue((target / "CommonModules/М/Ext/Module.bsl").is_file())
         # остаток неудачного извлечения без маркера не принимается за готовое дерево
-        (target.with_name(f"{target.name}.done")).unlink()
+        workspace.done_marker(target, ".").unlink()
         (target / "CommonModules/М/Ext/Module.bsl").unlink()
         workspace.materialize(r, sha, ".", self.tmp / "trees")
+        self.assertTrue((target / "CommonModules/М/Ext/Module.bsl").is_file())
+
+    def test_tree_shared_by_sources(self):
+        """Источник плана и расширения сценариев — в одном дереве редакции: следующий src не стирает прежние."""
+        r = self._repo()
+        for ext in ("ТестыА", "ТестыБ"):
+            write(r, f"ext/{ext}/Configuration.xml", CONFIG)
+        run(r, "add", "-A")
+        run(r, "commit", "-q", "-m", "ext")
+        sha = gitdiff.rev(r, "HEAD")
+        trees = self.tmp / "trees"
+        target = workspace.materialize(r, sha, "CommonModules", trees)
+        for ext in ("ТестыА", "ТестыБ"):
+            self.assertEqual(workspace.materialize(r, sha, f"ext/{ext}", trees), target)
+        self.assertTrue((target / "CommonModules/М/Ext/Module.bsl").is_file())
+        self.assertTrue((target / "ext/ТестыА/Configuration.xml").is_file())
+        # неудачное извлечение одного src очищает только его поддерево
+        workspace.done_marker(target, "ext/ТестыБ").unlink()
+        with mock.patch.object(workspace.tarfile.TarFile, "extractall", side_effect=OSError(errno.EIO, "I/O")):
+            with self.assertRaises(gitdiff.GitError):
+                workspace.materialize(r, sha, "ext/ТестыБ", trees)
+        self.assertFalse((target / "ext/ТестыБ").exists())
+        self.assertTrue((target / "ext/ТестыА/Configuration.xml").is_file())
         self.assertTrue((target / "CommonModules/М/Ext/Module.bsl").is_file())
 
     def test_extract_long_path_error(self):
@@ -145,7 +168,7 @@ class TestSources(unittest.TestCase):
                                side_effect=workspace.tarfile.TarError("ссылка за пределы дерева")):
             with self.assertRaisesRegex(gitdiff.GitError, "извлечение редакции .+ссылка за пределы"):
                 workspace.materialize(r, sha, ".", self.tmp / "trees")
-        self.assertFalse(target.with_name(f"{target.name}.done").exists())
+        self.assertFalse(workspace.done_marker(target, ".").exists())
 
     def test_tree_dir_mkdir_error(self):
         """Не создался сам каталог редакции — GitError с подсказкой, а не трассировка."""
@@ -187,6 +210,11 @@ class TestSources(unittest.TestCase):
                 workspace.run_dir({"environment": {"runDir": str(r / ".agents" / ".artifacts")}}, r)
         self.assertEqual(out.getvalue().count("внутри рабочего дерева"), 1)
         self.assertIn("OTK_RUN_DIR", out.getvalue())
+        # runDir по умолчанию (<TEMP>/otk) проверяется так же
+        with contextlib.redirect_stderr(out), mock.patch.object(workspace.tempfile, "gettempdir",
+                                                                return_value=str(r / "tmp")):
+            workspace.run_dir({"environment": {}}, r)
+        self.assertEqual(out.getvalue().count("внутри рабочего дерева"), 2)
 
     def test_bslls_from_vscode(self):
         storage = self.tmp / "globalStorage"
