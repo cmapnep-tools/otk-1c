@@ -136,6 +136,25 @@ class TestSources(unittest.TestCase):
         self.assertFalse((self.tmp / "trees" / sha[:workspace.TREE_SHA]).exists())
         self.assertEqual(workspace._long_path_hint(OSError(errno.EACCES, "denied", "C:/x"), "C:/x"), "")
 
+    def test_extract_rejected_not_marked_done(self):
+        """Фильтр tarfile отклонил запись при коде git 0 — сбой, маркер готовности не ставится."""
+        r = self._repo()
+        sha = gitdiff.rev(r, "HEAD")
+        target = self.tmp / "trees" / sha[:workspace.TREE_SHA]
+        with mock.patch.object(workspace.tarfile.TarFile, "extractall",
+                               side_effect=workspace.tarfile.TarError("ссылка за пределы дерева")):
+            with self.assertRaisesRegex(gitdiff.GitError, "извлечение редакции .+ссылка за пределы"):
+                workspace.materialize(r, sha, ".", self.tmp / "trees")
+        self.assertFalse(target.with_name(f"{target.name}.done").exists())
+
+    def test_tree_dir_mkdir_error(self):
+        """Не создался сам каталог редакции — GitError с подсказкой, а не трассировка."""
+        r = self._repo()
+        failure = OSError(errno.ENAMETOOLONG, "File name too long", str(self.tmp / ("д" * 300)))
+        with mock.patch.object(workspace.Path, "mkdir", side_effect=failure):
+            with self.assertRaisesRegex(gitdiff.GitError, "каталог редакции .+OTK_RUN_DIR"):
+                workspace.materialize(r, gitdiff.rev(r, "HEAD"), ".", self.tmp / "trees")
+
     def test_run_dir_inside_worktree_warning(self):
         r = self._repo()
         workspace._warned_inside.clear()

@@ -52,22 +52,26 @@ def materialize(repo, sha, src, trees_dir):
     done = target.with_name(f"{target.name}.done")
     if done.is_file() and layout.detect(target / src):
         return target
+    done.unlink(missing_ok=True)                    # до очистки: оборвётся — остаток без маркера
     shutil.rmtree(target, ignore_errors=True)       # остаток прошлого извлечения — заново
-    target.mkdir(parents=True, exist_ok=True)
+    try:
+        target.mkdir(parents=True, exist_ok=True)
+    except OSError as e:
+        raise gitdiff.GitError(f"каталог редакции {target}: {e}" + _long_path_hint(e, target)) from e
     # проект EDT: экспорт 1cedtcli требует ещё .project и DT-INF рядом с src
     proj = Path(src).parent.as_posix()
     extra = [p for p in ((f"{proj}/{n}" if proj != "." else n) for n in (".project", "DT-INF"))
              if Path(src).name == "src"
              and gitdiff.git(repo, "rev-parse", "--verify", "-q", f"{sha}:{p}", check=False).strip()]
-    extract_error = None
+    extract_error = tar_error = None
     with tempfile.TemporaryFile() as err:     # stderr — в файл: канал мог бы заполниться, пока читаем stdout
         proc = subprocess.Popen(["git", "-C", str(repo), "archive", "--format=tar", sha, "--", src, *extra],
                                 stdout=subprocess.PIPE, stderr=err, stdin=subprocess.DEVNULL)
         try:
             with tarfile.open(fileobj=proc.stdout, mode="r|") as tar:
                 tar.extractall(target, **SAFE_EXTRACT)  # noqa: S202 — фильтр data, где он есть
-        except tarfile.TarError:
-            pass                              # git оборвал архив — причина в stderr
+        except tarfile.TarError as e:         # git оборвал архив (причина в stderr) или фильтр отклонил запись
+            tar_error = e
         except OSError as e:                  # не записался файл: чаще всего путь длиннее MAX_PATH на Windows
             extract_error = e
         # tarfile останавливается на маркере конца архива, а git ещё пишет выравнивание: без дочитывания
@@ -78,13 +82,15 @@ def materialize(repo, sha, src, trees_dir):
         rc = proc.wait()
         err.seek(0)
         stderr = err.read().decode("utf-8", "replace").strip()
-    if rc or extract_error:
+    if rc or extract_error or tar_error:
         shutil.rmtree(target, ignore_errors=True)   # маркера нет — остаток следующий прогон извлечёт заново
     if extract_error:
         raise gitdiff.GitError(f"извлечение редакции {sha[:TREE_SHA]} в {target}: {extract_error}"
                                + _long_path_hint(extract_error, target))
     if rc:
         raise gitdiff.GitError(f"git archive {sha} -- {src}: {stderr[-500:]}" + _lfs_hint(stderr, sha))
+    if tar_error:
+        raise gitdiff.GitError(f"извлечение редакции {sha[:TREE_SHA]} в {target}: {tar_error}")
     done.touch()
     return target
 
