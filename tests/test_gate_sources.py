@@ -203,16 +203,18 @@ class TestSources(unittest.TestCase):
                 self.assertEqual(want(src) - have, set(), f"маркер {src} на неполном дереве")
 
         # один источник; источник плана и расширения рядом (как у сценариев); вложенные и объемлющий
-        for steps in ((".",), ("CommonModules", "ext/ТестыА", "ext/ТестыБ"), ("ext/ТестыА", "ext", ".")):
+        sequences = ((".",), ("CommonModules", "ext/ТестыА", "ext/ТестыБ"), ("ext/ТестыА", "ext", "."))
+        for seq, steps in enumerate(sequences):     # каталоги — свои у каждой последовательности: с чистого листа
             def scenario(trees, steps=steps):
                 for s in steps:
                     workspace.materialize(r, sha, s, trees)
-            clean = self.tmp / f"чисто{len(steps)}"
+            clean = self.tmp / f"чисто{seq}"
             found = _faults.points(lambda: scenario(clean))  # noqa: B023 — вызывается здесь же
             self.assertTrue(found)
             for i, (owner, name, nth) in enumerate(found):
                 with self.subTest(steps=steps, fault=_faults.label(owner, name, nth)):
-                    trees = self.tmp / f"сбой{len(steps)}-{i}"
+                    trees = self.tmp / f"сбой{seq}-{i}"
+                    self.assertFalse(trees.exists())
                     with _faults.fail_at(owner, name, nth):
                         try:
                             scenario(trees)
