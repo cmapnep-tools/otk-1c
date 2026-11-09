@@ -27,7 +27,7 @@ from .extras import availability, console, controls, mcp, scaffold, techlog
 from .gate import collect as collect_mod, doctor, output, pipeline, reasons, report, report_html, runner
 from .integrations import ci as ci_mod, hook, platform_tools as pt_mod
 from .probes import build, designer_check, syntax
-from .probes.platform import Platform, find_platform, platform_version
+from .probes.platform import Platform, find_platform, ib_path, platform_version
 from .sources import contexts, gitdiff, layout, workspace
 
 # ошибки, которые main печатает одной строкой с кодом 2 (gate --json — итогом со status infra)
@@ -254,7 +254,9 @@ def _build_plan(a):
     config.detect_extension(cfg, workspace.plan_root(repo, a.plan, cfg) if a.plan else repo / cfg["project"]["source"])
     plan = json.loads(Path(a.plan).read_text(encoding="utf-8")) if a.plan else None
     origin = f"план {a.plan}" if a.plan else a.head or "HEAD"
-    ib = Path(env["ib"]) if env.get("ib") else None
+    # копия ИБ — так же, как её видит сборка (Platform): /F<каталог> в connection тоже даёт каталог,
+    # иначе dry-run читал бы состояние не там и показывал загрузку при up-to-date
+    ib = ib_path(env)
     create_ib = False if a.assume_current else build.create_ib_plan(
         ib, env.get("connection"), cfg["project"].get("extension"))
     if plan and plan.get("headDir"):

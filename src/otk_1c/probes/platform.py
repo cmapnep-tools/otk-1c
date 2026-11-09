@@ -280,6 +280,16 @@ class ConfigOps:
         return self.designer("/ManageCfgSupport", "-disableSupport", "-force", label=label)
 
 
+def ib_path(env):
+    """Каталог копии ИБ так же, как его видит Platform: connection «/FКаталог» — файловая ИБ, «/SСервер\\База» —
+    сервер (каталога нет), иначе environment.ib. None — каталога копии нет (её нет или работа идёт по серверу)."""
+    connection = env.get("connection")
+    if connection:
+        return Path(connection[2:]) if connection[:2].upper() == "/F" else None
+    ib = env.get("ib")
+    return Path(ib) if ib else None
+
+
 class Platform(ConfigOps):
     def __init__(self, env, run_dir):
         configured = env.get("platform")
@@ -291,12 +301,9 @@ class Platform(ConfigOps):
         # connection — строка соединения Конфигуратора («/FКаталог» или «/SСервер\База»): так задаётся
         # чужая (целевая) база хука Platform Tools; ib — своя файловая копия ОТК
         self.connection = env.get("connection")
-        ib = env.get("ib")
-        if self.connection:
-            ib = self.connection[2:] if self.connection[:2].upper() == "/F" else None
-        elif not ib:
+        self.ib = ib_path(env)
+        if self.ib is None and not self.connection:
             raise InfraError("не задана копия ИБ: --ib, environment.ib в otk.local.toml или OTK_IB", code="no-ib")
-        self.ib = Path(ib) if ib else None
         self.edtcli = find_edtcli(env.get("edtcli"))
         self.edt_timeout = int(env.get("edtTimeout") or 1800)
         self.user = env.get("user", "")

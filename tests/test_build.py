@@ -277,6 +277,36 @@ class CmdBuildTest(unittest.TestCase):
         self.assertEqual(err.getvalue(), "")
         self.assertFalse((self.repo / "build-state.json").exists())
 
+    def test_dry_run_reads_state_from_connection_ib(self):
+        """--connection /F<каталог>: состояние копии — там же, где у обычной сборки (otk-state.json в каталоге ИБ),
+        иначе dry-run показывал бы загрузку, когда сборка вернула бы up-to-date."""
+        self.git("init", "-q", "-b", "master")
+        self.git("config", "user.email", "t@t")
+        self.git("config", "user.name", "t")
+        (self.repo / "src" / "cf" / "a.txt").write_text("1", encoding="utf-8")
+        self.git("add", "-A")
+        self.git("commit", "-q", "-m", "a")
+        head = self.git("rev-parse", "HEAD")
+        ib = self.tmp / "ib"
+        ib.mkdir()
+        (ib / "1Cv8.1CD").write_bytes(b"x")
+        run_dir = self.tmp / "runs"
+        build.save_state(run_dir, {"ib": str(ib), "commit": head, "tree": build.tree_hash(self.repo, head, "src/cf")},
+                         ib)
+        cfg = {"project": {"source": "src/cf"}, "environment": {"connection": "/F" + str(ib)}}
+        args = SimpleNamespace(repo=str(self.repo), plan=None, head=None, full=False, assume_current=False,
+                               json=False, dry_run=True)
+        out = io.StringIO()
+        with mock.patch.object(cli, "_project", return_value=self.repo), \
+                mock.patch.object(cli, "_cfg", return_value=cfg), \
+                mock.patch.object(cli.workspace, "run_dir", return_value=run_dir), \
+                mock.patch.object(cli.config, "detect_extension"), \
+                mock.patch.object(cli.build, "build", side_effect=AssertionError("build called")), \
+                contextlib.redirect_stdout(out):
+            code = cli.cmd_build(args)
+        self.assertEqual(code, 0)
+        self.assertIn('"action": "up-to-date"', out.getvalue())
+
     def test_dry_run_json_keeps_revision_out_of_build(self):
         """Конверт build --json --dry-run: revision и origin — на верхнем уровне, в build — только план шага."""
         self.git("init", "-q", "-b", "master")
