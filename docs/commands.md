@@ -9,22 +9,31 @@ otk gate --dir <выгрузка> [--base-dir <было>]   # без git: кат
 otk gate --vendor --ib <ИБ>        # разово: доработки ИБ относительно её конфигурации поставщика (минуты)
 otk gate … --all-scenarios         # все сценарные тесты, а не только по изменённым методам
 otk collect --base <ref>           # только план: что изменилось и как это проверять (otk.json)
-otk scaffold                       # заготовки тестов для изменённых методов без теста
-otk static | build | run           # шаги gate по отдельности
-otk report                         # сводка по файлам шагов каталога прогона (после static/run)
+otk scaffold [--dry-run]           # заготовки тестов для изменённых методов без теста
+otk static | run                   # шаги gate по отдельности
+otk build [--json] [--dry-run]     # загрузка редакции в копию ИБ
+otk report [--json]                # сводка по файлам шагов каталога прогона (после static/run)
 otk doctor                         # окружение: какие проверки доступны и что теряется
-otk gate … --json | otk doctor --json   # для агентов: итог одним объектом JSON, причины с reasonCode (см. agents.md)
-otk availability build [--out <каталог>]   # таблица доступности методов платформы для своей платформы
-otk designer-check [--update-baseline]  # все модули Конфигуратором с отрицательным контролем
+otk gate … --json | doctor --json | report --json | build --json | console … --json
+otk platform-help status --json    # машинный статус индексов справки
+otk availability build [--out <каталог>] [--dry-run]  # таблица доступности методов платформы
+otk designer-check [--update-baseline] [--dry-run]   # все модули с отрицательным контролем
 otk gate --base <ref> --designer   # gate и все модули Конфигуратором в той же копии ИБ: одна сводка, один код
 otk controls [--parity] [--doc ФАЙЛ]   # контрольные дефекты: каждый обязан быть пойман; --doc — таблица паритета
 otk controls --analyzers [--doc ФАЙЛ]  # те же дефекты статикой с обоими анализаторами BSL: кто что ловит
-otk hook install | uninstall       # git-хук pre-push
+otk hook install | uninstall [--dry-run]   # git-хук pre-push
 otk ci gate [--designer] | designer-check   # запуск в CI (артефакты)
 otk console query|check|metadata|eventlog|bases --ib <база> …   # консоль копии ИБ (только чтение)
 otk mcp [--idle 120]               # та же консоль MCP-сервером (stdio) для ИИ-агента
 otk tj calls|queries|sdbl|errors|locks|timeouts|events <каталог ТЖ>   # анализ технологического журнала
 ```
+
+`otk report --json` печатает один объект `otk.report-result.v1` со сводкой и путём к `summary.json`; журнал идёт
+в stderr. Схема: `src/otk_1c/schema/report-result.schema.json`.
+
+`--json` у `build`, `console` и `platform-help status` использует версионированный объект `otk.<команда>-result.v1`.
+`--dry-run` у изменяющих команд показывает план и не выполняет перечисленные записи, загрузку в ИБ или обновление
+индекса; для `scaffold` внешняя команда черновика не запускается.
 
 `--worktree` проверяет незакоммиченные изменения; `--static-only` — только статика, без копии ИБ
 (секунды); `--fast` — не запускать пробы, если статика уже нашла ошибки. При находках больше 50 `gate` и `report`

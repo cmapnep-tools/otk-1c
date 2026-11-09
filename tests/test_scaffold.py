@@ -1,11 +1,16 @@
 """Заготовки сценарных тестов: какие методы без тестов, куда и как пишется каркас, черновик внешней командой."""
+import contextlib
+import io
 import shutil
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
 
 from _fs import rmtree_force
+from otk_1c import cli
 from otk_1c.extras import scaffold
 from otk_1c.gate import scenarios
 from otk_1c.probes import ib_tools
@@ -84,6 +89,39 @@ class ScaffoldTest(unittest.TestCase):
         text = (self.repo / done[0]["file"]).read_bytes().decode("utf-8-sig")
         self.assertIn("\tРезультат = Н.Посчитать(1, 2);", text)
         self.assertNotIn("ЮТест.Пропустить", text)
+
+    def test_cli_dry_run_does_not_write(self):
+        ext = self.repo / "tests" / "cfe" / "Т"
+        before = {p.relative_to(self.repo): p.read_bytes() for p in ext.rglob("*") if p.is_file()}
+        cfg = {"project": {"source": "src"}, "environment": {"contexts": [],
+              "ordinaryApplication": False}}
+        plan = {"source": "src", "modules": [module("ОбщийМодуль.М", "Разобрать")]}
+        args = SimpleNamespace(repo=str(self.repo), source=None, base="base", head="head", extension=None,
+                               no_draft=False, dry_run=True)
+        out = io.StringIO()
+        with mock.patch.object(cli.gitdiff, "git", return_value=str(self.repo)), \
+                mock.patch.object(cli.config, "load", return_value=cfg), \
+                mock.patch.object(cli.collect_mod, "collect", return_value=plan), \
+                mock.patch.object(cli.scaffold, "scaffold", side_effect=AssertionError("writer called")), \
+                contextlib.redirect_stdout(out):
+            code = cli.cmd_scaffold(args)
+        after = {p.relative_to(self.repo): p.read_bytes() for p in ext.rglob("*") if p.is_file()}
+        self.assertEqual(code, 0)
+        self.assertEqual(before, after)
+        self.assertIn("План заготовок", out.getvalue())
+        self.assertIn("М.Разобрать", out.getvalue())
+        self.assertIn('"draft": false', out.getvalue())            # команды черновика нет — и она не запускалась
+
+    def test_preview_reports_configured_draft_without_running_it(self):
+        script = self.repo / "draft.py"
+        script.write_text("import sys\nsys.exit('черновик запускать нельзя')\n", encoding="utf-8")
+        plan = {"source": "src", "modules": [module("ОбщийМодуль.Н", "Посчитать")]}
+        preview = scaffold.preview(self.repo, plan, {"scaffold": {"draft": [sys.executable, str(script)]}})
+        self.assertTrue(preview["draft"])
+        self.assertNotIn("draftCommand", preview)
+        self.assertFalse(scaffold.preview(self.repo, plan,
+                                          {"scaffold": {"draft": [sys.executable, str(script)]}},
+                                          use_draft=False)["draft"])
 
     def test_creates_extension(self):
         shutil.rmtree(self.repo / "tests")

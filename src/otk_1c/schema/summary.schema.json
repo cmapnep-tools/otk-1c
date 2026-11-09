@@ -21,6 +21,7 @@
                              "properties": {"check": {"type": "string", "description": "проверка реестра; без file — не выполнена целиком, с file — по модулю (видно в JUnit и Problems)"},
                                             "what": {"type": "string"}, "file": {"type": ["string", "null"]},
                                             "line": {"type": ["integer", "null"]}, "reason": {"type": ["string", "null"]},
+                                            "reasonCode": {"type": "string"},
                                             "needs": {"type": "string", "pattern": "^(designer:.+|ui|publication)$", "description": "чем закрыть: designer:<контекст> — полная проверка Конфигуратором в режиме (* — во всех), ui — UI/сценарные тесты, publication — проверка с публикацией сервиса"}}}},
     "uncovered": {"type": "array", "description": "не покрыто этим прогоном: чем закрыть",
                   "items": {"type": "object", "required": ["owner", "file", "context", "needs", "reason"],

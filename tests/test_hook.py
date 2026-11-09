@@ -1,4 +1,6 @@
 """Хук pre-push: установка, диапазоны проверки, коды выхода, настоящий git push во временный bare-репозиторий."""
+import contextlib
+import io
 import json
 import subprocess
 import tempfile
@@ -6,6 +8,7 @@ import unittest
 from pathlib import Path
 
 from _fs import rmtree_force
+from otk_1c import cli
 from otk_1c.integrations import hook
 from otk_1c.sources import gitdiff
 
@@ -46,6 +49,21 @@ class HookTest(unittest.TestCase):
         self.assertEqual(hook.uninstall(self.repo), path)
         self.assertFalse(path.exists())
         self.assertIsNone(hook.uninstall(self.repo))
+
+    def test_dry_run_install_uninstall(self):
+        path = hook.hook_path(self.repo)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(cli.main(["hook", "install", "--repo", str(self.repo), "--dry-run"]), 0)
+        self.assertIn("create:", out.getvalue())
+        self.assertFalse(path.exists())
+        hook.install(self.repo)
+        before = path.read_bytes()
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(cli.main(["hook", "uninstall", "--repo", str(self.repo), "--dry-run"]), 0)
+        self.assertIn("delete:", out.getvalue())
+        self.assertEqual(path.read_bytes(), before)
 
     def test_foreign_hook_kept(self):
         path = hook.hook_path(self.repo)

@@ -65,6 +65,22 @@ def uninstall(repo):
     return path
 
 
+def plan_change(repo, action, force=False):
+    """План install/uninstall без записи и удаления файлов."""
+    path = hook_path(repo)
+    exists = path.exists()
+    owned = exists and MARKER in path.read_text(encoding="utf-8", errors="replace")
+    if action == "install":
+        if not exists:
+            return {"action": "create", "path": str(path), "blocked": False}
+        if owned:
+            return {"action": "no-op", "path": str(path), "blocked": False}
+        return {"action": "replace" if force else "blocked", "path": str(path), "blocked": not force}
+    if not exists:
+        return {"action": "no-op", "path": str(path), "blocked": False}
+    return {"action": "delete" if owned else "blocked", "path": str(path), "blocked": not owned}
+
+
 def settings(cfg):
     return {**HOOK_DEFAULTS, **cfg.get("hook", {})}
 
@@ -144,6 +160,15 @@ def _infra(hs, log):
 
 def main(a):
     repo = Path(gitdiff.git(a.repo, "rev-parse", "--show-toplevel").strip())
+    if getattr(a, "dry_run", False):
+        if a.action == "run":
+            raise ValueError("--dry-run доступен только для hook install|uninstall")
+        plan = plan_change(repo, a.action, a.force)
+        print("План хука (без изменений):")
+        print(f"  {plan['action']}: {plan['path']}")
+        if plan["blocked"]:
+            print("  операция не будет выполнена: хук принадлежит не ОТК или нужен --force")
+        return 2 if plan["blocked"] else 0
     if a.action == "install":
         print(f"установлен: {install(repo, a.force)}")
         return 0

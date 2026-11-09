@@ -22,6 +22,21 @@
 внутренние файлы шагов: первое поле `$comment` напоминает, что формат меняется без предупреждения и править их
 вручную не нужно.
 
+### Поля отчёта и CI
+
+Публичные отчёты строятся по allowlist. В `summary.json` входят: `schema`, `version`, `code`, `verdict`, `base`,
+`head`, счётчики `modules` и `queries`, `findings`, `notChecked`, `uncovered`, `notes`, `infra`, `scenarios`,
+`smoke`, `timings` и сводные поля `designer`. Находка содержит только `severity`, `step`, `rule`, `file`, `line`,
+`column`, `message`, `count`, `context`, `object`, `method`, `place`, одну строку `text` и `sources` (`step`,
+`rule`, `context`, `message`, `modes`). Причины содержат `check`, `what`, `file`, `line`, `reason`, `reasonCode`,
+`needs`; непокрытые проверки — `owner`, `file`, `context`, `needs`, `reason`; инфраструктурные причины — только
+`reasonCode` и `message`.
+
+Сериализатор и текстовые форматтеры отбрасывают неизвестные поля, маскируют пароли и строки соединения, включая
+значения в JSON-фрагментах. Полный текст
+модуля и сырые JSON-файлы шагов в CI не публикуются; строка кода одной находки остаётся для точной диагностики.
+Список файлов CI — в [docs/ci.md](ci.md).
+
 ### Краткая сводка в консоли
 
 Находок больше 50 (большая разница без git, крупное слияние) — `gate` и `report` печатают не весь `summary.md`,

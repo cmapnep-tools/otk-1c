@@ -1,4 +1,6 @@
 """Сборка: ошибки файлов выгрузки при загрузке — находки, а не сбой инфраструктуры."""
+import contextlib
+import io
 import json
 import shutil
 import subprocess
@@ -8,6 +10,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
+import schema_check
 from _fs import rmtree_force
 from otk_1c import cli, config
 from otk_1c.probes import build
@@ -139,6 +142,39 @@ class EnsureIbTest(unittest.TestCase):
         self.assertFalse(build._commit_exists(repo, "2b937af287e9c779e0a91291eb165eee9d26583b"))
 
 
+class PlanFromStateTest(unittest.TestCase):
+    """Способ загрузки по состоянию копии ИБ — один расчёт у build и build --dry-run."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="otk-planstate-"))
+        self.ib = self.tmp / "ib"
+        self.ib.mkdir()
+
+    def tearDown(self):
+        rmtree_force(self.tmp)
+
+    def test_no_state_is_full(self):
+        self.assertEqual(build.plan_from_state(self.tmp, "src/cf", self.tmp, None, "new", self.ib),
+                         (None, None, False))
+
+    def test_partial_by_commit(self):
+        state = {"ib": str(self.ib), "commit": "a" * 40, "tree": "t0"}
+        with mock.patch.object(build, "_commit_exists", return_value=True), \
+                mock.patch.object(build, "_git_changes",
+                                  return_value=[("M", "CommonModules/М/Ext/Module.bsl")]):
+            files, modules, lost = build.plan_from_state(self.tmp, "src/cf", self.tmp, state, "b" * 40, self.ib)
+        self.assertEqual(files, ["CommonModules/М/Ext/Module.bsl"])
+        self.assertIsNone(modules)
+        self.assertFalse(lost)
+
+    def test_lost_commit_is_full(self):
+        state = {"ib": str(self.ib), "commit": "a" * 40, "tree": "t0"}
+        with mock.patch.object(build, "_commit_exists", return_value=False), \
+                mock.patch.object(build, "_git_changes", side_effect=AssertionError("не строить разницу")):
+            self.assertEqual(build.plan_from_state(self.tmp, "src/cf", self.tmp, state, "b" * 40, self.ib),
+                             (None, None, True))
+
+
 class CmdBuildTest(unittest.TestCase):
     """build собирает HEAD (или --head), а не редакцию последнего плана в каталоге прогона."""
 
@@ -182,6 +218,148 @@ class CmdBuildTest(unittest.TestCase):
         other = workspace.run_dir(config.load(self.repo), self.tmp / "other" / "repo")
         self.assertNotEqual(run_dir, other)                        # одноимённые каталоги — разные прогоны
         self.assertEqual(run_dir.name.split("-")[0], other.name.split("-")[0])
+
+    def test_json_result(self):
+        self.git("init", "-q", "-b", "master")
+        self.git("config", "user.email", "t@t")
+        self.git("config", "user.name", "t")
+        (self.repo / "src" / "cf" / "a.txt").write_text("1", encoding="utf-8")
+        self.git("add", "-A")
+        self.git("commit", "-q", "-m", "a")
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch("otk_1c.probes.build.build", return_value={"action": "full"}), \
+                mock.patch("otk_1c.cli.Platform"), \
+            contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = cli.main(["build", "--repo", str(self.repo), "--json"])
+        result = json.loads(out.getvalue())
+        self.assertEqual(schema_check.errors(result, schema_check.load("build-result")), [])
+        self.assertEqual((code, result["status"], result["result"]["build"]), (0, "ok", {"action": "full"}))
+        self.assertIn("сборка:", err.getvalue())
+
+    def test_json_load_error_redacts_stderr_and_payload(self):
+        plan_path = self.tmp / "plan.json"
+        plan_path.write_text(json.dumps({"headDir": str(self.tmp / "dump"), "source": "src/cf"}),
+                             encoding="utf-8")
+        cfg = {"project": {"source": "src/cf"}, "environment": {}}
+        args = SimpleNamespace(repo=str(self.repo), plan=str(plan_path), head=None, full=False, assume_current=False,
+                               json=True, dry_run=False)
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch.object(cli, "_project", return_value=self.repo), \
+                mock.patch.object(cli, "_cfg", return_value=cfg), \
+                mock.patch.object(cli.workspace, "run_dir", return_value=self.tmp / "runs"), \
+                mock.patch.object(cli.workspace, "plan_root", return_value=self.tmp / "dump"), \
+                mock.patch.object(cli.config, "detect_extension"), \
+                mock.patch.object(cli.build, "build_dirs",
+                                  side_effect=build.LoadError([("Form.xml", 'Pwd="secret"')])), \
+                mock.patch.object(cli, "Platform"), \
+                contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = cli.cmd_build(args)
+        result = json.loads(out.getvalue())
+        self.assertEqual(code, 1)
+        self.assertNotIn("secret", err.getvalue())
+        self.assertNotIn("secret", json.dumps(result))
+        self.assertIn("[скрыто]", err.getvalue())
+
+    def test_dry_run_does_not_build_or_write_state(self):
+        self.git("init", "-q", "-b", "master")
+        self.git("config", "user.email", "t@t")
+        self.git("config", "user.name", "t")
+        (self.repo / "src" / "cf" / "a.txt").write_text("1", encoding="utf-8")
+        self.git("add", "-A")
+        self.git("commit", "-q", "-m", "a")
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch("otk_1c.probes.build.build", side_effect=AssertionError("build called")), \
+                contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = cli.main(["build", "--repo", str(self.repo), "--dry-run"])
+        self.assertEqual(code, 0)
+        self.assertIn('"action": "full"', out.getvalue())
+        self.assertIn("План сборки", out.getvalue())
+        self.assertEqual(err.getvalue(), "")
+        self.assertFalse((self.repo / "build-state.json").exists())
+
+    def test_dry_run_json_keeps_revision_out_of_build(self):
+        """Конверт build --json --dry-run: revision и origin — на верхнем уровне, в build — только план шага."""
+        self.git("init", "-q", "-b", "master")
+        self.git("config", "user.email", "t@t")
+        self.git("config", "user.name", "t")
+        (self.repo / "src" / "cf" / "a.txt").write_text("1", encoding="utf-8")
+        self.git("add", "-A")
+        self.git("commit", "-q", "-m", "a")
+        out = io.StringIO()
+        with mock.patch("otk_1c.probes.build.build", side_effect=AssertionError("build called")), \
+                contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
+            code = cli.main(["build", "--repo", str(self.repo), "--dry-run", "--json"])
+        result = json.loads(out.getvalue())
+        self.assertEqual(schema_check.errors(result, schema_check.load("build-result")), [])
+        self.assertEqual(code, 0)
+        plan = result["result"]
+        self.assertTrue(plan["build"]["dryRun"])
+        self.assertEqual(plan["build"]["action"], "full")
+        self.assertNotIn("revision", plan["build"])
+        self.assertNotIn("origin", plan["build"])
+        self.assertEqual(plan["revision"], self.git("rev-parse", "HEAD"))
+
+    def test_dry_run_catalog_plan_without_ib_is_full(self):
+        plan_path = self.tmp / "plan.json"
+        plan_path.write_text(json.dumps({"headDir": str(self.tmp / "dump"), "source": "src/cf",
+                                         "baseDir": str(self.tmp / "base")}), encoding="utf-8")
+        ib = self.tmp / "ib"
+        cfg = {"project": {"source": "src/cf"}, "environment": {"ib": str(ib)}}
+        args = SimpleNamespace(repo=str(self.repo), plan=str(plan_path), head=None, full=False, assume_current=False)
+        with mock.patch.object(cli, "_project", return_value=self.repo), \
+                mock.patch.object(cli, "_cfg", return_value=cfg), \
+                mock.patch.object(cli.workspace, "run_dir", return_value=self.tmp / "runs"), \
+                mock.patch.object(cli.workspace, "plan_root", return_value=self.tmp / "dump"), \
+                mock.patch.object(cli.config, "detect_extension"), \
+                mock.patch.object(cli.build, "plan_load_dirs", return_value=["module.bsl"]):
+            result = cli._build_plan(args)
+        self.assertEqual(result["action"], "full")
+        self.assertTrue(result["createDatabase"])
+        self.assertIn("загрузить выгрузку: полностью", result["operations"])
+
+    def test_dry_run_catalog_assume_current_only_marks_state(self):
+        plan_path = self.tmp / "plan.json"
+        plan_path.write_text(json.dumps({"headDir": str(self.tmp / "dump"), "source": "src/cf",
+                                         "baseDir": str(self.tmp / "base")}), encoding="utf-8")
+        cfg = {"project": {"source": "src/cf"}, "environment": {"ib": str(self.tmp / "ib")}}
+        args = SimpleNamespace(repo=str(self.repo), plan=str(plan_path), head=None, full=False, assume_current=True)
+        with mock.patch.object(cli, "_project", return_value=self.repo), \
+                mock.patch.object(cli, "_cfg", return_value=cfg), \
+                mock.patch.object(cli.workspace, "run_dir", return_value=self.tmp / "runs"), \
+                mock.patch.object(cli.workspace, "plan_root", return_value=self.tmp / "dump"), \
+                mock.patch.object(cli.config, "detect_extension"), \
+                mock.patch.object(cli.build, "plan_load_dirs", side_effect=AssertionError("plan load called")):
+            result = cli._build_plan(args)
+        self.assertEqual(result["action"], "mark-current")
+        self.assertFalse(result["createDatabase"])
+        self.assertEqual(result["operations"], ["записать состояние текущей редакции без загрузки"])
+
+    def test_dry_run_rejects_nonempty_invalid_ib(self):
+        plan_path = self.tmp / "plan.json"
+        plan_path.write_text(json.dumps({"headDir": str(self.tmp / "dump"), "source": "src/cf"}),
+                             encoding="utf-8")
+        ib = self.tmp / "ib"
+        ib.mkdir()
+        (ib / "keep.txt").write_text("leave untouched", encoding="utf-8")
+        cfg = {"project": {"source": "src/cf"}, "environment": {"ib": str(ib)}}
+        args = SimpleNamespace(repo=str(self.repo), plan=str(plan_path), head=None, full=False, assume_current=False)
+        with mock.patch.object(cli, "_project", return_value=self.repo), \
+                mock.patch.object(cli, "_cfg", return_value=cfg), \
+                mock.patch.object(cli.workspace, "run_dir", return_value=self.tmp / "runs"), \
+                mock.patch.object(cli.workspace, "plan_root", return_value=self.tmp / "dump"), \
+                mock.patch.object(cli.config, "detect_extension"), \
+                self.assertRaisesRegex(build.InfraError, "каталог не пуст"):
+            cli._build_plan(args)
+        self.assertEqual([path.name for path in ib.iterdir()], ["keep.txt"])
+
+    def test_catalog_assume_current_skips_load(self):
+        plan = {"headDir": str(self.tmp / "dump"), "source": "src/cf"}
+        platform = SimpleNamespace(ib=self.tmp / "ib", connection=None, lock=lambda: None)
+        with mock.patch.object(build, "_load", side_effect=AssertionError("load called")):
+            result = build.build_dirs(plan, platform, self.tmp / "runs", assume_current=True)
+        self.assertEqual(result["action"], "marked")
+        self.assertFalse((platform.ib / "1Cv8.1CD").exists())
+        self.assertTrue((self.tmp / "runs" / build.RUN_STATE).exists())
 
 
 if __name__ == "__main__":

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmapnep-tools.github.io/otk-1c/schema/platform-help-result.v1.json",
+  "title": "Итог otk platform-help status --json (otk.platform-help-result.v1)",
+  "description": "Состояние локальных индексов справки платформы",
+  "type": "object",
+  "required": ["schema", "version", "code", "status", "result", "error"],
+  "properties": {
+    "schema": {"const": "otk.platform-help-result.v1"},
+    "version": {"type": "string"},
+    "code": {"enum": [0, 2]},
+    "status": {"anyOf": [{"enum": ["ok", "infra"]}, {"type": "string"}]},
+    "result": {"anyOf": [{"$ref": "#/$defs/result"}, {"type": "null"}]},
+    "error": {"anyOf": [{"$ref": "#/$defs/error"}, {"type": "null"}]}
+  },
+  "$defs": {
+    "result": {"type": "object", "required": ["action", "cacheDir", "helpAuto", "rows"],
+      "properties": {"action": {"const": "status"}, "cacheDir": {"type": "string"},
+        "helpAuto": {"type": "boolean"}, "rows": {"type": "array", "items": {"type": "object",
+          "required": ["version", "source", "index", "entries"],
+          "properties": {"version": {"type": "string"}, "source": {"type": "string"},
+            "index": {"type": "string"}, "entries": {"type": "integer"}}}}}},
+    "error": {"type": "object", "required": ["status", "reasonCode", "remediation", "message"],
+      "properties": {"status": {"const": "infra"}, "reasonCode": {"type": "string"},
+        "remediation": {"type": "string"}, "message": {"type": "string"}}}
+  }
+}

@@ -167,12 +167,29 @@ def plan_load_dirs(plan):
     return _load_list(_dir_changes(plan), layout.get(plan.get("sourceFormat")))
 
 
-def ensure_ib(platform, extension=None):
-    """Своей копии ИБ (environment.ib, не connection) нет или её каталог пуст — новая пустая файловая ИБ
-    (CREATEINFOBASE), загрузка после неё полная. Возвращает True, если ИБ создана. Каталог с файлами без 1Cv8.1CD
-    не трогается; расширению нужна копия с основной конфигурацией — её ОТК не собирает."""
-    ib = platform.ib
-    if platform.connection or ib is None or (ib / "1Cv8.1CD").exists():
+def plan_from_state(repo, src, source_root, state, head_sha, ib, full=False, extension=None):
+    """Что загружать в копию ИБ по её состоянию — общий расчёт build и build --dry-run: (files, modules, lost).
+    files — файлы частичной загрузки (None — полная), modules — модули EDT без экспорта,
+    lost — коммита прошлой загрузки в репозитории уже нет (разницу не построить)."""
+    if not (state and state.get("ib") == str(ib) and not full):
+        return None, None, False
+    commit = state.get("commit")
+    if not commit:
+        return None, None, False
+    if not _commit_exists(repo, commit):
+        return None, None, True
+    src_lay = layout.detect(Path(source_root) / src) or layout.DESIGNER
+    changes = _git_changes(repo, src, commit, head_sha)
+    files = _load_list(changes, src_lay)
+    return files, (edt_modules(changes, src_lay, extension) if files else None), False
+
+
+def create_ib_plan(ib, connection=None, extension=None):
+    """Проверить без записи, можно ли создать файловую ИБ; True — каталог пуст или отсутствует."""
+    if connection or ib is None:
+        return False
+    ib = Path(ib)
+    if (ib / "1Cv8.1CD").exists():
         return False
     if ib.exists() and (not ib.is_dir() or any(ib.iterdir())):
         raise InfraError(f"копия ИБ {ib}: каталог не пуст, а файловой ИБ (1Cv8.1CD) в нём нет — укажите копию ИБ "
@@ -180,6 +197,15 @@ def ensure_ib(platform, extension=None):
     if extension:
         raise InfraError(f"копии ИБ {ib} нет: для проверки расширения нужна копия ИБ с основной конфигурацией",
                          code="ib-invalid")
+    return True
+
+
+def ensure_ib(platform, extension=None):
+    """Своей копии ИБ (environment.ib, не connection) нет или её каталог пуст — новая пустая файловая ИБ
+    (CREATEINFOBASE), загрузка после неё полная. Возвращает True, если ИБ создана."""
+    ib = platform.ib
+    if not create_ib_plan(ib, platform.connection, extension):
+        return False
     rc, out = platform.create_file_ib(ib)
     if rc or not (ib / "1Cv8.1CD").exists():
         raise InfraError(f"не создана копия ИБ {ib}: rc={rc} {out[-300:]}", code="platform-failed")
@@ -201,17 +227,9 @@ def build(repo, head_sha, src, source_root, platform, run_dir, extension=None, f
     if state and state.get("ib") == str(platform.ib) and state.get("tree") == tree and not full:
         return {"action": "up-to-date", "commit": state["commit"]}
 
-    files = modules = None
-    lost = False
-    if state and state.get("ib") == str(platform.ib) and state.get("commit") and not full:
-        # коммит прошлой загрузки мог исчезнуть: пакеты controls и пустая база --all — вне веток, их собирает
-        # git gc; другой клон, shallow. Тогда разницы не построить — полная загрузка
-        lost = not _commit_exists(repo, state["commit"])
-    if state and state.get("ib") == str(platform.ib) and state.get("commit") and not full and not lost:
-        src_lay = layout.detect(Path(source_root) / src) or layout.DESIGNER
-        changes = _git_changes(repo, src, state["commit"], head_sha)
-        files = _load_list(changes, src_lay)
-        modules = edt_modules(changes, src_lay, extension) if files else None
+    # коммит прошлой загрузки мог исчезнуть: пакеты controls и пустая база --all — вне веток, их собирает
+    # git gc; другой клон, shallow. Тогда разницы не построить — полная загрузка
+    files, modules, lost = plan_from_state(repo, src, source_root, state, head_sha, platform.ib, full, extension)
     res = _load(platform, run_dir, Path(source_root) / src, files, extension, state, new_state, modules)
     if lost:
         res["action"] += f" (коммита прошлой загрузки {state['commit'][:10]} в репозитории нет)"
@@ -226,10 +244,16 @@ def _commit_exists(repo, sha):
         return False
 
 
-def build_dirs(plan, platform, run_dir, extension=None, full=False):
+def build_dirs(plan, platform, run_dir, extension=None, full=False, assume_current=False):
     """Сборка без git: контракт — в копии ИБ уже выгрузка plan["baseDir"]; загружаются отличия plan["headDir"]
     (без baseDir или full — полная загрузка)."""
     platform.lock()
+    if assume_current:
+        state = load_state(run_dir, platform.ib)
+        new_state = {"ib": str(platform.ib), "commit": None, "tree": None,
+                     "dir": plan["headDir"], "extension": extension}
+        save_state(run_dir, {**(state or {}), **new_state}, platform.ib)
+        return {"action": "marked", "commit": None}
     created = ensure_ib(platform, extension)
     state = None if created else load_state(run_dir, platform.ib)
     new_state = {"ib": str(platform.ib), "commit": None, "tree": None, "dir": plan["headDir"], "extension": extension}

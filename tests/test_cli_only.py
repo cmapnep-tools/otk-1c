@@ -7,6 +7,7 @@ import tomllib
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest import mock
 
 import otk_1c
 from _fs import rmtree_force
@@ -39,6 +40,36 @@ class TestVersion(unittest.TestCase):
         """Версия пакета и __version__ меняются вместе (выпуск и версия разработки .dev0)."""
         with open(Path(__file__).resolve().parents[1] / "pyproject.toml", "rb") as f:
             self.assertEqual(tomllib.load(f)["project"]["version"], otk_1c.__version__)
+
+    def test_platform_help_build_dry_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "help"
+            source.mkdir()
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out), mock.patch.object(cli.syntax, "build_from",
+                                                                    side_effect=AssertionError("build called")):
+                code = cli.main(["platform-help", "build", "--repo", tmp, "--from", str(source),
+                                 "--version", "8.3.27", "--dry-run"])
+            self.assertEqual(code, 0)
+            self.assertIn("План platform-help build", out.getvalue())
+            self.assertIn("8.3.27.db", out.getvalue())
+
+    def test_availability_build_dry_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cfg = {"project": {"source": "src/cf"}, "environment": {"platform": "C:/1cv8/bin"}}
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out), \
+                    mock.patch.object(cli.gitdiff, "git", return_value=str(root)), \
+                    mock.patch.object(cli.config, "load", return_value=cfg), \
+                    mock.patch.object(cli, "platform_version", return_value="8.3.27.2342"), \
+                    mock.patch.object(cli.availability, "build", side_effect=AssertionError("build called")):
+                code = cli.main(["availability", "build", "--repo", tmp, "--dry-run"])
+            self.assertEqual(code, 0)
+            self.assertIn("План availability build", out.getvalue())
+            self.assertIn("8.3.27.json", out.getvalue())        # как availability.build: три компонента версии
+            self.assertNotIn("8.3.27.2342.json", out.getvalue())
+            self.assertFalse((root / "8.3.27.2342.json").exists())
 
 
 class TestApplyArgs(unittest.TestCase):

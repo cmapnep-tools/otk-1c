@@ -99,6 +99,13 @@ SUMMARY = {"code": 0, "verdict": "можно отправлять", "base": "a",
 
 
 class GateResultTest(unittest.TestCase):
+    def test_command_error_masks_connection_string(self):
+        result = reasons.command_error("build", 'ошибка Srvr="host";Ref="demo";Usr="admin";Pwd="secret";')
+        message = result["error"]["message"]
+        self.assertNotIn("secret", message)
+        self.assertNotIn("host", message)
+        self.assertIn("[строка соединения скрыта]", message)
+
     def test_status(self):
         cases = [({}, "ok"), ({"verdict": "нечего проверять"}, "nothing"), ({"code": 1}, "errors"),
                  ({"code": 2, "infra": ["база занята"]}, "infra"), ({"code": 2, "verdict": "ничего не проверено"},
@@ -125,7 +132,7 @@ class GateResultTest(unittest.TestCase):
 
 
 class CliJsonTest(unittest.TestCase):
-    """gate --json и doctor --json: в stdout — один объект по схеме, журнал — в stderr, код выхода прежний."""
+    """Команды --json: в stdout — один объект по схеме, журнал — в stderr, код выхода прежний."""
 
     @classmethod
     def setUpClass(cls):
@@ -168,6 +175,42 @@ class CliJsonTest(unittest.TestCase):
         self.assertEqual((code, res["status"]), (2, "infra"))
         self.assertEqual(res["infra"][0]["reasonCode"], "no-source")
         self.assertIn("ошибка:", err)
+
+    def test_report(self):
+        _, gate_res, _ = self.gate(self.ext, "--static-only")
+        code, res, err = self.run_cli("report", "--repo", str(self.work), "--run-dir", gate_res["runDir"], "--json")
+        self.assertEqual(schema_check.errors(res, schema_check.load("report-result")), [])
+        self.assertEqual(code, res["code"])
+        self.assertEqual(res["status"], "ok")
+        self.assertEqual(res["summary"]["schema"], "otk.summary.v1")
+        self.assertTrue(Path(res["summaryPath"]).is_file())
+        self.assertIn("сводка:", err)
+
+    def test_report_legacy_output(self):
+        _, gate_res, _ = self.gate(self.ext, "--static-only")
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = cli.main(["report", "--repo", str(self.work), "--run-dir", gate_res["runDir"]])
+        self.assertEqual(code, 0)
+        self.assertIn("можно отправлять", out.getvalue())
+        self.assertIn("сводка:", out.getvalue())
+        self.assertEqual(err.getvalue(), "")
+
+    def test_report_missing_plan(self):
+        empty = self.tmp / "без-плана"
+        empty.mkdir(exist_ok=True)
+        code, res, err = self.run_cli("report", "--repo", str(self.work), "--run-dir", str(empty), "--json")
+        self.assertEqual(schema_check.errors(res, schema_check.load("report-result")), [])
+        self.assertEqual((code, res["status"], res["error"]["reasonCode"]), (2, "infra", "no-plan"))
+        self.assertIn("ошибка:", err)
+
+    def test_report_json_exception_redacts_stderr(self):
+        with mock.patch.object(cli, "_report_json", side_effect=ValueError('bad {"password":"secret"}')):
+            code, result, err = self.run_cli("report", "--repo", str(self.work), "--json")
+        self.assertEqual(code, 2)
+        self.assertNotIn("secret", err)
+        self.assertNotIn("secret", json.dumps(result))
+        self.assertIn("[скрыто]", result["error"]["message"])
 
     def test_internal_error(self):
         """Исключение в самой ОТК: с --json — объект (internal, код 2), без --json — код 2, а не 1 «есть ошибки»."""

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmapnep-tools.github.io/otk-1c/schema/console-result.v1.json",
+  "title": "Итог otk console --json (otk.console-result.v1)",
+  "description": "Один объект в stdout; команды не печатают строки соединения в этом контракте",
+  "type": "object",
+  "required": ["schema", "version", "code", "status", "result", "error"],
+  "properties": {
+    "schema": {"const": "otk.console-result.v1"},
+    "version": {"type": "string"},
+    "code": {"enum": [0, 1, 2]},
+    "status": {"anyOf": [{"enum": ["ok", "errors", "infra"]}, {"type": "string"}]},
+    "result": {"type": ["object", "null"]},
+    "error": {"anyOf": [{"$ref": "#/$defs/error"}, {"type": "null"}]}
+  },
+  "$defs": {
+    "error": {"type": "object", "required": ["status", "reasonCode", "remediation", "message"],
+      "properties": {"status": {"const": "infra"}, "reasonCode": {"type": "string"},
+        "remediation": {"type": "string"}, "message": {"type": "string"}}}
+  }
+}

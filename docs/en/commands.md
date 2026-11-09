@@ -11,22 +11,31 @@ otk gate --dir <выгрузка> [--base-dir <было>]   # without git: the w
 otk gate --vendor --ib <ИБ>        # one-off: customizations of the infobase relative to its vendor configuration (minutes)
 otk gate … --all-scenarios         # all scenario tests, not only those for the changed methods
 otk collect --base <ref>           # plan only: what has changed and how to check it (otk.json)
-otk scaffold                       # test stubs for changed methods that have no test
-otk static | build | run           # the steps of gate separately
-otk report                         # summary from the step files of the run directory (after static/run)
+otk scaffold [--dry-run]           # test stubs for changed methods that have no test
+otk static | run                   # the steps of gate separately
+otk build [--json] [--dry-run]     # load the revision into the infobase copy
+otk report [--json]                # summary from the step files of the run directory (after static/run)
 otk doctor                         # environment: which checks are available and what is lost
-otk gate … --json | otk doctor --json   # for agents: the outcome as a single JSON object, reasons with reasonCode (see agents.md)
-otk availability build [--out <каталог>]   # table of platform method availability for your platform
-otk designer-check [--update-baseline]  # all modules by the Designer with a negative control
+otk gate … --json | doctor --json | report --json | build --json | console … --json
+otk platform-help status --json    # machine-readable status of the help indexes
+otk availability build [--out <каталог>] [--dry-run]  # table of platform method availability
+otk designer-check [--update-baseline] [--dry-run]   # all modules with a negative control
 otk gate --base <ref> --designer   # gate and all modules by the Designer in the same infobase copy: one summary, one code
 otk controls [--parity] [--doc ФАЙЛ]   # control defects: each one must be caught; --doc — the parity table
 otk controls --analyzers [--doc ФАЙЛ]  # the same defects by static checks with both BSL analyzers: who catches what
-otk hook install | uninstall       # git pre-push hook
+otk hook install | uninstall [--dry-run]   # git pre-push hook
 otk ci gate [--designer] | designer-check   # run in CI (artifacts)
 otk console query|check|metadata|eventlog|bases --ib <база> …   # infobase copy console (read-only)
 otk mcp [--idle 120]               # the same console as an MCP server (stdio) for an AI agent
 otk tj calls|queries|sdbl|errors|locks|timeouts|events <каталог ТЖ>   # technological log analysis
 ```
+
+`otk report --json` prints a single `otk.report-result.v1` object with the summary and the path to `summary.json`; the
+command log goes to stderr. Schema: `src/otk_1c/schema/report-result.schema.json`.
+
+`--json` for `build`, `console` and `platform-help status` uses the versioned `otk.<command>-result.v1` object.
+`--dry-run` for the mutating commands prints the plan and performs none of the listed writes, infobase loads or index
+updates; for `scaffold` the external draft command is not run.
 
 `--worktree` checks uncommitted changes; `--static-only` — static checks only, without an infobase copy (seconds);
 `--fast` — do not run probes if the static checks have already found errors. When there are more than 50 findings,

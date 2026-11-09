@@ -21,7 +21,7 @@ log, mode = sys.argv[1], sys.argv[2]
 with open(log, "a", encoding="utf-8") as f:
     f.write(json.dumps(payload, ensure_ascii=False) + "\n")
 if mode == "fail":
-    sys.stderr.write("нет ключа API\n"); sys.exit(1)
+    sys.stderr.buffer.write("нет ключа API\n".encode("utf-8")); sys.exit(1)
 if mode == "garbage":
     print("не JSON"); sys.exit(0)
 if mode == "sleep":

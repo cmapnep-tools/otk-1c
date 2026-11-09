@@ -14,6 +14,7 @@ scenarios.py), добавляется каркас теста YAxUnit: реги�
 подставить любой инструмент; без неё — пустой каркас.
 """
 import json
+import os
 import re
 import shlex
 import subprocess
@@ -126,6 +127,49 @@ def ensure_extension(repo, path, extensions, config_root, name=None):
     return target, True
 
 
+def preview(repo, plan, cfg, extension=None, use_draft=True):
+    """План файлов scaffold без создания расширения, файлов или вызова команды черновика.
+    draft — черновик придёт от внешней команды ([scaffold] draft и не --no-draft); сама команда не вызывается."""
+    command = cfg.get("scaffold", {}).get("draft") if use_draft else None
+    sc = cfg.get("scenarios", {})
+    path = sc.get("path", scenarios.DEFAULT_PATH)
+    extensions = scenarios.discover(repo, path)
+    todo = targets(plan, extensions)
+    if not todo:
+        return {"extension": None, "createExtension": False, "files": [], "tests": [], "draft": bool(command)}
+    name = extension or cfg.get("scaffold", {}).get("extension")
+    found = next((e for e in extensions if e["name"].lower() == name.lower()), None) if name else None
+    if found:
+        ext_dir, ext_name, create_extension = Path(repo) / found["dir"], found["name"], False
+    elif name:
+        ext_name, ext_dir, create_extension = name, Path(repo) / path / name, True
+    elif len(extensions) == 1:
+        ext_dir, ext_name, create_extension = Path(repo) / extensions[0]["dir"], extensions[0]["name"], False
+    elif extensions:
+        raise ValueError("тестовых расширений несколько: укажите --extension "
+                         f"({', '.join(e['name'] for e in extensions)})")
+    else:
+        ext_name, ext_dir, create_extension = DEFAULT_EXTENSION, Path(repo) / path / DEFAULT_EXTENSION, True
+    prefix = _prefix(ext_dir) if (ext_dir / "Configuration.xml").exists() else DEFAULT_PREFIX
+    project_root = Path(repo) / plan["source"]
+    project_lay = layout.detect(project_root)
+    project_prefix = project_lay.read_properties(project_root).prefix if project_lay else ""
+    by_module = {}
+    for target in todo:
+        module = module_name(target["entry"]["owner"], prefix, project_prefix)
+        by_module.setdefault(module, []).append(target)
+    files = []
+    for module, targets_ in by_module.items():
+        rel = Path(path) / ext_name / "CommonModules" / module / "Ext" / "Module.bsl"
+        module_file = ext_dir / "CommonModules" / module / "Ext" / "Module.bsl"
+        files.append({"path": rel.as_posix(), "action": "append" if module_file.exists() else "create",
+                      "tests": [target["tag"] for target in targets_]})
+    if create_extension:
+        files.insert(0, {"path": (Path(path) / ext_name / "Configuration.xml").as_posix(), "action": "create"})
+    return {"extension": ext_name, "createExtension": create_extension, "files": files,
+            "tests": [target["tag"] for target in todo], "draft": bool(command)}
+
+
 def _prefix(ext_dir):
     m = re.search(r"<NamePrefix>([^<]*)</NamePrefix>", (ext_dir / "Configuration.xml").read_text(encoding="utf-8-sig"))
     return m.group(1) if m else ""
@@ -157,7 +201,8 @@ def draft(command, target, source_text, test_module, cwd=None):
     try:
         r = subprocess.run(shlex.split(command, posix=False) if isinstance(command, str) else command,
                            input=json.dumps(payload, ensure_ascii=False), capture_output=True, text=True,
-                           encoding="utf-8", timeout=300, cwd=cwd)
+                           encoding="utf-8", timeout=300, cwd=cwd,
+                           env={**os.environ, "PYTHONIOENCODING": "utf-8"})
     except (OSError, subprocess.TimeoutExpired):
         return None
     return r.stdout if r.returncode == 0 and r.stdout.strip() else None

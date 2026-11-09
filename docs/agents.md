@@ -109,6 +109,14 @@ otk doctor --json → чинить по reasonCode (или сказать чел
 несёт `reasonCode`, но важна она, только если её ждёт доступная иначе проверка. Занятость копии ИБ `doctor` не
 проверяет (не трогает блокировки) — её сообщает `gate` (`ib-busy`).
 
+`otk report --json` выдаёт `otk.report-result.v1`: поле `summary` содержит тот же `otk.summary.v1`, что и
+`summary.json`, `summaryPath` указывает на файл. Если план или сводка недоступны, `error.reasonCode` и
+`error.remediation` описывают сбой; код 2, подробности команды — в stderr.
+
+`otk build --json`, `otk console … --json` и `otk platform-help status --json` выдают соответственно
+`otk.build-result.v1`, `otk.console-result.v1` и `otk.platform-help-result.v1`. У `console bases --json` строки
+соединения и учётные данные не возвращаются.
+
 ### Коды причин
 
 Список стабилен: новые коды добавляются, существующие не переименовываются. Нераспознанная причина — `other`; незнакомый агенту код (из новой версии ОТК) читайте как `other` и действуйте по `remediation` ([«Контракт»](contract.md)).

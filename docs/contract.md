@@ -10,7 +10,7 @@
 | команды и флаги `otk`, коды выхода | текст вывода в консоль и журналов |
 | ключи `otk.toml` / `otk.local.toml`, переменные `OTK_*` | текст `summary.md` и `summary.html` |
 | `summary.json`, `junit.xml`, `summary.sarif`, `problems.txt` | `static.json`, `run.json`, `designer.json`, `designer-check.json` |
-| итоги `otk gate --json`, `otk doctor --json` | журналы `logs/`, состояние копии ИБ `otk-state.json` |
+| итоги `--json` команд `gate`, `doctor`, `report`, `build`, `console`, `platform-help status` | журналы `logs/`, состояние копии ИБ `otk-state.json` |
 | план `otk.json` (`otk collect --out`) | модули Python пакета `otk_1c` (API — это команда `otk`) |
 | коды причин (`reasonCode`) и правила находок (`rule`) | тексты сообщений и `remediation` |
 
@@ -19,7 +19,8 @@
 ## Схемы
 
 Каждый файл JSON начинается с `schema` — имя и версия формата (`otk.summary.v1`, `otk.gate-result.v1`,
-`otk.doctor-result.v1`, `otk.plan.v1`) — и `version` — версия ОТК, которая его записала. Схемы лежат в пакете
+`otk.doctor-result.v1`, `otk.report-result.v1`, `otk.build-result.v1`, `otk.console-result.v1`,
+`otk.platform-help-result.v1`, `otk.plan.v1`) — и `version` — версия ОТК, которая его записала. Схемы лежат в пакете
 (`src/otk_1c/schema/`) и на сайте документации по адресу из `$id`, например
 `https://cmapnep-tools.github.io/otk-1c/schema/gate-result.v1.json`.
 
@@ -57,6 +58,13 @@
 Команды без проверяемого кода (`collect`, `doctor`, `scaffold`, `availability`, `tj`, `mcp`, `platform-help`, `help`)
 возвращают только 0 и 2; `console` — тоже, кроме `console check` (1 — ошибка в запросе). `build` — 1, если выгрузка
 не загрузилась в копию ИБ. `ci`, `hook run` и `pt` возвращают код запущенной проверки.
+
+## Повторный запуск
+
+Повтор `gate` — всегда новый прогон: `collect` выполняется заново, а после записи нового плана `otk.json` удаляются
+`static.json`, `run.json` и `designer.json` прошлого запуска. Завершённые шаги не переиспользуются: сводка относится
+только к новой редакции и не смешивается с файлами предыдущего плана. Цена — повторные проверки; время шагов в сводке
+показывает, на что оно ушло.
 
 ## Настройки и переменные
 
