@@ -27,11 +27,12 @@ from .extras import availability, console, controls, mcp, scaffold, techlog
 from .gate import collect as collect_mod, doctor, output, pipeline, reasons, report, report_html, runner
 from .integrations import ci as ci_mod, hook, platform_tools as pt_mod
 from .probes import build, designer_check, syntax
-from .probes.platform import Platform
+from .probes.platform import Platform, find_platform, ib_path, platform_version
 from .sources import contexts, gitdiff, layout, workspace
 
 # ошибки, которые main печатает одной строкой с кодом 2 (gate --json — итогом со status infra)
-USER_ERRORS = (gitdiff.GitError, lang.UnsupportedScriptVariant, InfraError, FileExistsError, ValueError)
+USER_ERRORS = (gitdiff.GitError, lang.UnsupportedScriptVariant, InfraError, FileExistsError, ValueError,
+               console.ConsoleError)
 DESIGNER_STATIC = "--designer несовместим с --static-only (проверка Конфигуратором — в копии ИБ)"
 
 
@@ -52,11 +53,23 @@ def _cfg(a, repo):
     return config.apply_args(config.load(repo), a)
 
 def cmd_console(a):
-    sys.stdout.reconfigure(encoding="utf-8")
+    if getattr(a, "json", False):
+        return _json_out(a, _console_json, lambda text, code: reasons.command_error("console", text, code))
+    try:
+        res, code = _console_result(a)
+    except console.ConsoleError as e:
+        print(e, file=sys.stderr)
+        return 2
+    print(json.dumps(res, ensure_ascii=False, indent=1))
+    return code
+
+
+def _console_result(a):
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     text = sys.stdin.read() if a.text == "-" else a.text
     if a.action != "bases" and not (a.ib and (text or a.action == "eventlog")):
-        print("нужны --ib и текст (запрос или имя объекта)", file=sys.stderr)
-        return 2
+        raise console.ConsoleError("нужны --ib и текст (запрос или имя объекта)")
     con = console.Console(idle=0)
     try:
         args = {"base": a.ib, "text": text, "name": text, "limit": a.limit,
@@ -65,13 +78,17 @@ def cmd_console(a):
                 "group_by": a.group.split(",") if a.group else None}
         res = mcp.call(con, {"query": "ib_query", "check": "ib_check", "metadata": "ib_metadata",
                              "bases": "ib_bases", "eventlog": "ib_eventlog"}[a.action], args)
-    except console.ConsoleError as e:
-        print(e, file=sys.stderr)
-        return 2
     finally:
         con.close()
-    print(json.dumps(res, ensure_ascii=False, indent=1))
-    return 1 if a.action == "check" and not res.get("ok") else 0
+    return res, 1 if a.action == "check" and not res.get("ok") else 0
+
+
+def _console_json(a):
+    res, code = _console_result(a)
+    if a.action == "bases":
+        res = {"bases": {name: {"connected": item.get("connected", False)}
+                          for name, item in res.get("bases", {}).items()}}
+    return code, reasons.command_result("console", code, res)
 
 
 def cmd_tj(a):
@@ -95,6 +112,11 @@ def cmd_scaffold(a):
     base = a.base or cfg.get("hook", {}).get("base", "origin/master")
     head = a.head or gitdiff.WORKTREE
     plan = collect_mod.collect(repo, base, head, src, env["contexts"], env["ordinaryApplication"])
+    if a.dry_run:
+        preview = scaffold.preview(repo, plan, cfg, a.extension, not a.no_draft)
+        print("План заготовок (без изменений):")
+        print(json.dumps(preview, ensure_ascii=False, indent=1))
+        return 0
 
     def read_head(rel):
         return gitdiff.show(repo, head, f"{src}/{rel}")
@@ -190,6 +212,88 @@ def cmd_static(a):
 
 
 def cmd_build(a):
+    if getattr(a, "dry_run", False):
+        if getattr(a, "json", False):
+            return _json_out(a, _build_dry_run_json,
+                             lambda text, code: reasons.command_error("build", text, code))
+        result = _build_plan(a)
+        print("План сборки (без изменений):")
+        print(json.dumps(result, ensure_ascii=False, indent=1))
+        return 0
+    if getattr(a, "json", False):
+        return _json_out(a, _build_json, lambda text, code: reasons.command_error("build", text, code))
+    code, result, logs = _build_data(a)
+    for line in logs:
+        print(line)
+    return code
+
+
+def _build_json(a):
+    code, result, logs = _build_data(a)
+    for line in logs:
+        print(reasons.public_text(line))
+    return code, reasons.command_result("build", code, result)
+
+
+def _build_dry_run_json(a):
+    """build --dry-run --json: тот же конверт, что у сборки, но build — план, а не выполненный шаг."""
+    plan = _build_plan(a)
+    return 0, reasons.command_result("build", 0,
+                                    {"revision": plan["revision"], "origin": plan["origin"],
+                                     "build": {"dryRun": True, "action": plan["action"], "source": plan["source"],
+                                               "files": plan["files"], "createDatabase": plan["createDatabase"],
+                                               "operations": plan["operations"]},
+                                     "errors": []})
+
+
+def _build_plan(a):
+    repo = _project(a)
+    cfg = _cfg(a, repo)
+    run_dir = workspace.run_dir(cfg, repo)
+    env = cfg["environment"]
+    config.detect_extension(cfg, workspace.plan_root(repo, a.plan, cfg) if a.plan else repo / cfg["project"]["source"])
+    plan = json.loads(Path(a.plan).read_text(encoding="utf-8")) if a.plan else None
+    origin = f"план {a.plan}" if a.plan else a.head or "HEAD"
+    # копия ИБ — так же, как её видит сборка (Platform): /F<каталог> в connection тоже даёт каталог,
+    # иначе dry-run читал бы состояние не там и показывал загрузку при up-to-date
+    ib = ib_path(env)
+    create_ib = False if a.assume_current else build.create_ib_plan(
+        ib, env.get("connection"), cfg["project"].get("extension"))
+    if plan and plan.get("headDir"):
+        revision = None
+        source = plan["source"]
+        if a.assume_current:
+            action, files = "mark-current", []
+        else:
+            files = None if a.full or create_ib else build.plan_load_dirs(plan)
+            action = "full" if files is None else "up-to-date" if not files else "partial"
+    else:
+        revision = (plan.get("headSha") if plan else None) or gitdiff.rev(repo, a.head or "HEAD")
+        source = plan["source"] if plan else cfg["project"]["source"]
+        state = None if create_ib else build.load_state(run_dir, ib)
+        tree = build.tree_hash(repo, revision, source)
+        if a.assume_current:
+            action, files = "mark-current", []
+        elif state and state.get("ib") == str(ib) and state.get("tree") == tree and not a.full:
+            action, files = "up-to-date", []
+        else:
+            # способ загрузки — тем же расчётом, что у сборки (build.plan_from_state): без записи в ИБ и каталог прогона
+            files, _modules, _lost = build.plan_from_state(repo, source, repo, state, revision, ib, a.full,
+                                                           cfg["project"].get("extension"))
+            action = "full" if files is None else "up-to-date" if not files else "partial"
+    operations = []
+    if create_ib:
+        operations.append("создать файловую ИБ")
+    if action == "mark-current":
+        operations.append("записать состояние текущей редакции без загрузки")
+    elif action != "up-to-date":
+        operations += ["загрузить выгрузку: " + ("полностью" if files is None else f"частично ({len(files)} файлов)"),
+                       "обновить конфигурацию базы данных"]
+    return {"revision": revision, "origin": origin, "source": source, "action": action,
+            "files": files, "createDatabase": create_ib, "operations": operations}
+
+
+def _build_data(a):
     repo = _project(a)
     cfg = _cfg(a, repo)
     run_dir = workspace.run_dir(cfg, repo)
@@ -199,31 +303,32 @@ def cmd_build(a):
     if a.plan:
         plan = json.loads(Path(a.plan).read_text(encoding="utf-8"))
         if plan.get("headDir"):                   # план без git: контракт — в копии ИБ «было» (baseDir)
-            print(f"сборка: каталог {plan['headDir']} (план {a.plan})")
+            logs = [f"сборка: каталог {plan['headDir']} (план {a.plan})"]
             try:
                 res = build.build_dirs(plan, Platform(cfg["environment"], run_dir), run_dir,
-                                       extension=cfg["project"].get("extension"), full=a.full)
+                                       extension=cfg["project"].get("extension"), full=a.full,
+                                       assume_current=a.assume_current)
             except build.LoadError as e:
-                for rel, message in e.errors:
-                    print(f"{rel}: {message}")
-                return 1
-            print("сборка:", res)
-            return 0
+                logs.extend(f"{rel}: {message}" for rel, message in e.errors)
+                return 1, {"revision": None, "origin": f"план {a.plan}", "build": None,
+                           "errors": [{"file": rel, "message": message} for rel, message in e.errors]}, logs
+            logs.append(f"сборка: {res}")
+            return 0, {"revision": None, "origin": f"план {a.plan}", "build": res, "errors": []}, logs
         head, origin = plan.get("headSha") or gitdiff.rev(repo, "HEAD"), f"план {a.plan}"
     else:
         head, origin = gitdiff.rev(repo, a.head or "HEAD"), a.head or "HEAD"
         plan = {"headSha": head, "source": cfg["project"]["source"]}
-    print(f"сборка: редакция {head[:10]} ({origin})")
+    logs = [f"сборка: редакция {head[:10]} ({origin})"]
     try:
         res = build.build(repo, head, plan["source"], workspace.tree_root(repo, plan, run_dir),
                           Platform(cfg["environment"], run_dir), run_dir, extension=cfg["project"].get("extension"),
                           full=a.full, assume_current=a.assume_current)
     except build.LoadError as e:
-        for rel, message in e.errors:
-            print(f"{plan['source']}/{rel}: {message}")
-        return 1
-    print("сборка:", res)
-    return 0
+        logs.extend(f"{plan['source']}/{rel}: {message}" for rel, message in e.errors)
+        errors = [{"file": f"{plan['source']}/{rel}", "message": message} for rel, message in e.errors]
+        return 1, {"revision": head, "origin": origin, "build": None, "errors": errors}, logs
+    logs.append(f"сборка: {res}")
+    return 0, {"revision": head, "origin": origin, "build": res, "errors": []}, logs
 
 
 def cmd_run(a):
@@ -264,6 +369,17 @@ def _open_kind(a, cfg):
 
 
 def cmd_report(a):
+    if a.json:
+        return _json_out(a, _report_json, reasons.report_error)
+    summary, run_dir, repo = _report_data(a)
+    if summary is None:
+        print(f"нет плана {run_dir / 'otk.json'}: сначала otk collect или gate", file=sys.stderr)
+        return 2
+    _report_output(summary, run_dir, repo, a)
+    return summary["code"]
+
+
+def _report_data(a):
     repo = _project(a)
     run_dir = workspace.run_dir(config.load(repo), repo)
     if a.run_dir:
@@ -272,19 +388,29 @@ def cmd_report(a):
         nested = given / run_dir.name
         run_dir = nested if not (given / "otk.json").exists() and (nested / "otk.json").exists() else given
     if not (run_dir / "otk.json").exists():
-        print(f"нет плана {run_dir / 'otk.json'}: сначала otk collect или gate", file=sys.stderr)
-        return 2
+        return None, run_dir, repo
     plan = json.loads((run_dir / "otk.json").read_text(encoding="utf-8"))
     summary = report.from_files(run_dir, tree=lambda: workspace.tree_root(repo, plan, run_dir))
     head_dir = plan.get("headDir")
     output.write(summary, run_dir, Path(head_dir) if head_dir else repo)
+    return summary, run_dir, repo
+
+
+def _report_output(summary, run_dir, repo, a):
     md = report.console(summary, a.full)
     print(md if not a.quiet else md.splitlines()[0])
     print(f"сводка: {run_dir / 'summary.md'} (HTML: {run_dir / 'summary.html'})")
     kind = _open_kind(a, config.load(repo))
     if kind:
         report_html.open_summary(run_dir, kind)
-    return summary["code"]
+
+
+def _report_json(a):
+    summary, run_dir, repo = _report_data(a)
+    if summary is None:
+        raise InfraError(f"нет плана {run_dir / 'otk.json'}: сначала otk collect или gate", code="no-plan")
+    _report_output(summary, run_dir, repo, a)
+    return summary["code"], reasons.report_result(summary, run_dir)
 
 
 def cmd_gate(a):
@@ -308,10 +434,10 @@ def _json_out(a, run, error):
         try:
             code, res = run(a)
         except USER_ERRORS as e:
-            print(f"ошибка: {e}")
+            print(f"ошибка: {reasons.public_text(str(e))}")
             code, res = 2, error(str(e), getattr(e, "code", None))
         except Exception as e:  # noqa: BLE001 - сбой самой ОТК: тоже объект, а не трассировка вместо JSON
-            traceback.print_exc()
+            print(reasons.public_text(traceback.format_exc()), file=sys.stderr, end="")
             code, res = 2, error(_internal(e), "internal")
     print(json.dumps(res, ensure_ascii=False, indent=1), file=out)
     return code
@@ -403,6 +529,20 @@ def cmd_designer_check(a):
     repo = Path(gitdiff.git(a.repo, "rev-parse", "--show-toplevel").strip())
     cfg = config.load(repo)
     run_dir = workspace.run_dir(cfg, repo)
+    if a.dry_run:
+        baseline = designer_check.baseline_of(repo, cfg)
+        operations = ["загрузить HEAD в копию ИБ"]
+        if not a.no_control:
+            operations.append("проверить отрицательным контролем, что Конфигуратор видит ошибки")
+        operations += ["проверить модули Конфигуратором", "записать отчёты в каталог прогона"]
+        if a.update_baseline:
+            operations.append("перезаписать baseline найденными ошибками")
+        plan = {"source": cfg["project"]["source"], "runDir": str(run_dir),
+                "control": not a.no_control, "operations": operations,
+                "baseline": {"path": str(baseline), "update": a.update_baseline}}
+        print("План designer-check (без изменений):")
+        print(json.dumps(plan, ensure_ascii=False, indent=1))
+        return 0
     summary = designer_check.run(repo, cfg, run_dir, control=not a.no_control, log=lambda m: print(m, flush=True),
                             update_baseline=a.update_baseline)
     print(designer_check.markdown(summary))
@@ -494,6 +634,21 @@ def cmd_availability(a):
     cfg = config.load(repo)
     parent = config.parent_dir(repo, cfg)
     config_root = parent or repo / cfg["project"]["source"]
+    if a.dry_run:
+        env = cfg["environment"]
+        bin_dir = env.get("platform") or find_platform()
+        # имя таблицы — как у availability.build: три компонента версии (8.3.27)
+        version = availability.table_version(platform_version(bin_dir)) if bin_dir else None
+        out_dir = Path(a.out or contexts.user_tables_dir())
+        plan = {"platform": version, "extension": availability.EXT, "configurationRoot": str(config_root),
+                "output": str(out_dir / f"{version}.json") if version else None,
+                "operations": ["создать временное расширение", "загрузить его в копию ИБ",
+                               "проверить доступность API по контекстам", "удалить временное расширение"]}
+        if version:
+            plan["operations"].append(f"записать таблицу доступности в {plan['output']}")
+        print("План availability build (без изменений):")
+        print(json.dumps(plan, ensure_ascii=False, indent=1))
+        return 0 if version else 2
     out = availability.build(Platform(cfg["environment"], workspace.run_dir(cfg, repo)), config_root,
                       a.out or contexts.user_tables_dir(), log=lambda m: print(m, flush=True))
     print(f"записано: {out}")
@@ -503,8 +658,26 @@ def cmd_availability(a):
 def cmd_platform_help(a):
     """otk platform-help status | build: индекс справки синтакс-помощника; справки нет — код 2 (окружение)."""
 
+    if getattr(a, "json", False):
+        if a.action != "status":
+            raise ValueError("--json поддерживается для platform-help status")
+        return _json_out(a, _platform_help_json,
+                         lambda text, code: reasons.command_error("platform-help", text, code))
+
     env = config.load(Path(a.repo))["environment"]
     syntax.configure(env)
+    if a.dry_run and a.action == "build":
+        src = a.from_dir or a.platform or env.get("platform")
+        if not src:
+            plats = syntax.installed_platforms()
+            src = list(plats.values())[-1] if plats else None
+        version = a.version or (syntax.index.version_of_dir(src) if src else None)
+        plan = {"source": str(src) if src else None, "version": version,
+                "index": str(Path(syntax.cache_dir()) / f"{version}.db") if version else None,
+                "operations": ["прочитать файлы справки .hbk", "построить индекс SQLite в кэше пользователя"]}
+        print("План platform-help build (без изменений):")
+        print(json.dumps(plan, ensure_ascii=False, indent=1))
+        return 0 if src and version else 2
     if a.action == "status":
         rows = syntax.status()
         print(f"кэш: {syntax.cache_dir()}; helpAuto = {'true' if syntax.index.AUTO else 'false'}")
@@ -528,6 +701,17 @@ def cmd_platform_help(a):
         return 2
     print(f"индекс справки {v}: {n} записей -> {path}")
     return 0
+
+
+def _platform_help_json(a):
+    env = config.load(Path(a.repo))["environment"]
+    syntax.configure(env)
+    rows = syntax.status()
+    result = {"action": "status", "cacheDir": str(syntax.cache_dir()), "helpAuto": syntax.index.AUTO, "rows": rows}
+    if not rows:
+        text = "справки нет: " + syntax.build_command()
+        return 2, reasons.command_result("platform-help", 2, result, reasons.item(text, "infra", "no-help"))
+    return 0, reasons.command_result("platform-help", 0, result)
 
 
 def cmd_mcp(a):
@@ -576,6 +760,8 @@ def _add_build(sub):
     b.add_argument("--plan", help="собрать редакцию этого плана (otk.json)")
     b.add_argument("--full", action="store_true", help="полная загрузка")
     b.add_argument("--assume-current", action="store_true", help="считать, что ИБ уже соответствует редакции плана")
+    b.add_argument("--json", action="store_true", help="итог одним объектом JSON; журнал — в stderr")
+    b.add_argument("--dry-run", action="store_true", help="показать план загрузки без изменений ИБ и файлов")
     _env_args(b, parent=False)
 
 
@@ -597,6 +783,7 @@ def _add_report(sub):
     rp.add_argument("--repo", default=".")
     rp.add_argument("--run-dir", help="каталог прогона или, как у gate, каталог прогонов (по умолчанию — "
                                       "каталог прогона проекта)")
+    rp.add_argument("--json", action="store_true", help="итог одним объектом JSON; журнал — в stderr")
     rp.add_argument("--quiet", action="store_true", help="только строка вердикта")
     rp.add_argument("--full", action="store_true", help=FULL_HELP)
     _open_arg(rp)
@@ -662,6 +849,7 @@ def _add_designer_check(sub):
     fc.add_argument("--repo", default=".")
     fc.add_argument("--no-control", action="store_true", help="без отрицательного контроля")
     fc.add_argument("--update-baseline", action="store_true", help="принять текущие ошибки базовой линией")
+    fc.add_argument("--dry-run", action="store_true", help="показать план проверки и baseline без изменений")
 
 
 def _add_ci(sub):
@@ -698,6 +886,7 @@ def _add_hook(sub):
     hk.add_argument("url", nargs="?", help="(run) адрес удалённого репозитория — передаёт git")
     hk.add_argument("--repo", default=".")
     hk.add_argument("--force", action="store_true", help="(install) заменить чужой хук pre-push")
+    hk.add_argument("--dry-run", action="store_true", help="показать план установки/удаления без изменений")
 
 
 def _add_scaffold(sub):
@@ -709,6 +898,7 @@ def _add_scaffold(sub):
     sf.add_argument("--source")
     sf.add_argument("--extension", help="тестовое расширение, если их несколько (имя)")
     sf.add_argument("--no-draft", action="store_true", help="без черновика ([scaffold] draft) — только каркас")
+    sf.add_argument("--dry-run", action="store_true", help="показать план тестовых файлов без изменений")
 
 
 def _add_console(sub):
@@ -721,6 +911,7 @@ def _add_console(sub):
     cs.add_argument("--limit", type=int, default=200)
     cs.add_argument("--filter", help="(eventlog) отбор JSON: from, to, level, user, event, metadata, data, …")
     cs.add_argument("--group", help="(eventlog) группировка: user,event,metadata,level,date:день …")
+    cs.add_argument("--json", action="store_true", help="итог одним объектом JSON; журнал — в stderr")
 
 
 def _add_tj(sub):
@@ -765,6 +956,7 @@ def _add_availability(sub):
     av.add_argument("action", choices=["build"])
     av.add_argument("--repo", default=".")
     av.add_argument("--out", help="каталог таблицы (по умолчанию — кэш пользователя)")
+    av.add_argument("--dry-run", action="store_true", help="показать план без запуска платформы и записи таблицы")
 
 
 def _add_platform_help(sub):
@@ -776,6 +968,8 @@ def _add_platform_help(sub):
     hp.add_argument("--platform", help="каталог bin платформы (по умолчанию environment.platform или новейшая)")
     hp.add_argument("--from", dest="from_dir", help="каталог с копией shcntx_ru.hbk, shlang_ru.hbk, shquery_ru.hbk")
     hp.add_argument("--version", help="версия платформы, если не видна по имени каталога (8.3.27.2342)")
+    hp.add_argument("--json", action="store_true", help="для status: итог одним объектом JSON")
+    hp.add_argument("--dry-run", action="store_true", help="для build: показать источник и файл индекса без записи")
 
 
 def _add_help(sub):

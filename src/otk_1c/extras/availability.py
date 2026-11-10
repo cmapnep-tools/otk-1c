@@ -31,6 +31,12 @@ EXT = "otk_avail"
 WEB_DIR = Path(__file__).parent.parent / "availability" / "webclient"
 
 
+def table_version(version):
+    """Версия таблицы — три компонента (8.3.27): по строке версии платформы; None — строки версии нет."""
+    found = re.search(r"\d+\.\d+\.\d+", version or "")
+    return found.group(0) if found else None
+
+
 def webclient_types(version):
     """Замер веб-клиента ближайшей версии той же линейки: (версия замера, {тип: defined | undefined | crash})
     или None."""
@@ -61,7 +67,7 @@ def build(platform, config_root, out_dir, log=print):
     """Строит таблицу для платформы platform (Platform с копией ИБ), язык расширения — из выгрузки config_root.
     Возвращает путь записанного файла."""
 
-    version = re.search(r"\d+\.\d+\.\d+", platform_version(platform.bin) or "").group(0)
+    version = table_version(platform_version(platform.bin))
     syntax.add_platform(platform.bin)
     # таблица — ровно своей платформы: справку другой версии не подставлять
     ix = syntax.open_exact(syntax.index.version_of_dir(str(platform.bin)) or version, str(platform.bin))

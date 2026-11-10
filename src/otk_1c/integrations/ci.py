@@ -28,15 +28,38 @@ from . import forgejo_artifacts
 
 # Целевая ветка запроса на слияние: GitHub Actions и Forgejo/Gitea, GitLab CI, Jenkins (multibranch)
 TARGET_VARS = ("GITHUB_BASE_REF", "CI_MERGE_REQUEST_TARGET_BRANCH_NAME", "CHANGE_TARGET")
+GATE_ARTIFACTS = ("summary.html", "summary.md", "summary.json", "junit.xml", "problems.txt", "summary.sarif")
+DESIGNER_ARTIFACTS = ("designer-check.md", "junit-designer-check.xml")
+PUBLIC_ARTIFACTS = set(GATE_ARTIFACTS) | set(DESIGNER_ARTIFACTS)
+PRIVATE_ARTIFACTS = {"otk.json", "static.json", "run.json", "designer.json", "designer-check.json",
+                     "designer-check.out", "control-check.out", "control-check-ext.out"}
 
 
-def collect_artifacts(files, dest):
+def collect_artifacts(files, dest, run_dir):
     """Копии файлов в каталог dest (logs/x.out -> x.out) для загрузки средствами CI. Копия файла, которого
     в этом прогоне нет, удаляется: рабочий каталог Jenkins живёт между запусками. Возвращает число файлов."""
+    files = list(map(Path, files))
     dest = Path(dest)
+    run_dir = Path(run_dir).resolve()
+    target = dest.resolve()
+    if target == run_dir or target in run_dir.parents or run_dir in target.parents:
+        raise ValueError(f"каталог --artifacts {dest} пересекается с каталогом прогона {run_dir}")
+    names = {path.name for path in files}
+    managed = PRIVATE_ARTIFACTS | PUBLIC_ARTIFACTS
+    for name in managed:
+        path = dest / name
+        if path.is_symlink():
+            raise ValueError(f"путь артефакта {path} является символической ссылкой")
+        resolved = path.resolve()
+        if run_dir == resolved or run_dir in resolved.parents:
+            raise ValueError(f"путь артефакта {path} пересекается с каталогом прогона {run_dir}")
     dest.mkdir(parents=True, exist_ok=True)
+    for name in PRIVATE_ARTIFACTS:
+        (dest / name).unlink(missing_ok=True)
+    for name in PUBLIC_ARTIFACTS - names:
+        (dest / name).unlink(missing_ok=True)
     n = 0
-    for f in map(Path, files):
+    for f in files:
         target = dest / f.name
         if f.is_file():
             shutil.copyfile(f, target)
@@ -50,7 +73,7 @@ def _publish(name, run_dir, names, log, dest=None):
     files = [Path(run_dir) / n for n in names]
     try:
         if dest:
-            log(f"артефакты: {collect_artifacts(files, dest)} файлов в {dest}")
+            log(f"артефакты: {collect_artifacts(files, dest, run_dir)} файлов в {dest}")
         else:
             forgejo_artifacts.upload(name, files, log=log)
     except Exception as e:  # noqa: BLE001 - артефакты не должны менять вердикт проверки
@@ -103,15 +126,9 @@ def main(a):
         log(f"база: {base}")
         summary = pipeline.gate_run(repo, cfg, run_dir, pipeline.GateOptions(base, designer=a.designer), log=log)
         log(report.markdown(summary))
-        _publish("otk-gate", run_dir, ["summary.html", "summary.md", "summary.json", "junit.xml",
-                                            "problems.txt", "summary.sarif",
-                                            "otk.json"]
-                 + (["designer.json", "logs/designer-check.out", "logs/control-check.out",
-                     "logs/control-check-ext.out"] if a.designer else []), log, dest)
+        _publish("otk-gate", run_dir, GATE_ARTIFACTS, log, dest)
         return summary["code"]
     summary = designer_check.run(repo, cfg, run_dir, control=not a.no_control, log=log)
     log(designer_check.markdown(summary))
-    _publish("otk-designer-check", run_dir,
-             ["designer-check.md", "designer-check.json", "junit-designer-check.xml",
-              "logs/designer-check.out", "logs/control-check.out", "logs/control-check-ext.out"], log, dest)
+    _publish("otk-designer-check", run_dir, DESIGNER_ARTIFACTS, log, dest)
     return summary["code"]

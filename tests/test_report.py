@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 from _fs import rmtree_force
-from otk_1c import model
+from otk_1c import model, public
 from otk_1c.extras import controls
 from otk_1c.gate import output, report, report_html
 
@@ -16,6 +16,56 @@ PLAN = {"base": "a", "head": "b", "source": "src/cf", "modules": [{"path": "Comm
 
 
 class TestReport(unittest.TestCase):
+    def test_public_summary_allowlist_and_redaction(self):
+        summary = {"schema": "otk.summary.v1", "version": "1.0", "code": 1,
+                   "findings": [{"severity": "error", "step": "static", "rule": "x", "file": "m.bsl",
+                                 "line": 2, "column": 1, "message": 'Pwd="hunter2"', "text": "Х = 1;",
+                                 "moduleText": "полный модуль", "sources": [{"step": "static", "rule": "x",
+                                  "message": 'Srvr="host";Ref="demo";Usr="admin";Pwd="hunter2";'}]}],
+                   "notChecked": [], "uncovered": [],
+                   "notes": ["password=secret", "OTK_PASSWORD=another-secret", '{"password":"json-secret"}',
+                             r'{"password":"pre\"post"}'],
+                   "infra": [],
+                   "scenarios": {"selected": 1, "private": "вне вложенного контракта"},
+                   "smoke": {"opened": 1, "private": "вне вложенного контракта"},
+                   "timings": {"collect": 1.0, "private": "вне вложенного контракта"},
+                   "secret": "вне контракта"}
+        public = report.public_summary(summary)
+        encoded = str(public)
+        self.assertNotIn("полный модуль", encoded)
+        self.assertNotIn("вне контракта", encoded)
+        self.assertNotIn("вне вложенного контракта", encoded)
+        self.assertNotIn("hunter2", encoded)
+        self.assertNotIn("secret", encoded)
+        self.assertNotIn("json-secret", encoded)
+        self.assertIn('{"password":"[скрыто]"}', encoded)
+        self.assertIn("[строка соединения скрыта]", encoded)
+        self.assertEqual(public["findings"][0]["text"], "Х = 1;")
+
+    def test_public_text_keeps_paths_and_identifiers(self):
+        """Маскирование не съедает пути Linux и хвосты идентификаторов: секрет — только отдельный ключ."""
+        for text in ("C:/src/cf/CommonModules/М/Ext/Module.bsl", "A = maxTokens / 2;", 'userToken: "abc"',
+                     "/Fitness"):
+            with self.subTest(text=text):
+                self.assertEqual(public.public_text(text), text)
+        self.assertEqual(public.public_text('{"token":"abc"}'), '{"token":"[скрыто]"}')
+        self.assertEqual(public.public_text("db_password=abc"), "db_password=[скрыто]")
+
+    def test_public_text_masks_connection_aliases(self):
+        for text in ('--ib "/F/home/ib"', r"/Sserver\base", "/FC:/1C/Копии/ERP"):
+            with self.subTest(text=text):
+                self.assertIn("[база скрыта]", public.public_text(text))
+
+    def test_formatters_redact_raw_summary(self):
+        summary = report.build(PLAN, {"findings": [{"check": "x", "severity": "error", "module": "m.bsl",
+                                                    "line": 1, "message": 'Pwd="secret"'}]}, None, {})
+        summary["notes"].append('Srvr="host";Ref="demo";Usr="admin";Pwd="secret";')
+        outputs = [report.markdown(summary), report.brief(summary), str(report.problems(summary, "repo")),
+                   report.junit(summary), str(report.sarif(summary, "repo"))]
+        for rendered in outputs:
+            self.assertNotIn("secret", rendered)
+            self.assertNotIn("host", rendered)
+
     def test_error_verdict_and_problems(self):
         static = {"findings": [{"check": "metadata-ref", "severity": "error",
                                 "module": "CommonModules/М/Ext/Module.bsl",

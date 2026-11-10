@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmapnep-tools.github.io/otk-1c/schema/report-result.v1.json",
+  "title": "Итог otk report --json (otk.report-result.v1)",
+  "description": "Один объект в stdout; журнал — в stderr. Код выхода — как без --json",
+  "type": "object",
+  "required": ["schema", "version", "code", "status", "runDir", "summaryPath", "summary", "error"],
+  "properties": {
+    "schema": {"const": "otk.report-result.v1"},
+    "version": {"type": "string", "description": "версия ОТК"},
+    "code": {"enum": [0, 1, 2], "description": "код выхода: 0 — сводка сформирована без ошибок, 1 — есть ошибки, 2 — сбой"},
+    "status": {"anyOf": [{"enum": ["ok", "nothing", "errors", "infra", "not-checked"]}, {"type": "string"}]},
+    "runDir": {"type": ["string", "null"], "description": "каталог прогона; null — сводка не сформирована"},
+    "summaryPath": {"type": ["string", "null"], "description": "путь к summary.json"},
+    "summary": {"anyOf": [{"$ref": "https://cmapnep-tools.github.io/otk-1c/schema/summary.v1.json"}, {"type": "null"}]},
+    "error": {"anyOf": [{"$ref": "#/$defs/error"}, {"type": "null"}]}
+  },
+  "$defs": {
+    "error": {"type": "object", "required": ["status", "reasonCode", "remediation", "message"],
+      "properties": {"status": {"const": "infra"}, "reasonCode": {"type": "string"},
+        "remediation": {"type": "string"}, "message": {"type": "string"}}}
+  }
+}

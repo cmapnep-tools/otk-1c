@@ -38,6 +38,7 @@ from xml.sax.saxutils import escape
 from .. import config, lang, model
 from ..errors import InfraError
 from ..paths import cache_root
+from ..public import public_data, public_text
 from ..sources import gitdiff, layout
 from . import build as build_mod, ib_tools
 from .edt import BOM, pid_alive
@@ -213,6 +214,10 @@ def control_ib_dir(platform):
     return Path(cache_root()) / "control" / (platform_version(platform.bin) or "platform")
 
 
+def _safe_log(log):
+    return lambda message: log(public_text(message))
+
+
 def _on(platform, ib, run_dir):
     """Тот же Конфигуратор на другой файловой ИБ, без пользователя (у ИБ контроля их нет)."""
     p = copy.copy(platform)
@@ -223,6 +228,7 @@ def _on(platform, ib, run_dir):
 def control_ib(platform, log=print):
     """ИБ контроля (вариант А): пустая конфигурация + серверный общий модуль с заведомой ошибкой и расширение с таким
     же модулем; создаётся один раз на версию платформы. Не создаётся — InfraError (тогда — вариант Б)."""
+    log = _safe_log(log)
     root = control_ib_dir(platform)
     if (root / "ready").is_file():
         return root / "ib"
@@ -275,6 +281,7 @@ def minimal_control(platform, run_dir, log=print):
     """Вариант А: /CheckModules -Server в ИБ контроля — без расширения и с -Extension — обязан показать ошибку
     в контрольном модуле. Подтверждает запуск Конфигуратора, лицензию, разбор вывода и язык платформы.
     (сработал, описание); ИБ контроля не создаётся — InfraError."""
+    log = _safe_log(log)
     p = _on(platform, control_ib(platform, log), run_dir)
     parts, ok = [], True
     for label, args, obj in (("control-check", (), f"ОбщийМодуль.{CONTROL_MAIN}.Модуль"),
@@ -301,6 +308,7 @@ def inline_load(platform, dump, run_dir, ext_args=(), log=print):
     изменения) — копия своя: снимается с поддержки (/ManageCfgSupport -disableSupport -force) и повтор.
     dump в любом формате: модуль грузится в пути выгрузки, исходный — из копии в каталоге прогона (исходники EDT
     в ИБ не грузятся)."""
+    log = _safe_log(log)
     name = control_module(dump)
     if not name:
         raise InfraError("нет серверного общего модуля для отрицательного контроля")
@@ -366,6 +374,7 @@ def check(platform, dump, src, modes, baseline_path, run_dir, ext_args=(), contr
     """Отрицательный контроль и проверка всех модулей в уже собранной копии ИБ (dump — загруженная в неё
     выгрузка, src — её путь от корня репозитория для файлов находок). Возвращает {code, control, rc, findings
     (новые относительно базовой линии), known, fixed, baseline, timings, notes}; InfraError — наружу."""
+    log = _safe_log(log)
     res = {"code": 0, "control": None, "rc": None, "findings": [], "known": 0, "fixed": 0, "baseline": None,
            "timings": {}, "notes": []}
     inline = None
@@ -469,6 +478,7 @@ def verdict(summary):
 
 
 def markdown(summary):
+    summary = public_data(summary)
     lines = [f"# {verdict(summary)}", "", f"Коммит `{summary['commit'][:10]}`, режимы: {' '.join(summary['modes'])}"]
     if summary.get("control"):
         lines.append(f"Отрицательный контроль ({summary['control'].get('variant', 'A')}): "
@@ -490,6 +500,7 @@ def markdown(summary):
 
 
 def junit(summary):
+    summary = public_data(summary)
     cases = []
     for f in summary["findings"]:
         name = escape(f"{f['file'] or f['object']}:{f['line']}")
@@ -509,7 +520,7 @@ def junit(summary):
 
 
 def _finish(summary, run_dir):
-    data = {**model.header("designer-check", internal=True), **summary}
+    data = public_data({**model.header("designer-check", internal=True), **summary})
     (run_dir / "designer-check.json").write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
     (run_dir / "designer-check.md").write_text(markdown(summary), encoding="utf-8")
     (run_dir / "junit-designer-check.xml").write_text(junit(summary), encoding="utf-8")

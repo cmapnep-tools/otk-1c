@@ -56,10 +56,62 @@ class CiTest(unittest.TestCase):
         (run / "logs" / "designer-check.out").write_text("вывод", encoding="utf-8")
         dest.mkdir()
         (dest / "junit.xml").write_text("прошлый прогон", encoding="utf-8")
-        n = ci.collect_artifacts([run / "summary.md", run / "logs" / "designer-check.out", run / "junit.xml"], dest)
-        self.assertEqual(n, 2)
-        self.assertEqual(sorted(p.name for p in dest.iterdir()), ["designer-check.out", "summary.md"])
+        (dest / "otk.json").write_text("полный план", encoding="utf-8")
+        (dest / "designer-check.out").write_text("сырой лог", encoding="utf-8")
+        n = ci.collect_artifacts([run / "summary.md", run / "junit.xml"], dest, run)
+        self.assertEqual(n, 1)
+        self.assertEqual(sorted(p.name for p in dest.iterdir()), ["summary.md"])
         self.assertEqual((dest / "summary.md").read_text(encoding="utf-8"), "сводка")
+
+    def test_artifact_allowlist_excludes_internal_files(self):
+        self.assertEqual(ci.GATE_ARTIFACTS, ("summary.html", "summary.md", "summary.json", "junit.xml",
+                                             "problems.txt", "summary.sarif"))
+        self.assertEqual(ci.DESIGNER_ARTIFACTS, ("designer-check.md", "junit-designer-check.xml"))
+        self.assertNotIn("otk.json", ci.GATE_ARTIFACTS)
+        self.assertNotIn("designer.json", ci.GATE_ARTIFACTS)
+
+    def test_artifact_destination_cannot_overlap_run_dir(self):
+        run = self.tmp / "run"
+        run.mkdir()
+        summary = run / "summary.md"
+        summary.write_text("сводка", encoding="utf-8")
+        plan = run / "otk.json"
+        plan.write_text("план", encoding="utf-8")
+        for dest in (run, run / "artifacts", self.tmp):
+            with self.subTest(dest=dest), self.assertRaisesRegex(ValueError, "пересекается"):
+                ci.collect_artifacts([summary], dest, run)
+        with self.assertRaisesRegex(ValueError, "пересекается"):
+            ci.collect_artifacts([run / "logs" / "nested.txt"], run / "artifacts", run)
+        self.assertEqual(summary.read_text(encoding="utf-8"), "сводка")
+        self.assertEqual(plan.read_text(encoding="utf-8"), "план")
+
+    def test_artifact_symlink_cannot_overwrite_run_file(self):
+        run, dest = self.tmp / "run", self.tmp / "out"
+        run.mkdir()
+        dest.mkdir()
+        source = run / "summary.md"
+        source.write_text("new summary", encoding="utf-8")
+        plan = run / "otk.json"
+        plan.write_text("keep plan", encoding="utf-8")
+        symlink_target = dest / "summary.md"
+        with mock.patch.object(Path, "is_symlink", lambda path: path == symlink_target), \
+                self.assertRaisesRegex(ValueError, "символической ссылкой"):
+            ci.collect_artifacts([source], dest, run)
+        self.assertEqual(plan.read_text(encoding="utf-8"), "keep plan")
+
+    def test_collect_artifacts_removes_stale_public_mode(self):
+        run, dest = self.tmp / "run", self.tmp / "out"
+        run.mkdir()
+        dest.mkdir()
+        for name in ci.GATE_ARTIFACTS:
+            (dest / name).write_text("old gate", encoding="utf-8")
+        designer = run / "designer-check.md"
+        junit = run / "junit-designer-check.xml"
+        designer.write_text("new designer", encoding="utf-8")
+        junit.write_text("new junit", encoding="utf-8")
+        self.assertEqual(ci.collect_artifacts([designer, junit], dest, run), 2)
+        self.assertEqual(sorted(path.name for path in dest.iterdir()),
+                         ["designer-check.md", "junit-designer-check.xml"])
 
     def test_ensure_base_fetches_branch_and_history(self):
         origin = self.tmp / "origin"

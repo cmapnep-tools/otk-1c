@@ -27,6 +27,7 @@ from xml.sax.saxutils import escape
 
 from .. import __version__, lang, model
 from ..probes.platform import CHECK_MODES
+from ..public import public_summary as public_summary
 from ..sources import bsl, contexts, layout
 from . import reasons
 
@@ -613,6 +614,7 @@ def _timing_lines(summary):
 def brief(summary, top=10):
     """Сводка для консоли на большой разнице: счётчики по кодам, частые причины, объекты с наибольшим числом
     находок; подробности — в summary.md и summary.html."""
+    summary = public_summary(summary)
     lines = _head_lines(summary) + [""]
     for title, severity in (("Ошибки", "error"), ("Предупреждения", "warning")):
         items = [f for f in summary["findings"] if f["severity"] == severity]
@@ -635,6 +637,7 @@ def brief(summary, top=10):
 
 
 def markdown(summary):
+    summary = public_summary(summary)
     lines = _head_lines(summary)
     lines.append("")
     errors = [f for f in summary["findings"] if f["severity"] == "error"]
@@ -699,6 +702,7 @@ def _detail(f):
 
 def problems(summary, repo):
     """Строки для problemMatcher VS Code: <абсолютный путь>(<строка>,<колонка>): <error|warning> <код>: <текст>."""
+    summary = public_summary(summary)
     out = []
     for f in summary["findings"]:
         path = str((Path(repo) / f["file"]).resolve()) if f.get("file") else str(Path(repo).resolve())
@@ -713,6 +717,7 @@ def problems(summary, repo):
 
 
 def junit(summary):
+    summary = public_summary(summary)
     cases = []
     for f in summary["findings"]:
         tag = "failure" if f["severity"] == "error" else "system-out"
@@ -743,6 +748,7 @@ def sarif(summary, repo):
     Пути — от корня репозитория (`uriBaseId` SRCROOT), правило — код находки со ссылкой на справочник; «не
     проверено» реестра проверок — результаты `kind: open` без уровня (проверка не выполнялась, это не ошибка)."""
 
+    summary = public_summary(summary)
     codes = sorted({f["rule"] for f in summary["findings"]})
     rules = [{"id": c, "name": c, "shortDescription": {"text": c}, "helpUri": doc_link(c)} for c in codes]
     results = []

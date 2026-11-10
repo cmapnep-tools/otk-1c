@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from .. import __version__
+from ..public import public_data, public_summary, public_text
 
 # код: что сделать (remediation)
 CODES = {
@@ -92,13 +93,14 @@ def remediation(code: str) -> str:
 def entry(value: str | dict[str, Any]) -> dict[str, Any]:
     """Сбой инфраструктуры для summary.json: {reasonCode, message}; код места сбоя или по тексту."""
     value = {"message": value} if isinstance(value, str) else value
-    return {"reasonCode": value.get("reasonCode") or classify(value["message"]), "message": value["message"]}
+    message = public_text(value["message"])
+    return {"reasonCode": value.get("reasonCode") or classify(value["message"]), "message": message}
 
 
 def item(text: str | None, status: str, code: str | None = None, **extra) -> dict:
     """Причина для JSON: {status, reasonCode, remediation, message, ...extra}; код — по тексту, если не задан."""
     code = code or classify(text)
-    return {"status": status, "reasonCode": code, "remediation": remediation(code), "message": text or "",
+    return {"status": status, "reasonCode": code, "remediation": remediation(code), "message": public_text(text or ""),
             **extra}
 
 
@@ -111,12 +113,38 @@ def gate_status(summary: dict) -> str:
     return "nothing" if summary["verdict"] == "нечего проверять" else "ok"
 
 
+def command_result(command: str, code: int, result=None, error=None) -> dict:
+    """Общий конверт результата CLI-команды со стабильным именем схемы и кодом выхода."""
+    status = {0: "ok", 1: "errors", 2: "infra"}.get(code, "other")
+    return {"schema": f"otk.{command}-result.v1", "version": __version__, "code": code, "status": status,
+            "result": public_data(result), "error": public_data(error)}
+
+
+def command_error(command: str, text: str, code: str | None = None) -> dict:
+    """Общий результат инфраструктурной ошибки CLI-команды."""
+    return command_result(command, 2, error=item(text, "infra", code))
+
+
+def report_result(summary: dict, run_dir) -> dict:
+    """Итог report --json (schema/report-result.schema.json) со сводкой, собранной из файлов прогона."""
+    return {"schema": "otk.report-result.v1", "version": __version__, "code": summary["code"],
+            "status": gate_status(summary), "runDir": str(run_dir), "summaryPath": str(Path(run_dir) / "summary.json"),
+            "summary": public_summary(summary), "error": None}
+
+
+def report_error(text: str, code: str | None = None) -> dict:
+    """Итог report --json, когда сводку собрать нельзя (нет плана, настройка, сбой ОТК): код 2."""
+    return {"schema": "otk.report-result.v1", "version": __version__, "code": 2, "status": "infra",
+            "runDir": None, "summaryPath": None, "summary": None, "error": item(text, "infra", code)}
+
+
 def gate_result(summary: dict, run_dir) -> dict:
     """Итог gate --json (schema/gate-result.schema.json) по сводке прогона."""
+    infra = [entry(x) for x in summary.get("infra", [])]
+    summary = public_summary({**summary, "infra": infra})
     not_checked = [item(i.get("reason"), "not-checked", i.get("reasonCode"), what=i["what"], file=i.get("file"),
                         line=i.get("line"), **{k: i[k] for k in ("check", "needs") if i.get(k)})
                    for i in summary["notChecked"]]
-    infra = [entry(x) for x in summary.get("infra", [])]
     return {"schema": "otk.gate-result.v1", "version": __version__, "code": summary["code"],
             "status": gate_status(summary), "verdict": summary["verdict"], "runDir": str(run_dir),
             "summaryPath": str(Path(run_dir) / "summary.json"), "findings": summary["findings"],

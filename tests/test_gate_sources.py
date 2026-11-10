@@ -69,6 +69,30 @@ class TestSources(unittest.TestCase):
         self.assertEqual([m["path"] for m in plan["modules"]], ["CommonModules/М/Ext/Module.bsl"])
         self.assertTrue(any("в корне репозитория" in m for m in logs))
 
+    def test_gate_retry_starts_fresh(self):
+        """Повтор после прерывания заново строит план и не переиспользует файлы шагов прошлого запуска."""
+        repo = self._repo()
+        cfg = config._merge(config.load(repo), {"checks": {"bslls": "off", "platform-api": "off"}})
+        run_dir = self.tmp / "retry-run"
+        run_dir.mkdir()
+        stale = [run_dir / name for name in ("static.json", "run.json", "designer.json")]
+        for path in stale:
+            path.write_text('{"plan":"old"}', encoding="utf-8")
+        observations = []
+
+        def probes(*_args, **_kwargs):
+            observations.append([path.exists() for path in stale])
+            return False, None
+
+        with mock.patch.object(pipeline, "_probe_step", side_effect=probes), \
+                mock.patch.object(pipeline.collect_mod, "collect", wraps=pipeline.collect_mod.collect) as collect:
+            for _ in range(2):
+                pipeline.gate_run(repo, cfg, run_dir, pipeline.GateOptions("HEAD", worktree=True, static_only=True),
+                                  log=lambda _message: None)
+        self.assertEqual(collect.call_count, 2)
+        self.assertEqual(observations, [[False, False, False], [False, False, False]])
+        self.assertTrue((run_dir / "otk.json").is_file())
+
     def test_changes_outside_source_hint(self):
         r = self._repo()
         run(r, "commit", "-q", "-am", "head")

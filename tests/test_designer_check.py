@@ -1,4 +1,6 @@
 """Полная проверка Конфигуратором и запуск в CI: разбор вывода, контрольный модуль, настройки, артефакты."""
+import contextlib
+import io
 import json
 import tempfile
 import unittest
@@ -7,7 +9,7 @@ from pathlib import Path
 from unittest import mock
 
 from _fs import rmtree_force
-from otk_1c import config
+from otk_1c import cli, config
 from otk_1c.probes import designer_check
 from otk_1c.probes.platform import ConfigOps
 
@@ -32,6 +34,78 @@ FLAGS = ("<CommonModule><Properties><Global>{g}</Global><ClientManagedApplicatio
 
 
 class DesignerCheckTest(unittest.TestCase):
+    def test_check_logs_redact_control_errors(self):
+        root = Path(tempfile.mkdtemp())
+        logs = []
+        platform = type("PlatformStub", (), {
+            "connection": None,
+            "designer": lambda self, *args, **kwargs: (0, 0.1, ""),
+        })()
+        try:
+            with mock.patch.object(designer_check, "minimal_control",
+                                   return_value=(False, 'не работает {"password":"secret"}')), \
+                    mock.patch.object(designer_check, "inline_load", return_value=None):
+                designer_check.check(platform, root, "src/cf", [], root / "baseline.json", root / "runs",
+                                      log=logs.append)
+            self.assertTrue(logs)
+            self.assertNotIn("secret", "\n".join(logs))
+            self.assertIn("[скрыто]", "\n".join(logs))
+        finally:
+            rmtree_force(root)
+
+    def test_public_reports_redact_raw_notes(self):
+        summary = {"code": 2, "commit": "a" * 40, "modes": [], "control": None, "findings": [], "known": 0,
+                   "fixed": 0, "baseline": None, "timings": {},
+                   "notes": ['Конфигуратор: rc=1 {"Pwd":"secret"}']}
+        root = Path(tempfile.mkdtemp())
+        try:
+            markdown = designer_check.markdown(summary)
+            junit = designer_check.junit(summary)
+            designer_check._finish(summary, root)
+            result = (root / "designer-check.json").read_text(encoding="utf-8")
+            for output in (markdown, junit, result):
+                self.assertNotIn("secret", output)
+                self.assertIn("[скрыто]", output)
+        finally:
+            rmtree_force(root)
+
+    def test_dry_run_update_baseline_does_not_run_or_write(self):
+        root = Path(tempfile.mkdtemp())
+        try:
+            cfg = {"project": {"source": "src/cf"}, "designerCheck": {"baseline": "baseline.json"}}
+            out = io.StringIO()
+            with mock.patch.object(cli.gitdiff, "git", return_value=str(root)), \
+                    mock.patch.object(cli.config, "load", return_value=cfg), \
+                    mock.patch.object(cli.workspace, "run_dir", return_value=root / "runs"), \
+                    mock.patch.object(designer_check, "run", side_effect=AssertionError("run called")), \
+                    contextlib.redirect_stdout(out):
+                code = cli.main(["designer-check", "--repo", str(root), "--update-baseline", "--dry-run"])
+            self.assertEqual(code, 0)
+            self.assertIn("перезаписать baseline", out.getvalue())
+            self.assertFalse((root / "baseline.json").exists())
+            self.assertFalse((root / "runs").exists())
+        finally:
+            rmtree_force(root)
+
+    def test_dry_run_without_control_omits_control_step(self):
+        root = Path(tempfile.mkdtemp())
+        try:
+            cfg = {"project": {"source": "src/cf"}, "designerCheck": {}}
+            out = io.StringIO()
+            with mock.patch.object(cli.gitdiff, "git", return_value=str(root)), \
+                    mock.patch.object(cli.config, "load", return_value=cfg), \
+                    mock.patch.object(cli.workspace, "run_dir", return_value=root / "runs"), \
+                    mock.patch.object(designer_check, "run", side_effect=AssertionError("run called")), \
+                    contextlib.redirect_stdout(out):
+                code = cli.main(["designer-check", "--repo", str(root), "--no-control", "--dry-run"])
+            self.assertEqual(code, 0)
+            text = out.getvalue()
+            plan = json.loads(text[text.index("{"):])
+            self.assertFalse(plan["control"])
+            self.assertFalse(any("отрицательным контролем" in step for step in plan["operations"]))
+        finally:
+            rmtree_force(root)
+
     def test_parse(self):
         found = designer_check.parse(OUTPUT, "src/cf")
         self.assertEqual(len(found), 7)                     # одинаковая ошибка двух режимов — одна запись

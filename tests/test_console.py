@@ -1,11 +1,15 @@
 """Консоль ИБ без 1С: строки соединения, базы, значения, ошибки запросов, MCP на подставном соединении."""
+import contextlib
 import datetime
+import io
 import json
 import os
 import tempfile
 import unittest
 from unittest import mock
 
+import schema_check
+from otk_1c import cli
 from otk_1c.extras import console, mcp
 
 
@@ -133,6 +137,66 @@ class TestConsole(unittest.TestCase):
         self.assertIn("не описана", out["result"]["content"][0]["text"])
         tools_list = mcp.dispatch(con, {"jsonrpc": "2.0", "id": 2, "method": "tools/list"})["result"]["tools"]
         self.assertEqual(len(tools_list), 7)
+
+
+class CliConsoleJsonTest(unittest.TestCase):
+    def run_cli(self, *argv):
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = cli.main(list(argv))
+        return code, json.loads(out.getvalue()), err.getvalue()
+
+    def test_query_result(self):
+        with mock.patch.object(cli.mcp, "call", return_value={"rows": [[1]], "total": 1}):
+            code, result, err = self.run_cli("console", "query", "ВЫБРАТЬ 1", "--ib", "/Fкопия", "--json")
+        self.assertEqual(schema_check.errors(result, schema_check.load("console-result")), [])
+        self.assertEqual((code, result["status"], result["result"]["rows"]), (0, "ok", [[1]]))
+        self.assertEqual(err, "")
+
+    def test_bases_do_not_expose_connection(self):
+        bases = {"file": "secret-path", "bases": {"demo": {"connection": "/Ssecret/db", "user": "Admin",
+                                                                  "connected": False}}}
+        with mock.patch.object(cli.mcp, "call", return_value=bases):
+            code, result, _ = self.run_cli("console", "bases", "--json")
+        self.assertEqual(schema_check.errors(result, schema_check.load("console-result")), [])
+        self.assertEqual(result["result"], {"bases": {"demo": {"connected": False}}})
+        self.assertNotIn("secret", json.dumps(result))
+
+    def test_platform_help_status(self):
+        with mock.patch.object(cli.syntax, "status", return_value=[{"version": "8.3.27", "source": "bin",
+                                                                      "index": "актуален", "entries": 10}]):
+            code, result, _ = self.run_cli("platform-help", "status", "--json")
+        self.assertEqual(schema_check.errors(result, schema_check.load("platform-help-result")), [])
+        self.assertEqual((code, result["result"]["action"], len(result["result"]["rows"])), (0, "status", 1))
+
+    def test_platform_help_json_uses_project_settings(self):
+        env = {"platform": "C:/project/bin", "helpDir": "C:/project/help", "helpAuto": False}
+        cfg = {"environment": env}
+        with mock.patch.object(cli.config, "load", return_value=cfg), \
+                mock.patch.object(cli.syntax, "configure") as configure, \
+                mock.patch.object(cli.syntax, "status", return_value=[{"version": "8.3.27", "source": env["helpDir"],
+                                                                       "index": "актуален", "entries": 1}]):
+            code, result, _ = self.run_cli("platform-help", "status", "--repo", "project", "--json")
+        self.assertEqual(code, 0)
+        configure.assert_called_once_with(env)
+        self.assertEqual(result["result"]["rows"][0]["source"], env["helpDir"])
+
+    def test_platform_help_error_allows_null_result(self):
+        """Сбой до результата: в объекте result — null (схема это допускает), код 2, текст с секретом замаскирован."""
+        with mock.patch.object(cli.syntax, "status", side_effect=ValueError('bad {"token":"abc"}')):
+            code, result, err = self.run_cli("platform-help", "status", "--json")
+        self.assertEqual(schema_check.errors(result, schema_check.load("platform-help-result")), [])
+        self.assertEqual((code, result["status"], result["result"]), (2, "infra", None))
+        self.assertIn("[скрыто]", result["error"]["message"])
+        self.assertNotIn("abc", err)
+
+    def test_platform_help_missing(self):
+        with mock.patch.object(cli.syntax, "status", return_value=[]):
+            code, result, err = self.run_cli("platform-help", "status", "--json")
+        self.assertEqual(schema_check.errors(result, schema_check.load("platform-help-result")), [])
+        self.assertEqual((code, result["error"]["reasonCode"]), (2, "no-help"))
+        self.assertIn("справки нет", result["error"]["message"])
+        self.assertEqual(err, "")
 
 
 if __name__ == "__main__":

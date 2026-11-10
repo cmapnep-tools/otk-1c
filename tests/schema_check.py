@@ -12,7 +12,8 @@ from pathlib import Path
 SCHEMAS = Path(__file__).resolve().parent.parent / "src" / "otk_1c" / "schema"
 TYPES = {"object": dict, "array": list, "string": str, "boolean": bool, "null": type(None)}
 # публикуемая схема -> объекты, описанные полностью ("" — корень, иначе имя в $defs): ОТК не пишет лишних полей
-CLOSED = {"summary": ["", "finding"], "gate-result": [""], "doctor-result": [""]}
+CLOSED = {"summary": ["", "finding"], "gate-result": [""], "doctor-result": [""], "report-result": [""],
+          "build-result": [""], "console-result": [""], "platform-help-result": [""]}
 
 
 def _strict(node):
@@ -49,9 +50,15 @@ def errors(value, schema, root=None, path="$"):
     """Список нарушений: пусто — значение соответствует схеме."""
     root = root or schema
     if "$ref" in schema:
-        name = schema["$ref"].removeprefix("#/$defs/")
-        return errors(value, root["$defs"][name], root, path)
+        ref = schema["$ref"]
+        if ref.startswith("#/$defs/"):
+            name = ref.removeprefix("#/$defs/")
+            return errors(value, root["$defs"][name], root, path)
+        name = Path(ref.split("#", 1)[0]).name.removesuffix(".v1.json")
+        return errors(value, load(name), path=path)
     out = []
+    if "anyOf" in schema and not any(not errors(value, variant, root, path) for variant in schema["anyOf"]):
+        return [f"{path}: не соответствует ни одной схеме"]
     if "type" in schema:
         types = schema["type"] if isinstance(schema["type"], list) else [schema["type"]]
         if not any(_is(value, t) for t in types):

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmapnep-tools.github.io/otk-1c/schema/build-result.v1.json",
+  "title": "Итог otk build --json (otk.build-result.v1)",
+  "description": "Один объект в stdout; журнал сборки — в stderr",
+  "type": "object",
+  "required": ["schema", "version", "code", "status", "result", "error"],
+  "properties": {
+    "schema": {"const": "otk.build-result.v1"},
+    "version": {"type": "string"},
+    "code": {"enum": [0, 1, 2]},
+    "status": {"anyOf": [{"enum": ["ok", "errors", "infra"]}, {"type": "string"}]},
+    "result": {"anyOf": [{"$ref": "#/$defs/result"}, {"type": "null"}]},
+    "error": {"anyOf": [{"$ref": "#/$defs/error"}, {"type": "null"}]}
+  },
+  "$defs": {
+    "result": {"type": "object", "required": ["revision", "origin", "build", "errors"],
+      "properties": {"revision": {"type": ["string", "null"]}, "origin": {"type": "string"},
+        "build": {"type": ["object", "null"]},
+        "errors": {"type": "array", "items": {"type": "object", "required": ["file", "message"],
+          "properties": {"file": {"type": "string"}, "message": {"type": "string"}}}}}},
+    "error": {"type": "object", "required": ["status", "reasonCode", "remediation", "message"],
+      "properties": {"status": {"const": "infra"}, "reasonCode": {"type": "string"},
+        "remediation": {"type": "string"}, "message": {"type": "string"}}}
+  }
+}
