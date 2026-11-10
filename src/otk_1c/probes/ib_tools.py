@@ -44,6 +44,10 @@ def _ns(fmt):
     return f'{_NS} version="{fmt}"'
 
 
+_FORMAT_ATTR = re.compile(r'<MetaDataObject[^>]*\bversion="([^"]*)"')
+_FORMAT_VALUE = re.compile(r"\d+\.\d+")
+
+
 def _version_key(value):
     return tuple(int(x) for x in str(value).split("."))
 
@@ -61,21 +65,34 @@ def format_for_platform(version):
 
 def file_format(config_root):
     """Версия формата выгрузки Конфигуратора (атрибут version корня Configuration.xml) или None: исходники EDT,
-    файла нет."""
+    файла нет, версии формата в нём нет. Нечитаемый файл и неразбираемая версия — сбой инфраструктуры с
+    названием файла: иначе формат молча не проверен, а расширение собрано в чужой версии."""
     if config_root is None or layout.detect(config_root) is layout.EDT:
         return None
     path = Path(config_root) / "Configuration.xml"
     if not path.is_file():
         return None
-    m = re.search(r'<MetaDataObject[^>]*\bversion="([\d.]+)"', path.read_text(encoding="utf-8-sig"))
-    return m.group(1) if m else None
+    try:
+        text = path.read_text(encoding="utf-8-sig")
+    except OSError as e:
+        raise InfraError(f"не читается {path}: {e} — версию формата не определить") from e
+    m = _FORMAT_ATTR.search(text)
+    if not m:
+        return None
+    value = m.group(1)
+    if not _FORMAT_VALUE.fullmatch(value):
+        raise InfraError(f"{path}: версия формата файлов version=\"{value}\" не разбирается — ОТК сверяет "
+                         "формат выгрузки с платформой по виду 2.16")
+    return value
 
 
 def generated_format(config_root, bin_dir=None):
     """Версия формата файлов, которые генерирует ОТК: у выгрузки — её же версия (иначе Конфигуратор не грузит
-    файлы разных версий), у исходников EDT — по версии платформы; не выше потолка FORMAT_MAX."""
+    файлы разных версий), у исходников EDT и у выгрузки без версии формата — по версии платформы; не выше потолка
+    FORMAT_MAX."""
     edt = config_root is not None and layout.detect(config_root) is layout.EDT
-    fmt = (format_for_platform(platform_version(bin_dir)) if bin_dir else None) if edt else file_format(config_root)
+    platform_fmt = format_for_platform(platform_version(bin_dir)) if bin_dir else None
+    fmt = platform_fmt if edt else (file_format(config_root) or platform_fmt)
     return min(fmt or FORMAT_MAX, FORMAT_MAX, key=_version_key)
 
 
