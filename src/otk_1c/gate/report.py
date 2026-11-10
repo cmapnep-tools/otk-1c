@@ -403,25 +403,34 @@ def missing_required(plan, closes, uncovered_, not_checked_=(), run=None):
         return ctx in contexts_of.get(rel, ())
 
     def checked(module, ctx):
-        """Выполненная проверка модуля в контексте (пропуск и запись «не покрыто» — не проверка)."""
+        """Выполненная проверка модуля в контексте: проба или сеанс этого модуля (пропуск — не проверка),
+        расширенная проверка целиком в этом режиме, полная проверка Конфигуратором в режиме контекста. Результат
+        запроса проверяет текст запроса, а не модуль, поэтому покрытием не считается."""
         if closes("designer:*", ctx):
             return True                    # полная проверка Конфигуратором проверяет все модули конфигурации
         if module["path"] in ext_modules and ctx in ext_contexts:
             return True                    # расширенная проверка в этом режиме
-        return any(r.get("module") == module["path"] and r.get("context") == ctx
-                   and r.get("outcome") not in ("skipped", "uncovered")
+        return any(r.get("kind") in ("probe", "session") and r.get("module") == module["path"]
+                   and r.get("context") == ctx and r.get("outcome") not in ("skipped", "uncovered")
                    for r in (run or {}).get("results", []))
+
+    def module_of(entry):
+        file = entry.get("file") or ""
+        return file[len(prefix):] if file.startswith(prefix) else None
 
     out = []
     for ctx in required:
         modules = [m for m in plan["modules"] if ctx in (m.get("contexts") or [])]
         if not modules:
             continue
-        # designer:* закрывает wildcard-запись только если режим этого контекста тоже был в проверке
-        lost = [i for i in uncovered_ if about_ctx(i, ctx) and not closes(i.get("needs"), ctx)]
+        done = {m["path"] for m in modules if checked(m, ctx)}
+        # designer:* закрывает wildcard-запись только если режим этого контекста тоже был в проверке; запись
+        # о непроверенном модуле не считается, если этот модуль проверен другой выполненной проверкой
+        lost = [i for i in uncovered_ if about_ctx(i, ctx) and not closes(i.get("needs"), ctx)
+                and module_of(i) not in done]
         lost += [i for i in not_checked_ if i.get("needs") == f"designer:{ctx}"
                  and not closes(i.get("needs"), ctx)]
-        if lost or any(not checked(m, ctx) for m in modules):
+        if lost or any(m["path"] not in done for m in modules):
             out.append(ctx)
     return out
 

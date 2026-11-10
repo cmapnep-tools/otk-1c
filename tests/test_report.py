@@ -629,6 +629,24 @@ class TestRequiredContexts(unittest.TestCase):
         self.assertEqual((s["code"], s["verdict"]), (0, "можно отправлять"))
         self.assertEqual(s["uncovered"], [])
 
+    def test_record_about_covered_module_does_not_block(self):
+        """Запись «не покрыто» не мешает, если модуль проверен другой выполненной проверкой в этом контексте:
+        записи — то, что осталось не закрытым, а не приговор."""
+        plan = {**self.plan(), "requiredContexts": ["OrdinaryClient"]}
+        entry = {**self.unc(), "file": "src/cf/" + self.MOD}
+        run = {"results": [entry], "notes": [],
+               "extCheck": {"modules": [self.MOD], "contexts": ["OrdinaryClient"]}}
+        s = report.build(plan, {"findings": []}, run, {})
+        self.assertEqual((s["code"], s["verdict"]), (0, "можно отправлять"))
+
+    def test_query_result_does_not_cover(self):
+        """Результат запроса проверяет текст запроса, а не модуль: покрытием контекста он не считается."""
+        plan = {**self.plan(), "requiredContexts": ["OrdinaryClient"]}
+        run = {"results": [{"executor": "com", "kind": "query", "module": self.MOD, "owner": "q1",
+                            "context": "OrdinaryClient", "outcome": "ok", "message": "", "line": 1}],
+               "notes": []}
+        self.assertEqual(report.build(plan, {"findings": []}, run, {})["code"], 2)
+
     def test_no_module_in_context_is_ok(self):
         plan = {**self.plan(contexts=["Server"]), "requiredContexts": ["OrdinaryClient"]}
         s = report.build(plan, {"findings": []}, {"results": [], "notes": []}, {})
