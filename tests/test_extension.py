@@ -48,9 +48,9 @@ class ExtensionTest(unittest.TestCase):
         self.assertEqual(res[1]["module"], "CommonModules/demo_Адаптер/Ext/Module.bsl")
         self.assertEqual(res[1]["line"], 2)                # строка по идентификатору из текста модуля
         self.assertEqual(note, "")
-        res, note = extended_check.run_extension(FakePlatform("непонятный вывод"), "demo", entries, texts.get)
-        self.assertEqual(res, [])
-        self.assertIn("rc=101", note)
+        with self.assertRaises(extended_check.Failed) as e:      # не разобрано — проверка не выполнена целиком
+            extended_check.run_extension(FakePlatform("непонятный вывод"), "demo", entries, texts.get)
+        self.assertIn("rc=101", e.exception.reason)
 
     def test_bslls_excludes(self):
         tmp = Path(tempfile.mkdtemp())

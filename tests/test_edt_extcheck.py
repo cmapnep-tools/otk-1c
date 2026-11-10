@@ -30,9 +30,10 @@ class EdtRunTest(unittest.TestCase):
         (self.src / "Configuration" / "Configuration.mdo").write_text(CONFIG_MDO, encoding="utf-8")
 
     def test_base_properties_mdo(self):
+        # без платформы формат не определить — потолок ОТК
         self.assertEqual(ib_tools.base_properties(self.src),
                          {"language": "Русский", "languageUuid": "ru-uuid", "languageCode": "ru",
-                          "interface": "TaxiEnableVersion8_2"})
+                          "interface": "TaxiEnableVersion8_2", "format": ib_tools.FORMAT_MAX})
 
     def test_base_properties_default_interface(self):
         """Значение по умолчанию EDT не пишет."""

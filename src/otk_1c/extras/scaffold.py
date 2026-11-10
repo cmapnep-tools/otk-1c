@@ -22,6 +22,7 @@ from pathlib import Path
 
 from ..gate import scenarios
 from ..probes import ib_tools
+from ..probes.platform import find_platform
 from ..sources import bsl, layout
 
 DEFAULT_EXTENSION = "Тесты"
@@ -109,8 +110,9 @@ def register(name, title, tag):
     return f'\tЮТТесты.ДобавитьТест("{name}", "{title}", "{tag}");'
 
 
-def ensure_extension(repo, path, extensions, config_root, name=None):
-    """Тестовое расширение для заготовок: заданное, единственное или новое tests/cfe/Тесты."""
+def ensure_extension(repo, path, extensions, config_root, name=None, bin_dir=None):
+    """Тестовое расширение для заготовок: заданное, единственное или новое tests/cfe/Тесты. bin_dir — платформа,
+    по ней версия формата файлов нового расширения у исходников EDT."""
     if name:
         found = [e for e in extensions if e["name"].lower() == name.lower()]
         if found:
@@ -122,8 +124,8 @@ def ensure_extension(repo, path, extensions, config_root, name=None):
                          f"({', '.join(e['name'] for e in extensions)})")
     name = name or DEFAULT_EXTENSION
     target = Path(repo) / path / name
-    ib_tools.generate_test_extension(target, ib_tools.base_properties(config_root), name=name, prefix=DEFAULT_PREFIX,
-                                  modules={})
+    ib_tools.generate_test_extension(target, ib_tools.base_properties(config_root, bin_dir), name=name,
+                                     prefix=DEFAULT_PREFIX, modules={})
     return target, True
 
 
@@ -217,7 +219,12 @@ def scaffold(repo, plan, cfg, read_head, config_root, extension=None, use_draft=
     if not todo:
         return []
     ext_name = extension or cfg.get("scaffold", {}).get("extension")
-    ext_dir, created = ensure_extension(repo, path, exts, config_root, ext_name)
+    # у выгрузки Конфигуратора версия формата — у самой выгрузки; исходникам EDT она нужна от платформы
+    bin_dir = None
+    if config_root is not None and layout.detect(config_root) is layout.EDT:
+        env = cfg.get("environment", {})
+        bin_dir = Path(env["platform"]) if env.get("platform") else find_platform()
+    ext_dir, created = ensure_extension(repo, path, exts, config_root, ext_name, bin_dir)
     if created:
         log(f"создано тестовое расширение {ext_dir.relative_to(repo).as_posix()}")
     prefix = _prefix(ext_dir)

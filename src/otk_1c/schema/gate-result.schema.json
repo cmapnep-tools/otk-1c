@@ -28,7 +28,7 @@
                                                        "no-edtcli", "no-help", "no-availability", "no-git", "no-python",
                                                        "no-source", "no-parent", "no-plan", "timeout", "platform-failed", "restore-failed",
                                                        "edt-failed", "config-invalid", "probe-failed", "query-incomplete",
-                                                       "internal", "other"]}, {"type": "string"}],
+                                                       "format-unsupported", "internal", "other"]}, {"type": "string"}],
                                               "description": "стабильный код причины: список — docs/agents.md; незнакомый читать как other"},
                               "remediation": {"type": "string", "description": "что сделать"},
                               "message": {"type": "string", "description": "текст причины, как в сводке"},

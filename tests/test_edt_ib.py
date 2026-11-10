@@ -6,6 +6,7 @@ from pathlib import Path
 from unittest import mock
 
 from _fs import rmtree_force
+from otk_1c import checks
 from otk_1c.errors import InfraError
 from otk_1c.probes import build, edt
 from otk_1c.probes.executors import RunContext
@@ -189,10 +190,10 @@ class ExtcheckTest(Base):
                                   ["ОбластьДанных"]),
                          ["CommonModule.М", "Configuration", "Language.Русский"])
 
-    def ctx(self, p, dump=None):
+    def ctx(self, p, dump=None, gate=None):
         plan = {"source": "проект/src", "sourceFormat": "edt", "modules": []}
-        return RunContext(self.tmp, plan, {"project": {}}, self.tmp / "прогон", self.tmp, self.src, p, None,
-                          install=lambda r: "", log=lambda m: None, designer_dump=dump)
+        return RunContext(self.tmp, plan, {"project": {}}, self.tmp / "прогон", self.tmp, self.src, p,
+                          gate or checks.Gate({}), install=lambda r: "", log=lambda m: None, designer_dump=dump)
 
     def test_designer_root_from_ib(self):
         p = FakeIb(self.tmp)
@@ -218,12 +219,23 @@ class ExtcheckTest(Base):
         self.assertEqual(root, self.tmp / "прогон" / "edt-ib" / "extcheck")
         self.assertEqual(p.lists[0], ["CommonModule.М", "Configuration", "Language.Русский"])
 
-    def test_run_ib_dump_error_skips(self):
-        c = self.ctx(FakeIb(self.tmp, rc=1))
-        items = [self.unit("CommonModules/М/Module.bsl", "CommonModule", status="A")]
-        res, note = ExtCheck().run(c, items)
-        self.assertTrue(note.startswith("выгрузка ИБ:"))
-        self.assertEqual([r["outcome"] for r in res], ["skipped"])
+    def test_run_ib_dump_error_registry(self):
+        """Выгрузка ИБ для extcheck не удалась — проверка не выполнилась целиком: решает реестр проверок, а не
+        per-module skipped с кодом 0: on — сбой инфраструктуры (код 2), auto — «не проверено» с check extcheck."""
+        for mode, bucket in (("on", "infra"), ("auto", "not_checked")):
+            with self.subTest(mode):
+                gate = checks.Gate({"checks": {"extcheck": mode}})
+                c = self.ctx(FakeIb(self.tmp, rc=1), gate=gate)
+                items = [self.unit("CommonModules/М/Module.bsl", "CommonModule", status="A")]
+                res, note = ExtCheck().run(c, items)
+                self.assertEqual((res, note), ([], ""))
+                self.assertEqual(len(getattr(gate, bucket)), 1)
+                if mode == "auto":
+                    self.assertEqual(gate.not_checked[0]["check"], "extcheck")
+                    self.assertIn("выгрузка ИБ", gate.not_checked[0]["reason"])
+                else:
+                    self.assertIn('extcheck = "on"', gate.infra[0]["message"])
+                    self.assertIn("выгрузка ИБ", gate.infra[0]["message"])
 
 
 if __name__ == "__main__":

@@ -23,7 +23,7 @@ def ensure_tools(platform, run_dir, env, config_root, extra_renames=()):
     if not cfe or not Path(cfe).exists():
         raise InfraError("не задан YAxUnit: environment.yaxunit — путь к YAxUnit-*.cfe", code="no-yaxunit")
     renames = sorted(set(state.get("tools", {}).get("renames", [])) | set(extra_renames))
-    version = ib_tools.tools_version(cfe, ib_tools.base_properties(config_root))
+    version = ib_tools.tools_version(cfe, ib_tools.base_properties(config_root, getattr(platform, "bin", None)))
     current = state.get("tools", {})
     if current.get("version") == version and set(current.get("renames", [])) >= set(renames) and not extra_renames:
         return "актуальны"
@@ -185,6 +185,8 @@ def _run(repo, plan, cfg, run_dir, tree_root, log=print, session=None, gate=None
     platform = session.platform if session else Platform(env, run_dir)
     parent = cfg["project"].get("parent")
     config_root = (Path(repo) / parent).resolve() if parent else Path(tree_root) / plan["source"]
+    # выгрузка новее платформы не загрузится («Неизвестная версия формата»): сказать это до сборки копии ИБ
+    ib_tools.require_format(config_root, getattr(platform, "bin", None))
 
     t = time.time()
     try:

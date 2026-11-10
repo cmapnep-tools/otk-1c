@@ -35,6 +35,17 @@ from .base import result
 
 NAME = "extcheck"
 EXT = "otk_check"
+
+
+class Failed(Exception):
+    """Расширенная проверка не выполнилась целиком (расширение не собралось или не загрузилось, /CheckModules без
+    разобранных ошибок): проверены не модули, а ничего. Решает реестр проверок: on — код 2, auto — «не проверено»."""
+
+    def __init__(self, reason, code=None):
+        super().__init__(reason)
+        self.reason, self.code = reason, code
+
+
 MODES = check_modes(ordinary=False)
 CONTEXTS = frozenset(ctx for key, ctx in CHECK_MODES if key in MODES and ctx)   # что проверка закрывает
 OBJECT_MODULES = ("ObjectModule", "ManagerModule", "RecordSetModule")
@@ -112,7 +123,7 @@ def managed_form(config_root, a, lay=layout.DESIGNER):
     return bool(md) and (Path(config_root) / content_rel).is_file() and not lay.ordinary_form(md, a.sub)
 
 
-def _form_files(target, config_root, a, text):
+def _form_files(target, config_root, a, text, fmt):
     """Заимствованная форма в выгрузке временного расширения: описание, Form.xml (корень + пустой BaseForm), модуль."""
     md_rel, content_rel = layout.DESIGNER.form_files(a.collection, a.name, a.sub)
     tag = "Form" if a.sub else "CommonForm"
@@ -124,16 +135,16 @@ def _form_files(target, config_root, a, text):
     # Form.xml — в версии формата остальных файлов расширения: выгрузка ИБ новой платформой (8.5 — 2.22)
     # иначе не загружается («отличается от версии формата ранее загруженных файлов»)
     base_uid = base_uid.group(1)
-    root = root.group(0).replace(version.group(0), f'version="{ib_tools.FORMAT}"')
-    ib_tools.write(Path(target) / md_rel, _FORM_MD.format(ns=ib_tools._NS, tag=tag, uid=uuid.uuid4(),
+    root = root.group(0).replace(version.group(0), f'version="{fmt}"')
+    ib_tools.write(Path(target) / md_rel, _FORM_MD.format(ns=ib_tools._ns(fmt), tag=tag, uid=uuid.uuid4(),
                                                        name=a.sub or a.name, base=base_uid))
-    ib_tools.write(Path(target) / content_rel, root + f'<BaseForm version="{ib_tools.FORMAT}"/></Form>')
+    ib_tools.write(Path(target) / content_rel, root + f'<BaseForm version="{fmt}"/></Form>')
     ib_tools.write(Path(target) / layout.DESIGNER.module_path(a), text)
 
 
-def objects_for(config_root, units, texts):
+def objects_for(config_root, units, texts, fmt=None):
     """Заимствуемые объекты: владельцы форм и модулей объектов (с ТЧ и формами), объекты по ссылкам через
-    менеджеры, общие реквизиты, имена которых встречаются в модулях форм и объектов."""
+    менеджеры, общие реквизиты, имена которых встречаются в модулях форм и объектов; fmt — версия формата файлов."""
     owners = {}
     for a in units:
         if a.kind != "Module" and a.collection != "CommonForms":
@@ -142,19 +153,19 @@ def objects_for(config_root, units, texts):
                 forms.append(a.sub)
     objects = {}
     for (coll, name), forms in sorted(owners.items()):
-        o = ib_tools.adopted_object(config_root, coll, name, tabular=True, forms=forms)
+        o = ib_tools.adopted_object(config_root, coll, name, tabular=True, forms=forms, fmt=fmt)
         if o:
             objects[(coll, name.lower())] = o
     for coll, name in sorted(ib_tools.referenced_objects(texts)):
         if (coll, name.lower()) not in objects:
-            o = ib_tools.adopted_object(config_root, coll, name)
+            o = ib_tools.adopted_object(config_root, coll, name, fmt=fmt)
             if o:
                 objects[(coll, name.lower())] = o
     if owners or any(a.collection == "CommonForms" for a in units):
         words = set(re.findall(r"[\wА-Яа-яЁё]+", "\n".join(texts)))
         for name in layout.DESIGNER.object_names(config_root, "CommonAttributes"):
             if name in words:
-                o = ib_tools.adopted_object(config_root, "CommonAttributes", name)
+                o = ib_tools.adopted_object(config_root, "CommonAttributes", name, fmt=fmt)
                 if o:
                     objects[("CommonAttributes", name.lower())] = o
     return list(objects.values())
@@ -191,7 +202,7 @@ def ib_names(source, lay, units, texts):
     return sorted(n for n in names if n)
 
 
-def _check(platform, run_dir, props, config_root, units, side, objects=()):
+def _check(platform, run_dir, props, config_root, units, side, objects=(), fmt=None):
     """units — {путь в выгрузке: (Addr, описание общего модуля или None, текст)}. Возвращает словарь: findings
     [(путь или None, строка, сообщение, режим или None)] — по записи на режим; masked {путь: режимы с ошибкой
     первой стадии}; compiled {пути, где найдена канарейка}. Не загрузилось или не проверилось — {"failed": причина}."""
@@ -216,7 +227,7 @@ def _check(platform, run_dir, props, config_root, units, side, objects=()):
     try:
         for a, new_text in files:
             if a.kind == "FormModule":
-                _form_files(target, config_root, a, new_text)
+                _form_files(target, config_root, a, new_text, fmt or props["format"])
             else:
                 ib_tools.write(target / layout.DESIGNER.module_path(a), new_text)
     except ValueError as e:
@@ -269,16 +280,18 @@ def run_extension(platform, extension, entries, read_text, lay=layout.DESIGNER):
                 break
         entry = by_path.get(rel) or {"path": rel, "owner": m.group(2)}
         results.append(result(NAME, "extcheck", entry, "Designer", "compile-error", m.group(3), line))
-    note = f"проверка расширения {extension}: rc={rc} без разобранных ошибок" if rc and not results else ""
-    return results, note
+    if rc and not results:
+        raise Failed(f"проверка расширения {extension}: rc={rc} без разобранных ошибок: {out[-300:]}")
+    return results, ""
 
 
 def run(platform, run_dir, config_root, entries, read_base, read_head, read_xml, lay=layout.DESIGNER):
     """entries — изменённые модули плана: общие, а в выгрузке Конфигуратора и модули управляемых форм, объектов,
-    менеджеров, наборов записей. Возвращает (результаты, примечание)."""
+    менеджеров, наборов записей. Возвращает (результаты, примечание); не выполнилось целиком — Failed."""
     if not entries:
         return [], ""
-    props = ib_tools.base_properties(config_root)
+    props = ib_tools.base_properties(config_root, getattr(platform, "bin", None))
+    fmt = props["format"]
     by_rel = {}
     for e in entries:
         rel = lay.to_designer(e["path"])
@@ -298,13 +311,12 @@ def run(platform, run_dir, config_root, entries, read_base, read_head, read_xml,
     # объекты основной конфигурации, на которые ссылаются модули, заимствуются: иначе расширенная проверка в
     # расширении считает их «возможно ошибочными свойствами»; один набор для обеих редакций
     texts = [t for _, _, t in head.values()] + [t for _, _, t in base.values()]
-    objects = objects_for(config_root, [a for a, _ in by_rel.values()], texts)
+    objects = objects_for(config_root, [a for a, _ in by_rel.values()], texts, fmt)
     try:
-        after = _check(platform, run_dir, props, config_root, head, "after", objects)
+        after = _check(platform, run_dir, props, config_root, head, "after", objects, fmt)
         if "failed" in after:             # временное расширение не загрузилось — модули не проверены, а не «чисто»
-            note = after["failed"]
-            return [result(NAME, "extcheck", e, "Designer", "skipped", note) for _, e in by_rel.values()], note
-        before = _check(platform, run_dir, props, config_root, base, "before", objects) if base else \
+            raise Failed(after["failed"])
+        before = _check(platform, run_dir, props, config_root, base, "before", objects, fmt) if base else \
             {"findings": [], "masked": {}, "compiled": set()}
     finally:
         platform.delete_extension(EXT, label="extcheck-delete")
@@ -379,6 +391,15 @@ class ExtCheck:
         return ctx.modules if ctx.modules and ctx.gate.ready("extcheck", ctx.have) else None
 
     def run(self, ctx, items):
+        """Проверка выполнилась не целиком — решение реестра проверок, а не «модули чисты»: в on — код 2, в auto —
+        «не проверено» с check extcheck; per-module skipped при полном сбое не выдаются."""
+        try:
+            return self._run(ctx, items)
+        except Failed as e:
+            ctx.gate.failed(NAME, e.reason, e.code)
+            return [], ""
+
+    def _run(self, ctx, items):
         plan = ctx.plan
         source = Path(ctx.tree_root) / plan["source"]
         extension = ctx.cfg["project"].get("extension")
@@ -410,8 +431,7 @@ class ExtCheck:
             else:
                 root = ctx.designer_root() if changed else ctx.config_root
         except InfraError as e:
-            note = f"{'выгрузка ИБ' if ib_dump else 'экспорт EDT'}: {e}"
-            return [result(NAME, "extcheck", m, "Designer", "skipped", note) for m in changed], note
+            raise Failed(f"{'выгрузка ИБ' if ib_dump else 'экспорт EDT'}: {e}", e.code) from e
         if not ib_dump:
             units = [m for m in changed if self._supported(root, lay, m)]
         res, note = run(
