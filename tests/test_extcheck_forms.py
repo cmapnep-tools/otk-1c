@@ -4,12 +4,12 @@ import unittest
 from pathlib import Path
 
 from _fs import rmtree_force
-from otk_1c.probes import ib_tools
 from otk_1c.probes.executors import extended_check
 from otk_1c.probes.platform import ConfigOps
 from otk_1c.sources import layout
 
-NS = 'xmlns="http://v8.1c.ru/8.3/MDClasses" xmlns:xr="http://v8.1c.ru/8.3/xcf/readable" version="2.17"'
+FMT = "2.17"      # выгрузка платформы 8.3.24: файлы временного расширения — в её формате
+NS = f'xmlns="http://v8.1c.ru/8.3/MDClasses" xmlns:xr="http://v8.1c.ru/8.3/xcf/readable" version="{FMT}"'
 DUMP = {
     "Configuration.xml": f"<MetaDataObject {NS}><Configuration uuid=\"c\"><Properties>"
                          "<DefaultLanguage>Language.Русский</DefaultLanguage>"
@@ -127,10 +127,9 @@ class ExtCheckFormsTest(unittest.TestCase):
         self.assertIn("<ExtendedConfigurationObject>frm</ExtendedConfigurationObject>", form_md)
         self.assertIn("<xr:State>Extended</xr:State>", form_md)
         form = (ext / "Catalogs/Товары/Forms/Форма/Ext/Form.xml").read_text(encoding="utf-8-sig")
-        # выгрузка ИБ 8.5 (2.22) — в версии остальных файлов расширения, иначе Конфигуратор её не загрузит
-        self.assertTrue(form.endswith(f'version="{ib_tools.FORMAT}"><BaseForm version="{ib_tools.FORMAT}"/></Form>'),
-                        form)
-        self.assertIn(f'version="{ib_tools.FORMAT}"', form_md)
+        # Form.xml — в версии остальных файлов расширения (здесь выгрузки 2.17), иначе Конфигуратор её не загрузит
+        self.assertTrue(form.endswith(f'version="{FMT}"><BaseForm version="{FMT}"/></Form>'), form)
+        self.assertIn(f'version="{FMT}"', form_md)
         module = (ext / FORM_PATH).read_text(encoding="utf-8-sig")
         self.assertNotIn("мКэш", module)
         self.assertIn('&Вместо("Б")\nПроцедура kc_Б()', module)            # read_text: \r\n -> \n
@@ -177,11 +176,19 @@ class ExtCheckFormsTest(unittest.TestCase):
         self.assertEqual([(r["module"], r["outcome"]) for r in res], [(FORM_PATH, "skipped")])
 
     def test_check_failed(self):
-        """/CheckModules упал без разобранных строк — все модули «не проверено»."""
-        _, res, note = self.run_check(FakePlatform(after="", before="", rc=1))
-        self.assertEqual({r["outcome"] for r in res}, {"skipped"})
-        self.assertEqual(len(res), 2)
-        self.assertIn("rc=1", note)
+        """/CheckModules упал без разобранных строк — проверка не выполнилась целиком (решает реестр проверок)."""
+        with self.assertRaises(extended_check.Failed) as e:
+            self.run_check(FakePlatform(after="", before="", rc=1))
+        self.assertIn("rc=1", e.exception.reason)
+
+    def test_load_failed(self):
+        """Расширение не загрузилось (формат новее платформы) — проверка не выполнена целиком, а не «модули чисты»."""
+        platform = FakePlatform()
+        platform.load_dir = lambda *a, **k: (
+            1, 0, "Неизвестная версия формата 2.20 загружаемого файла run/extcheck-after/Configuration.xml")
+        with self.assertRaises(extended_check.Failed) as e:
+            self.run_check(platform)
+        self.assertIn("Неизвестная версия формата", e.exception.reason)
 
     def test_before_failed(self):
         """«Было» не проверилось — находки «стало» не выдаются за новые."""

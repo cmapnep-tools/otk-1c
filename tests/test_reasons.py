@@ -41,6 +41,10 @@ MESSAGES = {
     "no-plan": ["нет плана D:/otk/otk.json: сначала otk collect или gate"],
     "edt-failed": ["экспорт EDT D:/edt/Проект: rc=1 ошибка"],
     "query-incomplete": ["текст собран с переменными частями"],
+    "format-unsupported": ["загрузка otk_check: Неизвестная версия формата 2.20 загружаемого файла "
+                           "D:/run/extcheck-after/Configuration.xml",
+                           "формат выгрузки 2.20 новее платформы 8.3.23.2157 (до 2.16): выгрузку этой платформой "
+                           "не загрузить"],
     "config-invalid": ["environment.ibTool = 'x': допустимо designer или ibcmd",
                        "[designerCheck] modes = ['Х']: неизвестные ключи ['Х']", cli.DESIGNER_STATIC,
                        "D:/p/otk.toml: ошибка синтаксиса TOML: Expected ']' at the end of a table declaration"],

@@ -71,7 +71,7 @@ def build(platform, config_root, out_dir, log=print):
     syntax.add_platform(platform.bin)
     # таблица — ровно своей платформы: справку другой версии не подставлять
     ix = syntax.open_exact(syntax.index.version_of_dir(str(platform.bin)) or version, str(platform.bin))
-    props = ib_tools.base_properties(config_root)
+    props = ib_tools.base_properties(config_root, platform.bin)
     items = {}
     for r in ix.db.execute("SELECT name, name_en, kind FROM entries WHERE owner = ? AND kind IN ('method','property')",
                            (syntax.index.GLOBAL,)).fetchall():

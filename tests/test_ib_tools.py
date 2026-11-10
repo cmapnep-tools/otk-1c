@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from _fs import rmtree_force
+from otk_1c.errors import InfraError
 from otk_1c.probes import ib_tools
 
 CONFIG = ('<MetaDataObject><Configuration><Properties><Name>YAXUNIT</Name>'
@@ -135,6 +136,84 @@ class TestAdoptedObjects(unittest.TestCase):
         cfg = (target / "Configuration.xml").read_text(encoding="utf-8-sig")
         self.assertLess(cfg.index("<Catalog>Товары</Catalog>"), cfg.index("<Enum>Пол</Enum>"))
         self.assertTrue((target / "Catalogs" / "Товары.xml").exists())
+        # без props["format"] — потолок ОТК: 2.20 загружается платформой 8.3.27 и 8.5.1
+        self.assertIn(f'version="{ib_tools.FORMAT_MAX}"', cfg)
+
+    def test_extension_format(self):
+        """Формат файлов расширения — как у выгрузки: Конфигуратор не грузит файлы разных версий."""
+        props = {"language": "Русский", "languageUuid": "l", "languageCode": "ru", "interface": "Taxi",
+                 "format": "2.16"}
+        modules = {"М": ({"Server": "true"}, "Процедура П() Экспорт\nКонецПроцедуры\n")}
+        objects = [ib_tools.adopted_object(self.root, "Catalogs", "Товары", fmt="2.16")]
+        target = self.root / "ext16"
+        ib_tools.generate_test_extension(target, props, name="t", prefix="t_", modules=modules, objects=objects)
+        files = ["Configuration.xml", "Languages/Русский.xml", "CommonModules/М.xml", "Catalogs/Товары.xml"]
+        for rel in files:
+            with self.subTest(rel):
+                text = (target / rel).read_text(encoding="utf-8-sig")
+                self.assertIn('version="2.16"', text)
+                self.assertNotIn('version="2.20"', text)
+
+
+class FormatTest(unittest.TestCase):
+    """Версия формата файлов: по таблице ИТС для платформы, у выгрузки — её собственная; потолок — 2.20."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(rmtree_force, self.tmp)
+
+    def test_for_platform(self):
+        expect = {"8.3.21.1302": "2.14", "8.3.23.2157": "2.16", "8.3.24.1467": "2.17", "8.3.27.2342": "2.20",
+                  "8.5.1.1529": "2.22"}
+        for version, fmt in expect.items():
+            with self.subTest(version):
+                self.assertEqual(ib_tools.format_for_platform(version), fmt)
+        self.assertIsNone(ib_tools.format_for_platform("8.3.20.1000"))     # старее таблицы
+        self.assertIsNone(ib_tools.format_for_platform(None))
+
+    def test_file_format(self):
+        dump = self.tmp / "cf"
+        dump.mkdir()
+        (dump / "Configuration.xml").write_text('<MetaDataObject xmlns="x" version="2.17"><Configuration/>'
+                                                "</MetaDataObject>", encoding="utf-8")
+        self.assertEqual(ib_tools.file_format(dump), "2.17")
+        self.assertIsNone(ib_tools.file_format(self.tmp / "нет"))
+        (self.tmp / "edt/Configuration").mkdir(parents=True)
+        (self.tmp / "edt/Configuration/Configuration.mdo").write_text("<mdclass:Configuration/>", encoding="utf-8")
+        self.assertIsNone(ib_tools.file_format(self.tmp / "edt"))
+
+    def test_generated_format(self):
+        dump = self.tmp / "cf"
+        dump.mkdir()
+        (dump / "Configuration.xml").write_text('<MetaDataObject version="2.17"><Configuration/></MetaDataObject>',
+                                                encoding="utf-8")
+        self.assertEqual(ib_tools.generated_format(dump), "2.17")            # своя версия выгрузки, не платформы
+        edt = self.tmp / "edt/Configuration"
+        edt.mkdir(parents=True)
+        (edt / "Configuration.mdo").write_text("<mdclass:Configuration/>", encoding="utf-8")
+        bin23 = self.tmp / "1cv8/8.3.23.2157/bin"
+        self.assertEqual(ib_tools.generated_format(self.tmp / "edt", bin23), "2.16")
+        bin85 = self.tmp / "1cv8/8.5.1.1529/bin"
+        self.assertEqual(ib_tools.generated_format(self.tmp / "edt", bin85), ib_tools.FORMAT_MAX)
+        self.assertEqual(ib_tools.generated_format(self.tmp / "edt"), ib_tools.FORMAT_MAX)   # платформы нет
+        newer = self.tmp / "cf85"
+        newer.mkdir()
+        (newer / "Configuration.xml").write_text('<MetaDataObject version="2.22"><Configuration/></MetaDataObject>',
+                                                 encoding="utf-8")
+        self.assertEqual(ib_tools.generated_format(newer), ib_tools.FORMAT_MAX)  # потолок генерации
+
+    def test_require_format(self):
+        dump = self.tmp / "cf"
+        dump.mkdir()
+        (dump / "Configuration.xml").write_text('<MetaDataObject version="2.20"><Configuration/></MetaDataObject>',
+                                                encoding="utf-8")
+        with self.assertRaises(InfraError) as e:
+            ib_tools.require_format(dump, self.tmp / "1cv8/8.3.23.2157/bin")
+        self.assertEqual(e.exception.code, "format-unsupported")
+        self.assertIn("2.20", str(e.exception))
+        self.assertIn("8.3.23.2157", str(e.exception))
+        ib_tools.require_format(dump, self.tmp / "1cv8/8.3.27.2342/bin")       # та же версия — грузится
+        ib_tools.require_format(dump, None)                                    # платформа неизвестна — не судим
 
 
 if __name__ == "__main__":

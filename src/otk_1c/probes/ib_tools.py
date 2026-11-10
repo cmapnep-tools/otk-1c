@@ -13,23 +13,80 @@ from pathlib import Path
 from .. import lang
 from ..errors import InfraError
 from ..sources import layout
+from .platform import platform_version
 
 EXT = "otk"
 MODULE = "otk_ТестыПроб"
 YAX_NAME = "YAXUNIT"          # имя расширения внутри .cfe
 YAX_LANGUAGE = "Русский"      # язык, который заимствует YAxUnit
 _TEMPLATE = Path(__file__).parent.parent / "onec" / f"{MODULE}.bsl"
-FORMAT = "2.20"   # версия формата файлов расширений ОТК: Конфигуратор не грузит выгрузку из файлов разных версий
+# Потолок формата файлов ОТК: 2.20 проверен на 8.3.27 и 8.5.1. Конфигуратор не грузит выгрузку из файлов
+# разных версий, а версия выше платформы — «Неизвестная версия формата».
+FORMAT_MAX = "2.20"
+# Максимальная версия формата выгрузки платформы (ИТС «2.17.2. Версии формата выгрузки»: загрузка успешна, только
+# если версия файлов меньше или равна версии платформы).
+_PLATFORM_FORMATS = {(8, 3, 21): "2.14", (8, 3, 22): "2.15", (8, 3, 23): "2.16", (8, 3, 24): "2.17",
+                     (8, 3, 25): "2.18", (8, 3, 26): "2.19", (8, 3, 27): "2.20", (8, 5, 1): "2.22"}
 _NS = ('xmlns="http://v8.1c.ru/8.3/MDClasses" xmlns:app="http://v8.1c.ru/8.2/managed-application/core" '
        'xmlns:v8="http://v8.1c.ru/8.1/data/core" xmlns:xr="http://v8.1c.ru/8.3/xcf/readable" '
        'xmlns:cfg="http://v8.1c.ru/8.1/data/enterprise/current-config" xmlns:ent="http://v8.1c.ru/8.1/data/enterprise" '
        'xmlns:xen="http://v8.1c.ru/8.3/xcf/enums" '
        'xmlns:xs="http://www.w3.org/2001/XMLSchema" '
-       f'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="{FORMAT}"')
+       'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"')
 _CONTAINED = ["9cd510cd-abfc-11d4-9434-004095e12fc7", "9fcd25a0-4822-11d4-9414-008048da11f9",
               "e3687481-0a87-462c-a166-9f34594f9bba", "9de14907-ec23-4a07-96f0-85521cb6b53b",
               "51f2d5d8-ea4d-4064-8892-82951750031e", "e68182ea-4237-4383-967f-90c1e3370bc7",
               "fb282519-d103-4dd3-bc12-cb271d631dfc"]
+
+
+def _ns(fmt):
+    """Атрибуты MetaDataObject с версией формата файлов выгрузки."""
+    return f'{_NS} version="{fmt}"'
+
+
+def _version_key(value):
+    return tuple(int(x) for x in str(value).split("."))
+
+
+def format_for_platform(version):
+    """Максимальная версия формата выгрузки платформы version (8.3.27.2342 -> 2.20) или None: версия неизвестна
+    или старее первой строки таблицы ИТС."""
+    try:
+        key = _version_key(version)[:3]
+    except (TypeError, ValueError):
+        return None
+    known = [(k, v) for k, v in _PLATFORM_FORMATS.items() if k <= key]
+    return max(known)[1] if known else None
+
+
+def file_format(config_root):
+    """Версия формата выгрузки Конфигуратора (атрибут version корня Configuration.xml) или None: исходники EDT,
+    файла нет."""
+    if config_root is None or layout.detect(config_root) is layout.EDT:
+        return None
+    path = Path(config_root) / "Configuration.xml"
+    if not path.is_file():
+        return None
+    m = re.search(r'<MetaDataObject[^>]*\bversion="([\d.]+)"', path.read_text(encoding="utf-8-sig"))
+    return m.group(1) if m else None
+
+
+def generated_format(config_root, bin_dir=None):
+    """Версия формата файлов, которые генерирует ОТК: у выгрузки — её же версия (иначе Конфигуратор не грузит
+    файлы разных версий), у исходников EDT — по версии платформы; не выше потолка FORMAT_MAX."""
+    edt = config_root is not None and layout.detect(config_root) is layout.EDT
+    fmt = (format_for_platform(platform_version(bin_dir)) if bin_dir else None) if edt else file_format(config_root)
+    return min(fmt or FORMAT_MAX, FORMAT_MAX, key=_version_key)
+
+
+def require_format(config_root, bin_dir):
+    """Ошибка до сборки копии ИБ, если выгрузка сделана платформой новее проверяющей: её файлы не загрузятся."""
+    dump = file_format(config_root)
+    platform = format_for_platform(platform_version(bin_dir)) if bin_dir else None
+    if dump and platform and _version_key(dump) > _version_key(platform):
+        raise InfraError(f"формат выгрузки {dump} новее платформы {platform_version(bin_dir)} (до {platform}): "
+                         "выгрузку этой платформой не загрузить — проверьте платформой новее или возьмите выгрузку "
+                         "этой платформы", code="format-unsupported")
 
 
 def write(path, text):
@@ -57,17 +114,22 @@ def adopt_language(dump, old, props):
             write(xml, new)
 
 
-def base_properties(config_root):
-    """Язык (uuid) и режим совместимости интерфейса основной конфигурации (выгрузка Конфигуратора или EDT)."""
+def base_properties(config_root, bin_dir=None):
+    """Язык (uuid), режим совместимости интерфейса и версия формата файлов, которые генерирует ОТК, для основной
+    конфигурации (выгрузка Конфигуратора или EDT; bin_dir — платформа, по ней формат у исходников EDT)."""
     if layout.detect(config_root) is layout.EDT:
-        return _edt_properties((Path(config_root) / layout.EDT.config_file).read_text(encoding="utf-8-sig"))
-    cfg = (Path(config_root) / "Configuration.xml").read_text(encoding="utf-8-sig")
-    lang_name = re.search(r"<DefaultLanguage>Language\.([^<]+)</DefaultLanguage>", cfg).group(1)
-    lang_xml = (Path(config_root) / "Languages" / f"{lang_name}.xml").read_text(encoding="utf-8-sig")
-    return {"language": lang_name,
-            "languageUuid": re.search(r'<Language uuid="([^"]+)"', lang_xml).group(1),
-            "languageCode": re.search(r"<LanguageCode>([^<]+)</LanguageCode>", lang_xml).group(1),
-            "interface": re.search(r"<InterfaceCompatibilityMode>([^<]+)</InterfaceCompatibilityMode>", cfg).group(1)}
+        props = _edt_properties((Path(config_root) / layout.EDT.config_file).read_text(encoding="utf-8-sig"))
+    else:
+        cfg = (Path(config_root) / "Configuration.xml").read_text(encoding="utf-8-sig")
+        lang_name = re.search(r"<DefaultLanguage>Language\.([^<]+)</DefaultLanguage>", cfg).group(1)
+        lang_xml = (Path(config_root) / "Languages" / f"{lang_name}.xml").read_text(encoding="utf-8-sig")
+        props = {"language": lang_name,
+                 "languageUuid": re.search(r'<Language uuid="([^"]+)"', lang_xml).group(1),
+                 "languageCode": re.search(r"<LanguageCode>([^<]+)</LanguageCode>", lang_xml).group(1),
+                 "interface": re.search(r"<InterfaceCompatibilityMode>([^<]+)</InterfaceCompatibilityMode>",
+                                        cfg).group(1)}
+    props["format"] = generated_format(config_root, bin_dir)
+    return props
 
 
 def _edt_properties(text):
@@ -144,11 +206,11 @@ def _adopted_tabular(text):
 _COMMON_ATTRIBUTE_PROPS = ("Type", "AutoUse", "DataSeparation", "SeparatedDataUse")
 
 
-def adopted_object(config_root, collection, name, lay=layout.DESIGNER, tabular=False, forms=()):
+def adopted_object(config_root, collection, name, lay=layout.DESIGNER, tabular=False, forms=(), fmt=None):
     """Описание заимствованного объекта основной конфигурации для расширения или None (нет такого объекта):
     свои uuid и сгенерированные типы, ExtendedConfigurationObject — uuid объекта; у перечисления — значения.
     tabular — с табличными частями (модуль объекта во временном расширении); forms — имена
-    заимствованных форм объекта (<Form> в ChildObjects, после табличных частей)."""
+    заимствованных форм объекта (<Form> в ChildObjects, после табличных частей); fmt — версия формата файлов."""
     path = layout.find_ci(config_root, lay.object_file(collection, name))
     if path is None:
         return None
@@ -181,7 +243,8 @@ def adopted_object(config_root, collection, name, lay=layout.DESIGNER, tabular=F
     # не определена (ОбластьДанных…)» в модуле объекта (проверено на отраслевой конфигурации); Content не нужен
     own_props = "".join(m.group(0) for t in _COMMON_ATTRIBUTE_PROPS
                         for m in [re.search(rf"<{t}>.*?</{t}>", text, re.S)] if m) if tag == "CommonAttribute" else ""
-    xml = (f'<?xml version="1.0" encoding="UTF-8"?>\n<MetaDataObject {_NS}><{tag} uuid="{uuid.uuid4()}">'
+    xml = (f'<?xml version="1.0" encoding="UTF-8"?>\n<MetaDataObject {_ns(fmt or FORMAT_MAX)}><{tag} '
+           f'uuid="{uuid.uuid4()}">'
            f"<InternalInfo>{types}</InternalInfo><Properties><ObjectBelonging>Adopted</ObjectBelonging>"
            f"<Name>{real_name}</Name><Comment/><ExtendedConfigurationObject>{main_uuid}</ExtendedConfigurationObject>"
            f"{own_props}</Properties>{child_objects}</{tag}></MetaDataObject>")
@@ -190,7 +253,8 @@ def adopted_object(config_root, collection, name, lay=layout.DESIGNER, tabular=F
 
 def generate_test_extension(target, props, name=EXT, prefix="otk_", modules=None, objects=None):
     """Выгрузка расширения: язык + общие модули {имя: (флаги, текст)} + заимствованные объекты
-    [{collection, name, tag, xml}] (adopted_object)."""
+    [{collection, name, tag, xml}] (adopted_object). Версия формата файлов — props["format"]."""
+    fmt = props.get("format") or FORMAT_MAX
     shutil.rmtree(target, ignore_errors=True)
     target = Path(target)
     if modules is None:
@@ -206,7 +270,7 @@ def generate_test_extension(target, props, name=EXT, prefix="otk_", modules=None
     for o in objects:
         write(target / o["collection"] / f"{o['name']}.xml", o["xml"])
     write(target / "Configuration.xml", f"""<?xml version="1.0" encoding="UTF-8"?>
-<MetaDataObject {_NS}><Configuration uuid="{uuid.uuid4()}"><InternalInfo>{contained}</InternalInfo><Properties>
+<MetaDataObject {_ns(fmt)}><Configuration uuid="{uuid.uuid4()}"><InternalInfo>{contained}</InternalInfo><Properties>
 <ObjectBelonging>Adopted</ObjectBelonging><Name>{name}</Name><Synonym/><Comment/>
 <ConfigurationExtensionPurpose>AddOn</ConfigurationExtensionPurpose>
 <KeepMappingToExtendedConfigurationObjectsByIDs>true</KeepMappingToExtendedConfigurationObjectsByIDs>
@@ -219,25 +283,27 @@ def generate_test_extension(target, props, name=EXT, prefix="otk_", modules=None
 </Properties><ChildObjects><Language>{props['language']}</Language>{children}</ChildObjects>
 </Configuration></MetaDataObject>""")
     write(target / "Languages" / f"{props['language']}.xml", f"""<?xml version="1.0" encoding="UTF-8"?>
-<MetaDataObject {_NS}><Language uuid="{uuid.uuid4()}"><InternalInfo/>\
+<MetaDataObject {_ns(fmt)}><Language uuid="{uuid.uuid4()}"><InternalInfo/>\
 <Properties><ObjectBelonging>Adopted</ObjectBelonging>
 <Name>{props['language']}</Name><Comment/><ExtendedConfigurationObject>{props['languageUuid']}</ExtendedConfigurationObject>
 <LanguageCode>{props['languageCode']}</LanguageCode></Properties></Language></MetaDataObject>""")
     for mod_name, (flags, text) in modules.items():
-        write_common_module(target, mod_name, flags, text)
+        write_common_module(target, mod_name, flags, text, fmt)
     return target
 
 
-def write_common_module(target, mod_name, flags, text):
-    """Общий модуль в выгрузке: описание с флагами {"Server": "true", …} и текст модуля."""
+def write_common_module(target, mod_name, flags, text, fmt=None):
+    """Общий модуль в выгрузке: описание с флагами {"Server": "true", …} и текст модуля; fmt — версия формата
+    файлов (по умолчанию потолок ОТК или формат Configuration.xml этой выгрузки)."""
     target = Path(target)
+    fmt = fmt or file_format(target) or FORMAT_MAX
     head = flags.pop("__head__", f"<Name>{mod_name}</Name><Synonym/><Comment/>")
     all_flags = {f: flags.get(f, "false") for f in ("Global", "ClientManagedApplication", "Server",
                                                    "ExternalConnection", "ClientOrdinaryApplication",
                                                    "ServerCall", "Privileged")}
     props_xml = "".join(f"<{f}>{v}</{f}>" for f, v in all_flags.items())
     write(target / "CommonModules" / f"{mod_name}.xml", f"""<?xml version="1.0" encoding="UTF-8"?>
-<MetaDataObject {_NS}><CommonModule uuid="{uuid.uuid4()}"><Properties>{head}
+<MetaDataObject {_ns(fmt)}><CommonModule uuid="{uuid.uuid4()}"><Properties>{head}
 {props_xml}<ReturnValuesReuse>DontUse</ReturnValuesReuse></Properties></CommonModule></MetaDataObject>""")
     write(target / "CommonModules" / mod_name / "Ext" / "Module.bsl", text)
 
@@ -258,7 +324,7 @@ def unsafe(platform, name):
 def install(platform, run_dir, yaxunit_cfe, config_root, renames=()):
     """Установить YAxUnit (с переименованиями) и тестовое расширение. Возвращает описание."""
     run_dir = Path(run_dir)
-    props = base_properties(config_root)
+    props = base_properties(config_root, getattr(platform, "bin", None))
     rc, _, out = platform.load_extension("YAxUnit", yaxunit_cfe, label="yax-load")
     if rc:
         raise InfraError(f"загрузка YAxUnit: {out[-300:]}", code="platform-failed")
