@@ -613,6 +613,20 @@ class TestRequiredContexts(unittest.TestCase):
                          {"results": [self.unc("*", "designer:*")], "notes": []}, {})
         self.assertEqual(s["code"], 2)
 
+    def test_wildcard_needs_its_mode(self):
+        """Запись «не покрыто» модуля без пробы (needs designer:*) закрывается сокращённым набором режимов только в
+        проверенных контекстах: обязательный OrdinaryClient без своего режима остаётся непокрытым."""
+        plan = {**self.plan(), "requiredContexts": ["OrdinaryClient"]}
+        run = {"results": [self.unc("*", "designer:*")], "notes": []}
+        designer = {"ran": True, "modes": ["-Server"], "findings": [], "notes": []}
+        s = report.build(plan, {"findings": []}, run, {}, designer=designer)
+        self.assertEqual((s["code"], s["verdict"]), (2, "не покрыто обязательное: OrdinaryClient"))
+        self.assertEqual([i["context"] for i in s["uncovered"]], ["*"])      # запись остаётся: не проверено целиком
+        designer = {**designer, "modes": ["-Server", "-ThickClientOrdinaryApplication"]}
+        s = report.build(plan, {"findings": []}, run, {}, designer=designer)
+        self.assertEqual((s["code"], s["verdict"]), (0, "можно отправлять"))
+        self.assertEqual(s["uncovered"], [])
+
     def test_no_module_in_context_is_ok(self):
         plan = {**self.plan(contexts=["Server"]), "requiredContexts": ["OrdinaryClient"]}
         s = report.build(plan, {"findings": []}, {"results": [], "notes": []}, {})
