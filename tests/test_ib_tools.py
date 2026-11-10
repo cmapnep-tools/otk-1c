@@ -3,6 +3,7 @@ import re
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from _fs import rmtree_force
 from otk_1c.errors import InfraError
@@ -181,6 +182,34 @@ class FormatTest(unittest.TestCase):
         (self.tmp / "edt/Configuration").mkdir(parents=True)
         (self.tmp / "edt/Configuration/Configuration.mdo").write_text("<mdclass:Configuration/>", encoding="utf-8")
         self.assertIsNone(ib_tools.file_format(self.tmp / "edt"))
+
+    def test_bad_format(self):
+        """Нечитаемый Configuration.xml и неразбираемая версия — сбой инфраструктуры, а не молчание."""
+        broken = self.tmp / "broken"
+        broken.mkdir()
+        (broken / "Configuration.xml").write_text('<MetaDataObject version="2.17"/>', encoding="utf-8")
+        with mock.patch.object(Path, "read_text", side_effect=OSError("доступ запрещён")):
+            with self.assertRaises(InfraError) as e:
+                ib_tools.file_format(broken)
+        self.assertIn("Configuration.xml", str(e.exception))
+        odd = self.tmp / "odd"
+        odd.mkdir()
+        (odd / "Configuration.xml").write_text('<MetaDataObject version="2..1"><Configuration/></MetaDataObject>',
+                                               encoding="utf-8")
+        with self.assertRaises(InfraError) as e:
+            ib_tools.file_format(odd)
+        self.assertIn("2..1", str(e.exception))
+        with self.assertRaises(InfraError):                    # ранняя проверка формата не падает в int()
+            ib_tools.require_format(odd, self.tmp / "1cv8/8.3.23.2157/bin")
+
+    def test_format_without_version(self):
+        """Версии в выгрузке нет — формат берём у платформы, а не потолок: иначе на старой платформе не загрузится."""
+        dump = self.tmp / "old"
+        dump.mkdir()
+        (dump / "Configuration.xml").write_text("<MetaDataObject><Configuration/></MetaDataObject>", encoding="utf-8")
+        self.assertIsNone(ib_tools.file_format(dump))
+        self.assertEqual(ib_tools.generated_format(dump, self.tmp / "1cv8/8.3.23.2157/bin"), "2.16")
+        self.assertEqual(ib_tools.generated_format(dump), ib_tools.FORMAT_MAX)      # платформы нет — потолок
 
     def test_generated_format(self):
         dump = self.tmp / "cf"
