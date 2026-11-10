@@ -107,7 +107,8 @@ def write(run_dir, out, gate, plan):
     """run.json: результат шага, решения реестра проверок с прошлого файла шага и отпечаток плана (plan —
     план collect, без зависимых). Пробы не выполнялись (нет копии ИБ, --static-only, сбой) — out без
     результатов: решения и примечания всё равно в run.json."""
-    out = {**model.header("run", internal=True), "timings": {}, "notes": [], "results": [], **out}
+    out = {**model.header("run", internal=True), "timings": {}, "notes": [], "results": [],
+           "extCheck": {"modules": [], "contexts": []}, **out}
     taken = gate.take()
     out["notChecked"] = out.get("notChecked", []) + taken["notChecked"]
     out["infra"] = out.get("infra", []) + taken["infra"]
@@ -196,7 +197,8 @@ def _run(repo, plan, cfg, run_dir, tree_root, log=print, session=None, gate=None
                     "outcome": "compile-error", "message": message, "line": None} for rel, message in e.errors]
         log(f"сборка: ошибки загрузки выгрузки ({len(results)})")
         return {"timings": {"build": round(time.time() - t, 1)},
-                "notes": ["пробы не выполнялись: выгрузка не загружается в копию ИБ"], "results": results}
+                "notes": ["пробы не выполнялись: выгрузка не загружается в копию ИБ"], "results": results,
+                "extCheck": {"modules": [], "contexts": []}}
     ctx = executors.RunContext(
         repo, plan, cfg, run_dir, tree_root, config_root, platform, gate or checks.Gate(cfg),
         install=lambda renames: install_tools(session, platform, run_dir, env, config_root, renames),
@@ -240,4 +242,7 @@ def _run(repo, plan, cfg, run_dir, tree_root, log=print, session=None, gate=None
             ctx.results.append({"executor": "plan", "kind": "uncovered", "module": m["path"], "owner": m["owner"],
                                 "context": c["context"], "needs": c["needs"], "outcome": "skipped",
                                 "message": c["reason"], "line": None})
-    return {"timings": ctx.timings, "notes": ctx.notes, "results": _normalize(ctx.results, plan["modules"])}
+    # extCheck — чем прогон закрыл «не покрыто»: без него report не отличит модули, проверенные расширенной
+    # проверкой (у них нет ни результатов, ни записей), от непроверенных (--static-only)
+    return {"timings": ctx.timings, "notes": ctx.notes, "results": _normalize(ctx.results, plan["modules"]),
+            "extCheck": {"modules": sorted(ctx.covered), "contexts": sorted(ctx.ext_contexts)}}

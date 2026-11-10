@@ -262,7 +262,21 @@
    "smoke",
    "tools",
    "yaxunit"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Клиент/Module.bsl",
+    "Плоский/Module.bsl",
+    "Плохой/Module.bsl",
+    "Сервер/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "com-missing": {
   "results": [
@@ -400,7 +414,20 @@
    "extcheck",
    "tools",
    "yaxunit"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Клиент/Module.bsl",
+    "Плоский/Module.bsl",
+    "Сервер/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "com-fails": {
   "results": [
@@ -548,7 +575,20 @@
    "extcheck",
    "tools",
    "yaxunit"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Клиент/Module.bsl",
+    "Плоский/Module.bsl",
+    "Сервер/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "com-fails-no-yax": {
   "results": [
@@ -672,7 +712,20 @@
    "build",
    "com",
    "extcheck"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Клиент/Module.bsl",
+    "Плоский/Module.bsl",
+    "Сервер/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "no-tools": {
   "results": [
@@ -791,7 +844,20 @@
   "timings": [
    "build",
    "extcheck"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Клиент/Module.bsl",
+    "Плоский/Module.bsl",
+    "Сервер/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "no-yax-com-ok": {
   "results": [
@@ -932,7 +998,20 @@
    "build",
    "com",
    "extcheck"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Клиент/Module.bsl",
+    "Плоский/Module.bsl",
+    "Сервер/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "server-yaxunit": {
   "results": [
@@ -1034,7 +1113,18 @@
    "extcheck",
    "tools",
    "yaxunit"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Сервер/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "session-start": {
   "results": [
@@ -1083,7 +1173,16 @@
    "extcheck",
    "tools",
    "yaxunit"
-  ]
+  ],
+  "extCheck": {
+   "modules": [],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "session-start-off": {
   "results": [],
@@ -1106,7 +1205,16 @@
   "timings": [
    "build",
    "extcheck"
-  ]
+  ],
+  "extCheck": {
+   "modules": [],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "conflict": {
   "results": [
@@ -1186,7 +1294,18 @@
    "extcheck",
    "tools",
    "yaxunit"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Клиент/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "load-error": {
   "results": [
@@ -1215,7 +1334,11 @@
   ],
   "timings": [
    "build"
-  ]
+  ],
+  "extCheck": {
+   "modules": [],
+   "contexts": []
+  }
  },
  "extension": {
   "results": [
@@ -1296,7 +1419,19 @@
    "extcheck",
    "tools",
    "yaxunit"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Клиент/Module.bsl",
+    "Сервер/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "checks-off": {
   "results": [
@@ -1378,7 +1513,11 @@
    "scenarios",
    "tools",
    "yaxunit"
-  ]
+  ],
+  "extCheck": {
+   "modules": [],
+   "contexts": []
+  }
  },
  "checks-on-missing": {
   "results": [
@@ -1429,7 +1568,18 @@
   "timings": [
    "build",
    "extcheck"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Клиент/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "web-only": {
   "results": [
@@ -1471,7 +1621,18 @@
   "timings": [
    "build",
    "extcheck"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Клиент/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "session": {
   "results": [
@@ -1615,7 +1776,19 @@
    "scenarios",
    "tools",
    "yaxunit"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Клиент/Module.bsl",
+    "Сервер/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "session-ext": {
   "results": [
@@ -1669,7 +1842,18 @@
    "build",
    "com",
    "extcheck"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Сервер/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "session-db-changed": {
   "results": [
@@ -1770,7 +1954,19 @@
   "timings": [
    "build",
    "extcheck"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Клиент/Module.bsl",
+    "Сервер/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "empty": {
   "results": [],
@@ -1786,7 +1982,11 @@
   ],
   "timings": [
    "build"
-  ]
+  ],
+  "extCheck": {
+   "modules": [],
+   "contexts": []
+  }
  },
  "conflict-exhausted": {
   "results": [
@@ -1890,7 +2090,18 @@
    "extcheck",
    "tools",
    "yaxunit"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Клиент/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "conflict-exhausted-on": {
   "results": [
@@ -1991,7 +2202,18 @@
    "extcheck",
    "tools",
    "yaxunit"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Клиент/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "conflict-exhausted-com": {
   "results": [
@@ -2139,7 +2361,19 @@
    "extcheck",
    "tools",
    "yaxunit"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Клиент/Module.bsl",
+    "Сервер/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "conflict-smoke": {
   "results": [
@@ -2196,7 +2430,11 @@
    "build",
    "smoke",
    "tools"
-  ]
+  ],
+  "extCheck": {
+   "modules": [],
+   "contexts": []
+  }
  },
  "conflict-scenarios": {
   "results": [
@@ -2262,7 +2500,11 @@
    "build",
    "scenarios",
    "tools"
-  ]
+  ],
+  "extCheck": {
+   "modules": [],
+   "contexts": []
+  }
  },
  "conflict-exhausted-smoke-scen": {
   "results": [
@@ -2384,7 +2626,18 @@
    "smoke",
    "tools",
    "yaxunit"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Клиент/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "com-missing-ec": {
   "results": [
@@ -2533,7 +2786,20 @@
    "extcheck",
    "tools",
    "yaxunit"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "ВетвьВС/Module.bsl",
+    "Клиент/Module.bsl",
+    "ТолькоВС/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "ec-no-tools": {
   "results": [],
@@ -2569,7 +2835,16 @@
   "timings": [
    "build",
    "extcheck"
-  ]
+  ],
+  "extCheck": {
+   "modules": [],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "com-ok-ec": {
   "results": [
@@ -2615,7 +2890,16 @@
    "build",
    "com",
    "extcheck"
-  ]
+  ],
+  "extCheck": {
+   "modules": [],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "contexts-no-ec": {
   "results": [
@@ -2776,7 +3060,21 @@
    "extcheck",
    "tools",
    "yaxunit"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "ВетвьВС/Module.bsl",
+    "Клиент/Module.bsl",
+    "Сервер/Module.bsl",
+    "ТолькоВС/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "contexts-no-ec-no-yax": {
   "results": [
@@ -2851,7 +3149,19 @@
   "timings": [
    "build",
    "extcheck"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Сервер/Module.bsl",
+    "ТолькоВС/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "contexts-no-ec-no-yax-on": {
   "results": [
@@ -2902,7 +3212,18 @@
   "timings": [
    "build",
    "extcheck"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Сервер/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "contexts-ec-only-modules": {
   "results": [
@@ -2955,7 +3276,18 @@
   "timings": [
    "build",
    "extcheck"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "ТолькоВС/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "contexts-no-ec-server-yaxunit": {
   "results": [
@@ -3078,7 +3410,20 @@
    "extcheck",
    "tools",
    "yaxunit"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "ВетвьВС/Module.bsl",
+    "Сервер/Module.bsl",
+    "ТолькоВС/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "contexts-no-ec-plain": {
   "results": [
@@ -3169,7 +3514,18 @@
    "extcheck",
    "tools",
    "yaxunit"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Плоский/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "contexts-no-ec-probes-off": {
   "results": [
@@ -3238,7 +3594,18 @@
    "extcheck",
    "tools",
    "yaxunit"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Сервер/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "contexts-no-ec-queries-off": {
   "results": [
@@ -3307,7 +3674,18 @@
    "extcheck",
    "tools",
    "yaxunit"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Сервер/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "no-git": {
   "results": [
@@ -3437,7 +3815,19 @@
    "scenarios",
    "tools",
    "yaxunit"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Клиент/Module.bsl",
+    "Сервер/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "ordinary-client": {
   "results": [
@@ -3503,7 +3893,19 @@
    "build",
    "com",
    "extcheck"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Обычный/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "OrdinaryClient",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "ordinary-client-ext": {
   "results": [
@@ -3558,7 +3960,19 @@
    "build",
    "com",
    "extcheck"
-  ]
+  ],
+  "extCheck": {
+   "modules": [
+    "Обычный/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "OrdinaryClient",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  },
  "ordinary-client-no-ext": {
   "results": [
@@ -3610,6 +4024,10 @@
   "timings": [
    "build",
    "com"
-  ]
+  ],
+  "extCheck": {
+   "modules": [],
+   "contexts": []
+  }
  }
 }
