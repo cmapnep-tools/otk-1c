@@ -249,15 +249,20 @@ def merge_designer(findings, designer, src):
 
 def designer_closes(designer):
     """needs -> закрыт ли выполненной проверкой всех модулей: designer:* — да, designer:<контекст> — если его режим
-    был среди режимов проверки; не выполнялась — ничего."""
+    был среди режимов проверки; не выполнялась — ничего. У designer:* с ctx — закрыт ли в этом контексте (сокращённый
+    набор режимов проверяет модуль целиком только в них)."""
     if not (designer or {}).get("ran"):
-        return lambda needs: False
+        return lambda needs, ctx=None: False
     modes = set(designer.get("modes") or [])
     by_ctx = {ctx: key for key, ctx in CHECK_MODES if ctx}
 
-    def closes(needs):
-        group, _, ctx = (needs or "").partition(":")
-        return group == "designer" and (ctx == "*" or by_ctx.get(ctx) in modes)
+    def closes(needs, ctx=None):
+        group, _, need = (needs or "").partition(":")
+        if group != "designer":
+            return False
+        if need == "*":
+            return ctx is None or by_ctx.get(ctx) in modes
+        return by_ctx.get(need) in modes
     return closes
 
 
@@ -393,8 +398,10 @@ def missing_required(plan, closes, uncovered_, not_checked_=()):
 
     out = []
     for ctx in required:
-        lost = [i for i in uncovered_ if not closes(i.get("needs")) and about_ctx(i, ctx)]
-        lost += [i for i in not_checked_ if not closes(i.get("needs")) and i.get("needs") == f"designer:{ctx}"]
+        # designer:* закрывает wildcard-запись только если режим этого контекста тоже был в проверке
+        lost = [i for i in uncovered_ if about_ctx(i, ctx) and not closes(i.get("needs"), ctx)]
+        lost += [i for i in not_checked_ if i.get("needs") == f"designer:{ctx}"
+                 and not closes(i.get("needs"), ctx)]
         if lost:
             out.append(ctx)
     return out
@@ -432,12 +439,26 @@ def build(plan, static, run, timings, infra_errors=(), read=None, designer=None)
              + list((static_.get("apiInfo") or {}).get("notes", []))
              + list(run_.get("notes", [])) + list(designer_.get("notes", [])) + dropped_notes
              + [x["message"] for x in infra])
-    closed = sum(1 for i in not_checked_ + uncovered_ if closes(i.get("needs")))
+    # needs designer:* — модуль целиком: закрыт, только если в режимах проверки были все его контексты
+    # (сокращённый набор режимов проверяет модуль частично, и «не покрыто» должно остаться)
+    contexts_of = {m["path"]: list(m.get("contexts") or []) for m in plan["modules"]}
+    prefix = plan["source"].rstrip("/") + "/"
+
+    def closes_item(i):
+        needs = i.get("needs")
+        if needs != "designer:*":
+            return closes(needs)
+        file = i.get("file") or ""
+        rel = file[len(prefix):] if file.startswith(prefix) else None
+        contexts = contexts_of.get(rel)
+        return closes(needs) if not contexts else all(closes(needs, ctx) for ctx in contexts)
+
+    closed = sum(1 for i in not_checked_ + uncovered_ if closes_item(i))
     summary = {**model.header("summary"), "code": code, "verdict": text, "base": plan["base"], "head": plan["head"],
                "modules": len(plan["modules"]), "queries": len(plan["queries"]),
                "findings": findings,
-               "notChecked": [i for i in not_checked_ if not closes(i.get("needs"))],
-               "uncovered": [i for i in uncovered_ if not closes(i.get("needs"))], "notes": notes, "infra": infra,
+               "notChecked": [i for i in not_checked_ if not closes_item(i)],
+               "uncovered": [i for i in uncovered_ if not closes_item(i)], "notes": notes, "infra": infra,
                "scenarios": scenario_counts(plan, run), "smoke": smoke_counts(plan, run), "timings": timings}
     if designer is not None:
         summary["designer"] = {"ran": bool(designer_.get("ran")), "modes": designer_.get("modes", []),
