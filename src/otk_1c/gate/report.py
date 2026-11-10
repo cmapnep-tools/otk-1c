@@ -445,9 +445,13 @@ def build(plan, static, run, timings, infra_errors=(), read=None, designer=None)
     plan = model.with_dependents(plan, static)
     infra = [reasons.entry(x) for x in (list(infra_errors) + static_.get("infra", []) + run_.get("infra", [])
                                         + designer_.get("infra", []))]
-    bad = None if plan.get("requiredContexts") is None else contexts.values_error(plan["requiredContexts"])
+    bad = contexts.values_error(plan["requiredContexts"]) if "requiredContexts" in plan else None
     if bad:      # план не проходит свою схему: неверное значение пропустило бы непокрытый контекст
         infra.append(reasons.entry({"message": f"requiredContexts плана: {bad}", "reasonCode": "config-invalid"}))
+    avail_bad = contexts.values_error(plan["contextsAvailable"]) if "contextsAvailable" in plan else None
+    if avail_bad:      # контексты модулей включают WebClient, а доступные для проверки — нет
+        infra.append(reasons.entry({"message": f"contextsAvailable плана: {avail_bad}",
+                                    "reasonCode": "config-invalid"}))
     dropped_notes = []
     findings = merge_designer(collect_findings(plan, static, run, dropped_notes), designer, plan["source"])
     findings = locate(findings, plan, read)
@@ -455,7 +459,7 @@ def build(plan, static, run, timings, infra_errors=(), read=None, designer=None)
     not_checked_ = [{**i, "reasonCode": i.get("reasonCode") or reasons.classify(i.get("reason"))}
                     for i in static_.get("notChecked", []) + run_.get("notChecked", []) + not_checked(plan, run)]
     uncovered_ = uncovered(plan, run)
-    missing = missing_required(plan, closes, uncovered_, not_checked_, run_)
+    missing = [] if bad else missing_required(plan, closes, uncovered_, not_checked_, run_)
     code, text = verdict(plan, findings, static, run, infra, designer, missing)
     an_info = static_.get("analyzerInfo") or {}
     bslls_error = an_info.get("error")

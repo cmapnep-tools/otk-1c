@@ -112,9 +112,16 @@ class TestDirDiff(unittest.TestCase):
         write(parent, "Configuration.xml",
               '<Configuration><Properties><ScriptVariant>Russian</ScriptVariant>'
               '<DefaultRunMode>OrdinaryApplication</DefaultRunMode></Properties></Configuration>')
-        plan = collect.collect_dirs(None, self.head, CONTEXTS, parent=parent,
-                                    required_contexts=["OrdinaryClient"])
+        ext = self.tmp / "расширение"
+        write(ext, "Configuration.xml",
+              '<Configuration><Properties><ScriptVariant>Russian</ScriptVariant>'
+              '<ConfigurationExtensionPurpose>AddOn</ConfigurationExtensionPurpose></Properties></Configuration>')
+        write(ext, "CommonModules/М/Ext/Module.bsl", HEAD_MODULE)
+        plan = collect.collect_dirs(None, ext, CONTEXTS, parent=parent, required_contexts=["OrdinaryClient"])
         self.assertEqual(plan["requiredContexts"], ["OrdinaryClient"])
+        # у обычной конфигурации режим родителя не наследуется: --parent не делает её обычным приложением
+        with self.assertRaises(InfraError):
+            collect.collect_dirs(None, self.head, CONTEXTS, parent=parent, required_contexts=["OrdinaryClient"])
 
     def test_lines_like_git_diff(self):
         ch = gitdiff.FileChange("M", "м")
