@@ -1,11 +1,13 @@
 # Шаблон: проверка PR ОТК (otk gate) на своём Linux-раннере с платформой 1С — пробы в копии ИБ. Скопировать
 # в .github/workflows/ проекта 1С и заполнить env: свои пути стенда. Раннер — self-hosted с метками linux и 1c:
-# платформа 1С для Linux, Python 3.11+, ОТК (python -m pip install otk-1c), xvfb; X-сервер ОТК поднимает сама.
-# Облачные раннеры GitHub не подходят: на них нет платформы и копии ИБ. Стенд раннера и профиль окружения —
-# docs/linux.md, «Раннер CI».
+# платформа 1С для Linux, Python 3.11+, ОТК (pipx install otk-1c — команда otk в PATH раннера), xvfb;
+# X-сервер ОТК поднимает сама. Облачные раннеры GitHub не подходят: на них нет платформы и копии ИБ.
+# Стенд раннера и профиль окружения — docs/linux.md, «Раннер CI».
 # Стенд — каталог OTK_HOME вне рабочего каталога задания: actions/checkout очищает рабочее дерево, а копия ИБ и
 # прогоны живут между запусками (частичная загрузка изменённых модулей; первый запуск — полная загрузка выгрузки).
-# Копия ИБ одна: параллельные задания с ней — «база занята» (код 2), поэтому задания идут по очереди (concurrency).
+# Копия ИБ одна: параллельные задания с ней — «база занята» (код 2), поэтому задания идут по очереди (queue: max).
+# Раннер держит копию ИБ и секрет входа, а код PR на нём исполняется: запускайте здесь только PR из своего
+# репозитория (условие в job), код форков — на облачном раннере со статикой (otk gate --static-only).
 # Внешнего соединения (COM) на Linux нет: серверные пробы и разбор запросов идут через YAxUnit (OTK_YAXUNIT),
 # контекст внешнего соединения — «не проверено» с причиной.
 # База — целевая ветка PR (ОТК берёт её из GITHUB_BASE_REF и догружает сама).
@@ -15,9 +17,9 @@ name: otk
 on:
   pull_request:
 
-concurrency:                                 # одна копия ИБ на раннер: очередь, а не отмена предыдущего задания
-  group: otk-gate-${{ github.repository }}
-  cancel-in-progress: false
+concurrency:                                 # одна копия ИБ на раннер: до 100 заданий ждут в очереди (FIFO),
+  group: otk-gate-${{ github.repository }}   # лишние отменяются; cancel-in-progress с queue: max не сочетается
+  queue: max
 
 env:
   OTK_HOME: /srv/otk-ci                    # стенд раннера: копии ИБ, прогоны, YAxUnit, BSL LS (пути — в шаге otk gate)
@@ -26,6 +28,8 @@ env:
 
 jobs:
   gate:
+    # только PR из своего репозитория: на раннере постоянный стенд и секреты, код форков здесь не исполняем
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, linux, 1c]
     timeout-minutes: 120
     steps:
@@ -40,7 +44,7 @@ jobs:
           OTK_RUN_DIR: ${{ env.OTK_HOME }}/runs
           OTK_YAXUNIT: ${{ env.OTK_HOME }}/YAxUnit.cfe
           OTK_BSLLS: ${{ env.OTK_HOME }}/bsl-language-server/bsl-language-server
-        run: python3 -m otk_1c ci gate --artifacts otk-artifacts
+        run: otk ci gate --artifacts otk-artifacts       # команда установленной ОТК (pipx или venv — в PATH)
 
       - uses: actions/upload-artifact@v4
         if: always()

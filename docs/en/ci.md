@@ -19,8 +19,9 @@ around the step is needed: OTK takes the base revision from the CI variables and
 | Jenkins | [jenkins/Jenkinsfile](../jenkins/Jenkinsfile) | `Jenkinsfile` (Multibranch Pipeline) | `archiveArtifacts`, `junit` |
 
 The runner (agent) is your own, not a cloud one: it has the 1C platform, Python 3.11+ and OTK installed
-(`python -m pip install otk-1c`), and holds your own file infobase copy and the run directory. They live between
-runs: OTK loads only the changed part into the copy. The first run is a full load of the dump. On a Linux runner
+(`python -m pip install otk-1c`, on Linux — `pipx install otk-1c` and the `otk` command in `PATH`), and holds your
+own file infobase copy and the run directory. They live between runs: OTK loads only the changed part into the copy.
+The first run is a full load of the dump. On a Linux runner
 the bench is the same, but there is no external connection: server probes and query parsing go through YAxUnit, and
 OTK starts the X server for the Designer and the client by itself. What to install, where the bench lives and which
 environment profile the job sets — [linux.md](../linux.md#раннер-ci) (in Russian). A runner started as a Windows
