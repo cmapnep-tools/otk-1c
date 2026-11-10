@@ -210,6 +210,7 @@ class TestSources(unittest.TestCase):
         foreign = trees / f"{target.name}-{'0' * 40}.done"          # имя — не от этого содержимого
         variants = {"пустой": (own, ""),
                     "чужое имя при содержимом «.»": (foreign, "."),   # «.» покрывает любой источник
+                    "чужой путь в своём имени": (own, "CommonModules"),  # маркер «.» с путём другого источника
                     "лишние символы в содержимом": (own, ".\n")}
         for name, (marker, content) in variants.items():
             with self.subTest(name):
