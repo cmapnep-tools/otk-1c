@@ -14,15 +14,17 @@ around the step is needed: OTK takes the base revision from the CI variables and
 | --- | --- | --- | --- |
 | Forgejo, Gitea Actions | [forgejo/otk-gate.yml](../forgejo/otk-gate.yml), [forgejo/otk-designer-check.yml](../forgejo/otk-designer-check.yml) | `.forgejo/workflows/` (Gitea — `.gitea/workflows/`) | uploaded by OTK itself using the `upload-artifact` v3 protocol (verified on Forgejo): the runner does not need node |
 | GitHub Actions | [github/otk-gate.yml](../github/otk-gate.yml), [github/otk-designer-check.yml](../github/otk-designer-check.yml) | `.github/workflows/` | `actions/upload-artifact@v4` |
+| GitHub Actions, own Linux runner | [github/otk-gate-linux.yml](../github/otk-gate-linux.yml) | `.github/workflows/` | `actions/upload-artifact@v4` |
 | GitLab CI | [gitlab/otk.gitlab-ci.yml](../gitlab/otk.gitlab-ci.yml) | `.gitlab-ci.yml` or `include` | `artifacts`, the `junit` report — in the merge request |
 | Jenkins | [jenkins/Jenkinsfile](../jenkins/Jenkinsfile) | `Jenkinsfile` (Multibranch Pipeline) | `archiveArtifacts`, `junit` |
 
 The runner (agent) is your own, not a cloud one: it has the 1C platform, Python 3.11+ and OTK installed
 (`python -m pip install otk-1c`), and holds your own file infobase copy and the run directory. They live between
 runs: OTK loads only the changed part into the copy. The first run is a full load of the dump. On a Linux runner
-everything is the same, and OTK starts the X server for the Designer and the client by itself
-([linux.md](../linux.md) (in Russian)). A runner started as a Windows service requires an additional 1C license
-([licensing.md](../licensing.md) (in Russian)).
+the bench is the same, but there is no external connection: server probes and query parsing go through YAxUnit, and
+OTK starts the X server for the Designer and the client by itself. What to install, where the bench lives and which
+environment profile the job sets — [linux.md](../linux.md#раннер-ci) (in Russian). A runner started as a Windows
+service requires an additional 1C license ([licensing.md](../licensing.md) (in Russian)).
 
 The job passes machine paths in `OTK_*` variables (`IB`, `USER`, `PASSWORD`, `PLATFORM`, `YAXUNIT`,
 `BSLLS`, `RUN_DIR`; the full list — [“Settings”](configuration.md)); like everywhere, they take precedence over
