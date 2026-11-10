@@ -130,6 +130,22 @@ class TestDirDiff(unittest.TestCase):
         with self.assertRaises(InfraError):
             collect.collect_dirs(None, self.head, CONTEXTS, parent=parent, required_contexts=["OrdinaryClient"])
 
+    def test_ordinary_client_of_extension_needs_parent(self):
+        """Без --parent флаги заимствованных общих модулей неизвестны: требование OrdinaryClient проверить
+        нечем — это ошибка настройки, а не молча выполненное требование."""
+        ext = self.tmp / "расширение-без-родителя"
+        write(ext, "Configuration.xml",
+              '<Configuration><Properties><ScriptVariant>Russian</ScriptVariant>'
+              '<ConfigurationExtensionPurpose>AddOn</ConfigurationExtensionPurpose></Properties></Configuration>')
+        write(ext, "CommonModules/М.xml",
+              '<CommonModule><Properties><ObjectBelonging>Adopted</ObjectBelonging></Properties></CommonModule>')
+        write(ext, "CommonModules/М/Ext/Module.bsl", HEAD_MODULE)
+        with self.assertRaises(InfraError) as e:
+            collect.collect_dirs(None, ext, CONTEXTS, ordinary_application=True,
+                                 required_contexts=["OrdinaryClient"])
+        self.assertEqual(e.exception.code, "config-invalid")
+        self.assertIn("--parent", str(e.exception))
+
     def test_lines_like_git_diff(self):
         ch = gitdiff.FileChange("M", "м")
         dirdiff.fill_lines(ch, "а\nб\nв\nг\n", "а\nБ\nв\nновая\nг\n")
