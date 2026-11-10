@@ -325,10 +325,10 @@ def _plan_step(repo: Path, cfg: dict, run_dir: Path, opts: GateOptions, gate: ch
     t = time.time()
     if opts.head_dir:
         plan = collect_mod.collect_dirs(opts.base_dir, opts.head_dir, env["contexts"], env["ordinaryApplication"],
-                                        parent_root)
+                                        parent_root, env.get("requiredContexts", ()))
     else:
         plan = collect_mod.collect(repo, opts.base, head, src, env["contexts"], env["ordinaryApplication"],
-                                   parent_root)
+                                   parent_root, env.get("requiredContexts", ()))
         outside = None if plan["modules"] or plan["metadata"] else changes_outside(repo, plan, src)
         if outside:
             notes.append(outside)

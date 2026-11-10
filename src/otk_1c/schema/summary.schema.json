@@ -9,7 +9,7 @@
   "properties": {
     "schema": {"const": "otk.summary.v1"},
     "version": {"type": "string", "description": "версия ОТК"},
-    "code": {"enum": [0, 1, 2], "description": "0 — можно отправлять, 1 — есть ошибки, 2 — сбой инфраструктуры или ничего не проверено"},
+    "code": {"enum": [0, 1, 2], "description": "0 — можно отправлять, 1 — есть ошибки, 2 — сбой инфраструктуры, ничего не проверено или не покрыт обязательный контекст"},
     "verdict": {"type": "string"},
     "base": {"type": ["string", "null"]},
     "head": {"type": "string"},

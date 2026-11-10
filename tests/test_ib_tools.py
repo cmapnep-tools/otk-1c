@@ -140,6 +140,37 @@ class TestAdoptedObjects(unittest.TestCase):
         # без props["format"] — потолок ОТК: 2.20 загружается платформой 8.3.27 и 8.5.1
         self.assertIn(f'version="{ib_tools.FORMAT_MAX}"', cfg)
 
+    def test_extension_run_mode(self):
+        """Основной режим запуска расширения — как у расширяемой конфигурации: контролируемое свойство, с
+        ManagedApplication расширение не загружается в конфигурацию обычного приложения."""
+        props = {"language": "Русский", "languageUuid": "l", "languageCode": "ru", "interface": "Taxi"}
+        target = self.root / "ext-run"
+        ib_tools.generate_test_extension(target, props, name="t", prefix="t_", modules={}, objects=[])
+        cfg = (target / "Configuration.xml").read_text(encoding="utf-8-sig")
+        self.assertIn("<DefaultRunMode>ManagedApplication</DefaultRunMode>", cfg)   # без runMode — как раньше
+        ib_tools.generate_test_extension(target, {**props, "runMode": "OrdinaryApplication"}, name="t", prefix="t_",
+                                         modules={}, objects=[])
+        cfg = (target / "Configuration.xml").read_text(encoding="utf-8-sig")
+        self.assertIn("<DefaultRunMode>OrdinaryApplication</DefaultRunMode>", cfg)
+
+    def test_base_properties_run_mode(self):
+        dump = self.root / "run-mode"
+        (dump / "Languages").mkdir(parents=True)
+        (dump / "Configuration.xml").write_text(
+            '<MetaDataObject><Configuration><Properties><DefaultLanguage>Language.Русский</DefaultLanguage>'
+            "<InterfaceCompatibilityMode>Taxi</InterfaceCompatibilityMode>"
+            "<DefaultRunMode>OrdinaryApplication</DefaultRunMode></Properties></Configuration></MetaDataObject>",
+            encoding="utf-8")
+        (dump / "Languages" / "Русский.xml").write_text(
+            '<MetaDataObject><Language uuid="lang-uuid"><Properties><Name>Русский</Name>'
+            "<LanguageCode>ru</LanguageCode></Properties></Language></MetaDataObject>", encoding="utf-8")
+        self.assertEqual(ib_tools.base_properties(dump)["runMode"], "OrdinaryApplication")
+        (dump / "Configuration.xml").write_text(
+            '<MetaDataObject><Configuration><Properties><DefaultLanguage>Language.Русский</DefaultLanguage>'
+            "<InterfaceCompatibilityMode>Taxi</InterfaceCompatibilityMode>"
+            "</Properties></Configuration></MetaDataObject>", encoding="utf-8")
+        self.assertEqual(ib_tools.base_properties(dump)["runMode"], "ManagedApplication")   # свойства нет — обычный
+
     def test_extension_format(self):
         """Формат файлов расширения — как у выгрузки: Конфигуратор не грузит файлы разных версий."""
         props = {"language": "Русский", "languageUuid": "l", "languageCode": "ru", "interface": "Taxi",

@@ -358,7 +358,7 @@ def checked_count(static, run, designer=None):
     return probes + (1 if static is not None else 0) + (1 if (designer or {}).get("ran") else 0)
 
 
-def verdict(plan, findings, static, run, infra_errors, designer=None):
+def verdict(plan, findings, static, run, infra_errors, designer=None, missing=()):
     has_input = bool(plan["modules"] or plan["queries"] or plan.get("smoke"))
     if infra_errors:
         return 2, "сбой инфраструктуры"
@@ -366,9 +366,38 @@ def verdict(plan, findings, static, run, infra_errors, designer=None):
         return 1, "есть ошибки — не отправлять"
     if has_input and checked_count(static, run, designer) == 0:
         return 2, "ничего не проверено"
+    if missing:
+        return 2, "не покрыто обязательное: " + ", ".join(missing)
     if not has_input and not plan["removedModules"] and not plan["metadata"]:
         return 0, "нечего проверять"
     return 0, "можно отправлять"
+
+
+def missing_required(plan, closes, uncovered_, not_checked_=()):
+    """Обязательные контексты (`environment.requiredContexts`) без покрытия: «не покрыто» и «не проверено»
+    модулей в этих контекстах, которые не закрыла выполненная проверка Конфигуратором. Порядок — как в настройке."""
+    required = list(plan.get("requiredContexts") or [])
+    if not required:
+        return []
+    # контексты модуля по владельцу: запись «не покрыто» с context "*" — модуль без пробы, не проверен целиком
+    contexts_of = {}
+    for m in plan["modules"]:
+        contexts_of.setdefault(m.get("owner"), set()).update(m.get("contexts") or [])
+
+    def about_ctx(entry, ctx):
+        if entry.get("context") == ctx:
+            return True
+        if entry.get("context") == "*":
+            return ctx in contexts_of.get(entry.get("owner"), ())
+        return False
+
+    out = []
+    for ctx in required:
+        lost = [i for i in uncovered_ if not closes(i.get("needs")) and about_ctx(i, ctx)]
+        lost += [i for i in not_checked_ if not closes(i.get("needs")) and i.get("needs") == f"designer:{ctx}"]
+        if lost:
+            out.append(ctx)
+    return out
 
 
 def build(plan, static, run, timings, infra_errors=(), read=None, designer=None):
@@ -384,7 +413,12 @@ def build(plan, static, run, timings, infra_errors=(), read=None, designer=None)
     dropped_notes = []
     findings = merge_designer(collect_findings(plan, static, run, dropped_notes), designer, plan["source"])
     findings = locate(findings, plan, read)
-    code, text = verdict(plan, findings, static, run, infra, designer)
+    closes = designer_closes(designer)
+    not_checked_ = [{**i, "reasonCode": i.get("reasonCode") or reasons.classify(i.get("reason"))}
+                    for i in static_.get("notChecked", []) + run_.get("notChecked", []) + not_checked(plan, run)]
+    uncovered_ = uncovered(plan, run)
+    missing = missing_required(plan, closes, uncovered_, not_checked_)
+    code, text = verdict(plan, findings, static, run, infra, designer, missing)
     an_info = static_.get("analyzerInfo") or {}
     bslls_error = an_info.get("error")
     an_name = "BSL LS" if an_info.get("analyzer", "bslls") == "bslls" else \
@@ -398,10 +432,6 @@ def build(plan, static, run, timings, infra_errors=(), read=None, designer=None)
              + list((static_.get("apiInfo") or {}).get("notes", []))
              + list(run_.get("notes", [])) + list(designer_.get("notes", [])) + dropped_notes
              + [x["message"] for x in infra])
-    closes = designer_closes(designer)
-    not_checked_ = [{**i, "reasonCode": i.get("reasonCode") or reasons.classify(i.get("reason"))}
-                    for i in static_.get("notChecked", []) + run_.get("notChecked", []) + not_checked(plan, run)]
-    uncovered_ = uncovered(plan, run)
     closed = sum(1 for i in not_checked_ + uncovered_ if closes(i.get("needs")))
     summary = {**model.header("summary"), "code": code, "verdict": text, "base": plan["base"], "head": plan["head"],
                "modules": len(plan["modules"]), "queries": len(plan["queries"]),

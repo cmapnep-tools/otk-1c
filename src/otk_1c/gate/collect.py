@@ -101,9 +101,10 @@ def _module_entry(info, change, base_text, head_text, available, lexicon_body):
     return entry, found
 
 
-def collect(repo, base, head, source_dir, contexts_available, ordinary_application=False, parent=None):
+def collect(repo, base, head, source_dir, contexts_available, ordinary_application=False, parent=None,
+            required_contexts=()):
     """План по git: base..head (head = gitdiff.WORKTREE — рабочее дерево). parent — каталог основной конфигурации
-    (флаги заимствованных общих модулей расширения)."""
+    (флаги заимствованных общих модулей расширения); required_contexts — контексты, покрытие которых обязательно."""
     repo = Path(repo)
     prefix = gitdiff.source_prefix(source_dir)
     base_sha = gitdiff.rev(repo, base)
@@ -121,10 +122,12 @@ def collect(repo, base, head, source_dir, contexts_available, ordinary_applicati
         header = {"base": base, "baseSha": base_sha,
                   "head": head if head is not gitdiff.WORKTREE else "WORKTREE", "headSha": head_sha}
         return _collect(header, source_dir, changes, everything, lambda rel: blobs.show(base_sha, prefix + rel),
-                        lambda rel: blobs.show(head, prefix + rel), contexts_available, ordinary_application, parent)
+                        lambda rel: blobs.show(head, prefix + rel), contexts_available, ordinary_application, parent,
+                        required_contexts)
 
 
-def collect_dirs(base_dir, head_dir, contexts_available, ordinary_application=False, parent=None):
+def collect_dirs(base_dir, head_dir, contexts_available, ordinary_application=False, parent=None,
+                 required_contexts=()):
     """План без git: head_dir — каталог выгрузки (файл конфигурации в корне: Configuration.xml или
     Configuration/Configuration.mdo); base_dir — выгрузка «было» или None (все модули, как gate --all)."""
     head_dir = layout.source_root(Path(head_dir).resolve())
@@ -138,11 +141,12 @@ def collect_dirs(base_dir, head_dir, contexts_available, ordinary_application=Fa
               "head": str(head_dir), "headSha": None, "headDir": str(head_dir)}
     return _collect(header, ".", changes, base_dir is None,
                     (lambda rel: dirdiff.read(base_dir, rel)) if base_dir else (lambda rel: None),
-                    lambda rel: dirdiff.read(head_dir, rel), contexts_available, ordinary_application, parent)
+                    lambda rel: dirdiff.read(head_dir, rel), contexts_available, ordinary_application, parent,
+                    required_contexts)
 
 
 def _collect(header, source_dir, changes, everything, read_base, read_head, contexts_available, ordinary_application,
-             parent=None):
+             parent=None, required_contexts=()):
     """changes — изменения с путями от корня выгрузки (строки заполнены, кроме everything — все строки новые);
     read_base / read_head(rel) -> текст файла в редакции «было» / «стало» или None."""
     # формат — по «стало», затем по «было» (проект мог перейти из одного формата в другой)
@@ -200,6 +204,7 @@ def _collect(header, source_dir, changes, everything, read_base, read_head, cont
         **header,
         "sourceFormat": lay.format, "source": source_dir, "scriptVariant": variant,
         "contextsAvailable": list(contexts_available),
+        "requiredContexts": list(required_contexts),
         "modules": modules,
         "removedModules": removed_modules,
         "metadata": metadata,

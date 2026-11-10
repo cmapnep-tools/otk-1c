@@ -33,7 +33,8 @@ class EdtRunTest(unittest.TestCase):
         # без платформы формат не определить — потолок ОТК
         self.assertEqual(ib_tools.base_properties(self.src),
                          {"language": "Русский", "languageUuid": "ru-uuid", "languageCode": "ru",
-                          "interface": "TaxiEnableVersion8_2", "format": ib_tools.FORMAT_MAX})
+                          "interface": "TaxiEnableVersion8_2", "format": ib_tools.FORMAT_MAX,
+                          "runMode": "ManagedApplication"})
 
     def test_base_properties_default_interface(self):
         """Значение по умолчанию EDT не пишет."""

@@ -563,6 +563,56 @@ class TestQueryNeeds(unittest.TestCase):
         self.assertNotIn("Конфигуратором (сервер)", report.markdown(s))
 
 
+class TestRequiredContexts(unittest.TestCase):
+    """environment.requiredContexts: непокрытый обязательный контекст — код 2 и вердикт; закрытый полной
+    проверкой Конфигуратором — не влияет."""
+    MOD = "CommonModules/М/Ext/Module.bsl"
+
+    def plan(self, **kw):
+        return {**PLAN, "queries": [], "modules": [
+            {"path": self.MOD, "kind": "CommonModule", "owner": "ОбщийМодуль.М",
+             "contexts": ["Server", "OrdinaryClient"], **kw}]}
+
+    @staticmethod
+    def unc(ctx="OrdinaryClient", needs="designer:OrdinaryClient"):
+        return {"executor": "plan", "kind": "uncovered", "module": TestRequiredContexts.MOD,
+                "owner": "ОбщийМодуль.М", "context": ctx, "needs": needs, "outcome": "skipped",
+                "message": "контекст недоступен локально", "line": None}
+
+    def test_missing_required_is_code_2(self):
+        plan = {**self.plan(), "requiredContexts": ["OrdinaryClient"]}
+        s = report.build(plan, {"findings": []}, {"results": [self.unc()], "notes": []}, {})
+        self.assertEqual((s["code"], s["verdict"]), (2, "не покрыто обязательное: OrdinaryClient"))
+        self.assertEqual([i["context"] for i in s["uncovered"]], ["OrdinaryClient"])   # запись остаётся
+
+    def test_closed_by_designer(self):
+        plan = {**self.plan(), "requiredContexts": ["OrdinaryClient"]}
+        designer = {"ran": True, "modes": ["-ThickClientOrdinaryApplication"], "findings": [], "notes": []}
+        s = report.build(plan, {"findings": []}, {"results": [self.unc()], "notes": []}, {}, designer=designer)
+        self.assertEqual((s["code"], s["verdict"]), (0, "можно отправлять"))
+        self.assertEqual(s["uncovered"], [])
+
+    def test_module_without_probe_counts(self):
+        plan = {**self.plan(), "requiredContexts": ["OrdinaryClient"]}
+        s = report.build(plan, {"findings": []},
+                         {"results": [self.unc("*", "designer:*")], "notes": []}, {})
+        self.assertEqual(s["code"], 2)
+
+    def test_no_module_in_context_is_ok(self):
+        plan = {**self.plan(contexts=["Server"]), "requiredContexts": ["OrdinaryClient"]}
+        s = report.build(plan, {"findings": []}, {"results": [], "notes": []}, {})
+        self.assertEqual(s["code"], 0)
+
+    def test_skipped_probe_by_context(self):
+        plan = {**self.plan(), "requiredContexts": ["OrdinaryClient"]}
+        run = {"results": [{"executor": "com", "kind": "probe", "module": self.MOD, "owner": "ОбщийМодуль.М",
+                            "context": "OrdinaryClient", "outcome": "skipped", "message": "не выполнено: COM",
+                            "line": None}], "notes": []}
+        s = report.build(plan, {"findings": []}, run, {})
+        self.assertEqual([i.get("needs") for i in s["notChecked"]], ["designer:OrdinaryClient"])
+        self.assertEqual(s["code"], 2)
+
+
 class TestHtml(unittest.TestCase):
     """Summary.html — один файл, все разделы, экранирование, открытие."""
 

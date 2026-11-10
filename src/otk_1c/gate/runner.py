@@ -12,7 +12,6 @@ from ..errors import InfraError
 from ..lang import platform_texts
 from ..probes import build, executors, ib_tools, userbase
 from ..probes.executors import owner_of
-from ..probes.executors.extended_check import CONTEXTS as EXT_CONTEXTS
 from ..probes.platform import Platform, com_progid
 from ..sources import gitdiff, layout
 
@@ -233,10 +232,11 @@ def _run(repo, plan, cfg, run_dir, tree_root, log=print, session=None, gate=None
         ctx.timings[ex.name] = round(ctx.timings.get(ex.name, 0) + time.time() - t, 1)
 
     for m in plan["modules"]:
+        contexts = set(m.get("contexts", []))
         for c in m.get("uncovered", []):
-            if m["path"] in ctx.covered and (c["context"] in EXT_CONTEXTS or c["context"] == "*"
-                                             and "OrdinaryClient" not in m.get("contexts", [])):
-                continue              # проверено extcheck во всех режимах
+            if m["path"] in ctx.covered and (c["context"] in ctx.ext_contexts
+                                             or c["context"] == "*" and contexts <= ctx.ext_contexts):
+                continue              # проверено extcheck во всех его режимах этого прогона
             ctx.results.append({"executor": "plan", "kind": "uncovered", "module": m["path"], "owner": m["owner"],
                                 "context": c["context"], "needs": c["needs"], "outcome": "skipped",
                                 "message": c["reason"], "line": None})

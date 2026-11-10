@@ -144,7 +144,11 @@ def base_properties(config_root, bin_dir=None):
                  "languageUuid": re.search(r'<Language uuid="([^"]+)"', lang_xml).group(1),
                  "languageCode": re.search(r"<LanguageCode>([^<]+)</LanguageCode>", lang_xml).group(1),
                  "interface": re.search(r"<InterfaceCompatibilityMode>([^<]+)</InterfaceCompatibilityMode>",
-                                        cfg).group(1)}
+                                        cfg).group(1),
+                 # основной режим запуска — контролируемое свойство расширения: у обычного приложения
+                 # расширение с ManagedApplication не загружается
+                 "runMode": (re.search(r"<DefaultRunMode>([^<]+)</DefaultRunMode>", cfg) or [None,
+                                                                                            "ManagedApplication"])[1]}
     props["format"] = generated_format(config_root, bin_dir)
     return props
 
@@ -158,7 +162,8 @@ def _edt_properties(text):
     lang = next(e for tag, e in items if tag == "languages" and layout.xml_text(e, "name") == lang_name)
     return {"language": lang_name, "languageUuid": lang.get("uuid"), "languageCode": layout.xml_text(lang,
                                                                                                      "languageCode"),
-            "interface": props.get("interfaceCompatibilityMode") or "Version8_2"}
+            "interface": props.get("interfaceCompatibilityMode") or "Version8_2",
+            "runMode": props.get("defaultRunMode") or "ManagedApplication"}
 
 
 _ORDER = ["Language", "Subsystem", "StyleItem", "Style", "CommonPicture", "SessionParameter", "Role", "CommonTemplate",
@@ -292,7 +297,7 @@ def generate_test_extension(target, props, name=EXT, prefix="otk_", modules=None
 <ConfigurationExtensionPurpose>AddOn</ConfigurationExtensionPurpose>
 <KeepMappingToExtendedConfigurationObjectsByIDs>true</KeepMappingToExtendedConfigurationObjectsByIDs>
 <NamePrefix>{prefix}</NamePrefix><ConfigurationExtensionCompatibilityMode>Version8_3_21</ConfigurationExtensionCompatibilityMode>
-<DefaultRunMode>ManagedApplication</DefaultRunMode>
+<DefaultRunMode>{props.get('runMode') or 'ManagedApplication'}</DefaultRunMode>
 <UsePurposes><v8:Value xsi:type="app:ApplicationUsePurpose">PlatformApplication</v8:Value></UsePurposes>
 <ScriptVariant>Russian</ScriptVariant><DefaultRoles/><Vendor>otk</Vendor><Version>1.0</Version>
 <DefaultLanguage>Language.{props['language']}</DefaultLanguage><BriefInformation/><DetailedInformation/><Copyright/>

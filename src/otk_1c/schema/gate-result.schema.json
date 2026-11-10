@@ -9,8 +9,8 @@
   "properties": {
     "schema": {"const": "otk.gate-result.v1"},
     "version": {"type": "string", "description": "версия ОТК"},
-    "code": {"enum": [0, 1, 2], "description": "код выхода: 0 — можно отправлять, 1 — есть ошибки, 2 — сбой инфраструктуры или ничего не проверено"},
-    "status": {"anyOf": [{"enum": ["ok", "nothing", "errors", "infra", "not-checked"]}, {"type": "string"}], "description": "ok — можно отправлять, nothing — нечего проверять, errors — есть ошибки, infra — сбой инфраструктуры, not-checked — ничего не проверено"},
+    "code": {"enum": [0, 1, 2], "description": "код выхода: 0 — можно отправлять, 1 — есть ошибки, 2 — сбой инфраструктуры, ничего не проверено или не покрыт обязательный контекст"},
+    "status": {"anyOf": [{"enum": ["ok", "nothing", "errors", "infra", "not-checked"]}, {"type": "string"}], "description": "ok — можно отправлять, nothing — нечего проверять, errors — есть ошибки, infra — сбой инфраструктуры, not-checked — ничего не проверено или не покрыт обязательный контекст"},
     "verdict": {"type": "string"},
     "runDir": {"type": ["string", "null"], "description": "каталог прогона; null — прогон оборвался до сводки"},
     "summaryPath": {"type": ["string", "null"], "description": "путь к summary.json"},

@@ -145,9 +145,11 @@ def cmd_collect(a):
     except InfraError:
         parent = None
     if a.dir:
-        plan = collect_mod.collect_dirs(a.base_dir, a.dir, env["contexts"], env["ordinaryApplication"], parent)
+        plan = collect_mod.collect_dirs(a.base_dir, a.dir, env["contexts"], env["ordinaryApplication"], parent,
+                                        env.get("requiredContexts", ()))
     else:
-        plan = collect_mod.collect(repo, a.base, head, source_dir, env["contexts"], env["ordinaryApplication"], parent)
+        plan = collect_mod.collect(repo, a.base, head, source_dir, env["contexts"], env["ordinaryApplication"], parent,
+                                   env.get("requiredContexts", ()))
     config.detect_extension(cfg, Path(a.dir) if a.dir else repo / source_dir)
     plan["notes"] = pipeline.plan_notes(cfg, getattr(a, "parent", None))      # как в gate
     plan["notes"] += pipeline.resolve_queries(plan, repo, cfg, workspace.run_dir(cfg, repo),
