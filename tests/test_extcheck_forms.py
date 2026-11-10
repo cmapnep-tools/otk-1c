@@ -70,10 +70,12 @@ COMPILED = canary(FORM_OBJ) + canary(OBJ_OBJ)
 
 class FakePlatform(ConfigOps):
     def __init__(self, after=AFTER + COMPILED, before=BEFORE + COMPILED, rc=1):
-        self.calls, self.out, self.rc = [], {"extcheck-after": after, "extcheck-before": before}, rc
+        self.calls, self.args = [], []
+        self.out, self.rc = {"extcheck-after": after, "extcheck-before": before}, rc
 
     def designer(self, *args, label="", timeout=0):
         self.calls.append((args[0], label))
+        self.args.append(args)
         if label in self.out:
             return self.rc, 0, self.out[label]
         return 0, 0, ""
@@ -103,17 +105,18 @@ class ExtCheckFormsTest(unittest.TestCase):
         out = extended_check.strip_vars(text)
         self.assertEqual(out, "\r\n\r\nПеремВ = 1;\r\n")
 
-    def run_check(self, platform=None, status="M"):
+    def run_check(self, platform=None, status="M", contexts=()):
         entries = [{"path": FORM_PATH, "owner": "Справочник.Товары.Форма.Форма", "kind": "FormModule",
-                    "status": status, "reason": "changed"},
+                    "status": status, "reason": "changed", "contexts": list(contexts)},
                    {"path": OBJ_PATH, "owner": "Справочник.Товары", "kind": "ObjectModule", "status": status,
-                    "reason": "changed"}]
+                    "reason": "changed", "contexts": list(contexts)}]
         head = {FORM_PATH: FORM_HEAD, OBJ_PATH: OBJ.replace("Тогда", "Тогда\n\t\tХ = Новый Х;")}
         base = {FORM_PATH: FORM_BASE, OBJ_PATH: OBJ}
         platform = platform or FakePlatform()
         res, note = extended_check.run(platform, self.tmp / "run", self.root, entries,
                                        read_base=lambda e: base[e["path"]],
-                                 read_head=lambda e: head[e["path"]], read_xml=lambda e: None)
+                                 read_head=lambda e: head[e["path"]], read_xml=lambda e: None,
+                                 ordinary=extended_check.needed_ordinary(entries))
         return platform, res, note
 
     def test_extension_layout(self):
@@ -213,6 +216,24 @@ class ExtCheckFormsTest(unittest.TestCase):
         _, res, _ = self.run_check(platform)
         self.assertEqual([r["message"] for r in res if r["outcome"] == "compile-error"],
                          ["Ожидается выражение (Тонкий клиент)"])
+
+    def test_ordinary_client_mode(self):
+        """Контекст OrdinaryClient у проверяемого модуля — режим -ThickClientOrdinaryApplication и покрытие этого
+        контекста; без него режима нет."""
+        platform, _, _ = self.run_check()
+        checks = [a for a in platform.args if a[0] == "/CheckModules"]
+        self.assertTrue(checks)
+        self.assertFalse([a for a in checks if "-ThickClientOrdinaryApplication" in a])
+        self.assertNotIn("OrdinaryClient", extended_check.covered_contexts(False))
+        platform, _, _ = self.run_check(contexts=["Server", "OrdinaryClient"])
+        checks = [a for a in platform.args if a[0] == "/CheckModules"]
+        self.assertTrue(all("-ThickClientOrdinaryApplication" in a for a in checks))
+        self.assertIn("OrdinaryClient", extended_check.covered_contexts(True))
+        self.assertIn("Server", extended_check.covered_contexts(True))
+
+    def test_needed_ordinary(self):
+        self.assertTrue(extended_check.needed_ordinary([{"contexts": ["Server", "OrdinaryClient"]}]))
+        self.assertFalse(extended_check.needed_ordinary([{"contexts": ["Server"]}, {"contexts": None}, {}]))
 
     def test_supported(self):
         sup = extended_check.ExtCheck._supported

@@ -91,6 +91,12 @@ class TestDirDiff(unittest.TestCase):
         for key in schema["required"]:
             self.assertIn(key, plan)
 
+    def test_required_contexts_in_plan(self):
+        """environment.requiredContexts попадает в план — report по файлам даёт тот же код, что и gate."""
+        self.assertEqual(collect.collect_dirs(None, self.head, CONTEXTS)["requiredContexts"], [])
+        plan = collect.collect_dirs(None, self.head, CONTEXTS, required_contexts=["OrdinaryClient"])
+        self.assertEqual(plan["requiredContexts"], ["OrdinaryClient"])
+
     def test_lines_like_git_diff(self):
         ch = gitdiff.FileChange("M", "м")
         dirdiff.fill_lines(ch, "а\nб\nв\nг\n", "а\nБ\nв\nновая\nг\n")

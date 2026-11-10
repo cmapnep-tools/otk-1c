@@ -41,6 +41,7 @@ MODULES = {
                        preprocessorContexts=["ExternalConnection"]),
     "ecmodule": module("ВнешнееСоединение", "ExternalConnectionModule", "session-start", ["ExternalConnection"]),
     "econly": module("ТолькоВС", "CommonModule", "missing-method", ["ExternalConnection"]),
+    "ordinary": module("Обычный", "CommonModule", "missing-method", ["Server", "OrdinaryClient"]),
 }
 QUERIES = [{"id": "q1", "module": "Сервер/Module.bsl", "line": 10, "text": "ВЫБРАТЬ 1", "complete": True},
            {"id": "q2", "module": "Сервер/Module.bsl", "line": 20, "text": "ВЫБРАТЬ", "complete": False}]
@@ -99,6 +100,13 @@ CASES = {
                                   **NO_EC},
     "contexts-no-ec-queries-off": {"modules": ["server"], "queries": True, "checks": {"queries": "off"}, **NO_EC},
     "no-git": {"modules": ["server", "client"], "scenarios": True, "headDir": True},
+    # контекст OrdinaryClient у модуля: extcheck включает режим обычного клиента и снимает «не покрыто»
+    "ordinary-client": {"modules": ["ordinary"], "uncovered": True,
+                        "contexts": ["Server", "ThinClient", "ExternalConnection"]},
+    "ordinary-client-ext": {"modules": ["ordinary"], "extension": "Расш"},
+    "ordinary-client-no-ext": {"modules": ["ordinary"], "uncovered": True,
+                               "contexts": ["Server", "ThinClient", "ExternalConnection"],
+                               "checks": {"extcheck": "off"}},
 }
 
 
@@ -209,14 +217,15 @@ def play(name):
             calls.append(["install_tools", list(extra_renames), session is not None])
             return "установлены"
 
-        def fake_extcheck(platform, run_dir, config_root, entries, read_base, read_head, read_xml, lay=None):
+        def fake_extcheck(platform, run_dir, config_root, entries, read_base, read_head, read_xml, lay=None,
+                          ordinary=False):
             calls.append(["extcheck.run", [e["path"] for e in entries],
-                          [[read_base(e), read_head(e), read_xml(e)] for e in entries]])
+                          [[read_base(e), read_head(e), read_xml(e)] for e in entries], ordinary])
             return [result("extcheck", "extcheck", e, "Designer", "ok") for e in entries], ""
 
-        def fake_extcheck_ext(platform, extension, entries, read_text, lay=None):
+        def fake_extcheck_ext(platform, extension, entries, read_text, lay=None, ordinary=False):
             calls.append(["extcheck.run_extension", extension, [e["path"] for e in entries],
-                          [read_text(e["path"]) for e in entries] + [read_text("нет/Module.bsl")]])
+                          [read_text(e["path"]) for e in entries] + [read_text("нет/Module.bsl")], ordinary])
             return [], "примечание расширения"
 
         def fake_scen_install(platform, run_dir, tree_root, extensions, log=print):

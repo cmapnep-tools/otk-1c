@@ -21,6 +21,7 @@ DEFAULTS: Config = {
     "project": {"source": "src/cf"},
     "environment": {
         "contexts": ["Server", "ThinClient", "ExternalConnection"],
+        "requiredContexts": [],
         "ordinaryApplication": False,
         "webClient": False,
         "runDir": "",
@@ -42,7 +43,8 @@ KNOWN: dict[str, set[str] | None] = {
     "project": {"source", "parent", "extension"},
     "environment": {"ib", "user", "password", "connection", "keepTools", "loadProject", "platform", "comConnector",
                     "bslls", "bsllsTimeout", "bsllsBatchMB", "yaxunit", "ibTool", "analyzer", "bslAnalyzer",
-                    "bslAnalyzerTimeout", "edtcli", "edtTimeout", "hiddenDesktop", "contexts", "ordinaryApplication",
+                    "bslAnalyzerTimeout", "edtcli", "edtTimeout", "hiddenDesktop", "contexts", "requiredContexts",
+                    "ordinaryApplication",
                     "webClient", "minPlatform", "compatWarnings", "executors", "runDir", "helpDir", "helpAuto",
                     "lockTimeout"},
     "scenarios": {"path"}, "checks": None, "platformNames": None, "analyzerSeverity": None,

@@ -232,7 +232,8 @@
       "ОбщийМодуль.Плохой",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ],
    [
     "materialize",
@@ -389,7 +390,8 @@
       "ОбщийМодуль.Клиент",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -536,7 +538,8 @@
       "ОбщийМодуль.Клиент",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -661,7 +664,8 @@
       "ОбщийМодуль.Клиент",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -780,7 +784,8 @@
       "ОбщийМодуль.Клиент",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -919,7 +924,8 @@
       "ОбщийМодуль.Клиент",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -1018,7 +1024,8 @@
       "ОбщийМодуль.Сервер",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -1067,7 +1074,8 @@
    [
     "extcheck.run",
     [],
-    []
+    [],
+    false
    ]
   ],
   "timings": [
@@ -1091,7 +1099,8 @@
    [
     "extcheck.run",
     [],
-    []
+    [],
+    false
    ]
   ],
   "timings": [
@@ -1168,7 +1177,8 @@
       "ОбщийМодуль.Клиент",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -1276,7 +1286,8 @@
      "ОбщийМодуль.Сервер",
      "ОбщийМодуль.Клиент",
      null
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -1411,7 +1422,8 @@
       "ОбщийМодуль.Клиент",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -1452,7 +1464,8 @@
       "ОбщийМодуль.Клиент",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -1569,7 +1582,8 @@
       "ОбщийМодуль.Клиент",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ],
    [
     "materialize",
@@ -1647,7 +1661,8 @@
     [
      "ОбщийМодуль.Сервер",
      null
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -1748,7 +1763,8 @@
       "ОбщийМодуль.Клиент",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -1865,7 +1881,8 @@
       "ОбщийМодуль.Клиент",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -1965,7 +1982,8 @@
       "ОбщийМодуль.Клиент",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -2111,7 +2129,8 @@
       "ОбщийМодуль.Клиент",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -2354,7 +2373,8 @@
       "ОбщийМодуль.Клиент",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -2503,7 +2523,8 @@
       "ОбщийМодуль.Клиент",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -2541,7 +2562,8 @@
    [
     "extcheck.run",
     [],
-    []
+    [],
+    false
    ]
   ],
   "timings": [
@@ -2585,7 +2607,8 @@
    [
     "extcheck.run",
     [],
-    []
+    [],
+    false
    ]
   ],
   "timings": [
@@ -2743,7 +2766,8 @@
       "ОбщийМодуль.Клиент",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -2820,7 +2844,8 @@
       "ОбщийМодуль.ТолькоВС",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -2870,7 +2895,8 @@
       "ОбщийМодуль.Сервер",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -2922,7 +2948,8 @@
       "ОбщийМодуль.ТолькоВС",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -3041,7 +3068,8 @@
       "ОбщийМодуль.ТолькоВС",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -3131,7 +3159,8 @@
       "ОбщийМодуль.Плоский",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -3199,7 +3228,8 @@
       "ОбщийМодуль.Сервер",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -3267,7 +3297,8 @@
       "ОбщийМодуль.Сервер",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ]
   ],
   "timings": [
@@ -3381,7 +3412,8 @@
       "ОбщийМодуль.Клиент",
       "<xml/>"
      ]
-    ]
+    ],
+    false
    ],
    [
     "scen.install",
@@ -3405,6 +3437,179 @@
    "scenarios",
    "tools",
    "yaxunit"
+  ]
+ },
+ "ordinary-client": {
+  "results": [
+   {
+    "executor": "com",
+    "kind": "probe",
+    "module": "Обычный/Module.bsl",
+    "owner": "ОбщийМодуль.Обычный",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Обычный/Module.bsl",
+    "owner": "ОбщийМодуль.Обычный",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [
+   "примечание COM"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "com.available",
+    "V85.COMConnector"
+   ],
+   [
+    "com.run",
+    [
+     "Обычный/Module.bsl"
+    ],
+    []
+   ],
+   [
+    "extcheck.run",
+    [
+     "Обычный/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Обычный",
+      "<xml/>"
+     ]
+    ],
+    true
+   ]
+  ],
+  "timings": [
+   "build",
+   "com",
+   "extcheck"
+  ]
+ },
+ "ordinary-client-ext": {
+  "results": [
+   {
+    "executor": "com",
+    "kind": "probe",
+    "module": "Обычный/Module.bsl",
+    "owner": "ОбщийМодуль.Обычный",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   }
+  ],
+  "notes": [
+   "примечание COM",
+   "примечание расширения"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    "Расш"
+   ],
+   [
+    "com.available",
+    "V85.COMConnector"
+   ],
+   [
+    "com.run",
+    [
+     "Обычный/Module.bsl"
+    ],
+    []
+   ],
+   [
+    "extcheck.run_extension",
+    "Расш",
+    [
+     "Обычный/Module.bsl"
+    ],
+    [
+     "ОбщийМодуль.Обычный",
+     null
+    ],
+    true
+   ]
+  ],
+  "timings": [
+   "build",
+   "com",
+   "extcheck"
+  ]
+ },
+ "ordinary-client-no-ext": {
+  "results": [
+   {
+    "executor": "com",
+    "kind": "probe",
+    "module": "Обычный/Module.bsl",
+    "owner": "ОбщийМодуль.Обычный",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "plan",
+    "kind": "uncovered",
+    "module": "Обычный/Module.bsl",
+    "owner": "ОбщийМодуль.Обычный",
+    "context": "OrdinaryClient",
+    "needs": "designer:OrdinaryClient",
+    "outcome": "skipped",
+    "message": "контекст недоступен локально",
+    "line": null
+   }
+  ],
+  "notes": [
+   "примечание COM"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "com.available",
+    "V85.COMConnector"
+   ],
+   [
+    "com.run",
+    [
+     "Обычный/Module.bsl"
+    ],
+    []
+   ]
+  ],
+  "timings": [
+   "build",
+   "com"
   ]
  }
 }

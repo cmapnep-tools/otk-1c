@@ -80,8 +80,11 @@ class TestPlatformTexts(unittest.TestCase):
     def test_check_modes(self):
         self.assertEqual(designer_check.MODES, ["-ThinClient", "-WebClient", "-Server", "-ExternalConnection",
                                            "-ThickClientOrdinaryApplication", "-ExtendedModulesCheck"])
-        self.assertEqual(extended_check.MODES, ["-ThinClient", "-WebClient", "-Server", "-ExternalConnection",
-                                          "-ExtendedModulesCheck"])
+        self.assertEqual(extended_check.check_modes(ordinary=False),
+                         ["-ThinClient", "-WebClient", "-Server", "-ExternalConnection", "-ExtendedModulesCheck"])
+        self.assertEqual(extended_check.check_modes(ordinary=True),
+                         ["-ThinClient", "-WebClient", "-Server", "-ExternalConnection",
+                          "-ThickClientOrdinaryApplication", "-ExtendedModulesCheck"])
         self.assertEqual(availability.MODES, (("-Server", "Server"), ("-ThinClient", "ThinClient"),
                                        ("-WebClient", "WebClient"), ("-ExternalConnection", "ExternalConnection")))
         self.assertEqual(platform.check_mode("OrdinaryClient"), designer_check.ORDINARY)

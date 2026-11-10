@@ -19,6 +19,8 @@
     "source": {"type": "string"},
     "scriptVariant": {"enum": ["Russian", "English"]},
     "contextsAvailable": {"type": "array", "items": {"$ref": "#/$defs/context"}},
+    "requiredContexts": {"type": "array", "items": {"$ref": "#/$defs/context"},
+                         "description": "контексты, покрытие которых обязательно (environment.requiredContexts)"},
     "modules": {"type": "array", "items": {"$ref": "#/$defs/module"}},
     "removedModules": {
       "type": "array",
@@ -58,7 +60,7 @@
               "items": {"$ref": "#/$defs/form"}}
   },
   "$defs": {
-    "context": {"enum": ["Server", "ThinClient", "OrdinaryClient", "ExternalConnection"]},
+    "context": {"enum": ["Server", "ThinClient", "OrdinaryClient", "WebClient", "ExternalConnection"]},
     "form": {"type": "object", "required": ["form", "path", "reason"],
              "properties": {"form": {"type": "string", "description": "полное имя: Справочник.Клиенты.Форма.ФормаСписка"},
                             "path": {"type": "string"}, "reason": {"enum": ["module", "layout"]}}},

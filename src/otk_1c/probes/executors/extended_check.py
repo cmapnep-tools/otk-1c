@@ -46,8 +46,6 @@ class Failed(Exception):
         self.reason, self.code = reason, code
 
 
-MODES = check_modes(ordinary=False)
-CONTEXTS = frozenset(ctx for key, ctx in CHECK_MODES if key in MODES and ctx)   # что проверка закрывает
 OBJECT_MODULES = ("ObjectModule", "ManagerModule", "RecordSetModule")
 _POSSIBLE = re.compile(r"^" + EXT + r" (\S+) (Возможно ошибочн\w+ \w+: \"([^\"]+)\")", re.M)
 _MASKING = re.compile(r"Тип не определен|фактических параметров|уже определен", re.I)
@@ -62,6 +60,17 @@ _FORM_MD = ('<?xml version="1.0" encoding="UTF-8"?>\n<MetaDataObject {ns}><{tag}
             "</InternalInfo><Properties><ObjectBelonging>Adopted</ObjectBelonging><Name>{name}</Name><Comment/>"
             "<ExtendedConfigurationObject>{base}</ExtendedConfigurationObject><FormType>Managed</FormType>"
             "</Properties></{tag}></MetaDataObject>")
+
+
+def needed_ordinary(entries):
+    """Нужен ли режим обычного клиента: у проверяемых модулей есть контекст OrdinaryClient (флаг
+    ClientOrdinaryApplication в конфигурации обычного приложения, модуль приложения, модуль объекта)."""
+    return any("OrdinaryClient" in (e.get("contexts") or []) for e in entries)
+
+
+def covered_contexts(ordinary=False):
+    """Контексты, которые проверка закрывает в этом прогоне (все её режимы, кроме расширенной проверки)."""
+    return frozenset(ctx for key, ctx in CHECK_MODES if (ordinary or ctx != "OrdinaryClient") and ctx)
 
 
 def to_interceptors(text):
@@ -202,7 +211,7 @@ def ib_names(source, lay, units, texts):
     return sorted(n for n in names if n)
 
 
-def _check(platform, run_dir, props, config_root, units, side, objects=(), fmt=None):
+def _check(platform, run_dir, props, config_root, units, side, objects=(), fmt=None, ordinary=False):
     """units — {путь в выгрузке: (Addr, описание общего модуля или None, текст)}. Возвращает словарь: findings
     [(путь или None, строка, сообщение, режим или None)] — по записи на режим; masked {путь: режимы с ошибкой
     первой стадии}; compiled {пути, где найдена канарейка}. Не загрузилось или не проверилось — {"failed": причина}."""
@@ -235,7 +244,8 @@ def _check(platform, run_dir, props, config_root, units, side, objects=(), fmt=N
     rc, _, out = platform.load_dir(target, extension=EXT, label=f"extcheck-load-{side}")
     if rc:
         return {"failed": f"загрузка {EXT}: {out[-300:]}"}
-    rc, _, out = platform.designer("/CheckModules", *MODES, "-Extension", EXT, label=f"extcheck-{side}")
+    rc, _, out = platform.designer("/CheckModules", *(check_modes(ordinary)), "-Extension", EXT,
+                                   label=f"extcheck-{side}")
     findings, masked, compiled = [], {}, set()
     for f in parse(out):
         rel = f["file"]
@@ -257,11 +267,12 @@ def _check(platform, run_dir, props, config_root, units, side, objects=(), fmt=N
 _POSSIBLE_ANY = re.compile(r"^(\S+) (\S+) (Возможно ошибочн\w+ \w+: \"([^\"]+)\")", re.M)
 
 
-def run_extension(platform, extension, entries, read_text, lay=layout.DESIGNER):
+def run_extension(platform, extension, entries, read_text, lay=layout.DESIGNER, ordinary=False):
     """Расширенная проверка проекта-расширения целиком. entries — модули плана (для привязки находок),
-    read_text(путь в исходниках) -> текст модуля или None; пути — в формате исходников lay. Возвращает
-    (результаты, примечание)."""
-    rc, _, out = platform.designer("/CheckModules", *MODES, "-Extension", extension, label="extcheck-extension")
+    read_text(путь в исходниках) -> текст модуля или None; пути — в формате исходников lay. ordinary — режим
+    обычного клиента (см. needed_ordinary). Возвращает (результаты, примечание)."""
+    rc, _, out = platform.designer("/CheckModules", *(check_modes(ordinary)), "-Extension", extension,
+                                   label="extcheck-extension")
     by_path = {e["path"]: e for e in entries}
     results = []
     for f in parse(out, lay=lay):
@@ -285,9 +296,11 @@ def run_extension(platform, extension, entries, read_text, lay=layout.DESIGNER):
     return results, ""
 
 
-def run(platform, run_dir, config_root, entries, read_base, read_head, read_xml, lay=layout.DESIGNER):
+def run(platform, run_dir, config_root, entries, read_base, read_head, read_xml, lay=layout.DESIGNER,
+        ordinary=False):
     """entries — изменённые модули плана: общие, а в выгрузке Конфигуратора и модули управляемых форм, объектов,
-    менеджеров, наборов записей. Возвращает (результаты, примечание); не выполнилось целиком — Failed."""
+    менеджеров, наборов записей. ordinary — режим обычного клиента (см. needed_ordinary). Возвращает
+    (результаты, примечание); не выполнилось целиком — Failed."""
     if not entries:
         return [], ""
     props = ib_tools.base_properties(config_root, getattr(platform, "bin", None))
@@ -313,10 +326,10 @@ def run(platform, run_dir, config_root, entries, read_base, read_head, read_xml,
     texts = [t for _, _, t in head.values()] + [t for _, _, t in base.values()]
     objects = objects_for(config_root, [a for a, _ in by_rel.values()], texts, fmt)
     try:
-        after = _check(platform, run_dir, props, config_root, head, "after", objects, fmt)
+        after = _check(platform, run_dir, props, config_root, head, "after", objects, fmt, ordinary)
         if "failed" in after:             # временное расширение не загрузилось — модули не проверены, а не «чисто»
             raise Failed(after["failed"])
-        before = _check(platform, run_dir, props, config_root, base, "before", objects, fmt) if base else \
+        before = _check(platform, run_dir, props, config_root, base, "before", objects, fmt, ordinary) if base else \
             {"findings": [], "masked": {}, "compiled": set()}
     finally:
         platform.delete_extension(EXT, label="extcheck-delete")
@@ -409,7 +422,10 @@ class ExtCheck:
                 p = source / rel
                 return layout.read_text(p)
 
-            return run_extension(ctx.platform, extension, items, read_ext, lay)
+            ordinary = needed_ordinary(items)
+            res, note = run_extension(ctx.platform, extension, items, read_ext, lay, ordinary)
+            ctx.ext_contexts = covered_contexts(ordinary)
+            return res, note
         changed = [m for m in items if m.get("reason") == "changed"
                    and m["kind"] in ("CommonModule", "FormModule") + OBJECT_MODULES]
         read_base = revision.read_base(ctx.repo, plan)
@@ -434,11 +450,13 @@ class ExtCheck:
             raise Failed(f"{'выгрузка ИБ' if ib_dump else 'экспорт EDT'}: {e}", e.code) from e
         if not ib_dump:
             units = [m for m in changed if self._supported(root, lay, m)]
+        ordinary = needed_ordinary(units)
         res, note = run(
             ctx.platform, ctx.run_dir, root, units,
             read_base=base_text, read_head=head_text,
             read_xml=lambda e: (root / layout.DESIGNER.object_file("CommonModules", e["owner"].split(".", 1)[1]))
-            .read_bytes().decode("utf-8-sig"), lay=lay)
+            .read_bytes().decode("utf-8-sig"), lay=lay, ordinary=ordinary)
+        ctx.ext_contexts = covered_contexts(ordinary)
         partial = {r["module"] for r in res if r["outcome"] == "skipped"}
         if None not in partial:           # ошибка без модуля — неизвестно, чей модуль не проверен
             ctx.covered |= {m["path"] for m in units} - partial
