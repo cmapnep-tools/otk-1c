@@ -5,7 +5,7 @@ import io
 import os
 import tempfile
 import unittest
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from unittest import mock
 
 import _faults
@@ -219,6 +219,21 @@ class TestSources(unittest.TestCase):
                 marker.write_text(content, encoding="utf-8")
                 self.assertEqual(workspace.materialize(r, sha, ".", trees), target)
                 self.assertTrue(module.is_file())
+
+    def test_drop_markers_compares_content_as_written(self):
+        """Снятие пересекающихся маркеров сверяет содержимое так же, как приём: без strip. Иначе маркер источника
+        `src/A ` (пробел — часть имени каталога на Linux) уцелел бы при сбое извлечения `src/A /ext`, и следующий
+        вызов принял бы неполное дерево за готовое."""
+        trees = self.tmp / "trees"
+        trees.mkdir()
+        target = trees / ("0" * workspace.TREE_SHA)
+        parent = workspace.done_marker(target, "src/A ")
+        parent.write_text("src/A ", encoding="utf-8")
+        sibling = workspace.done_marker(target, "src/B")
+        sibling.write_text("src/B", encoding="utf-8")
+        workspace._drop_markers(target, PurePosixPath("src/A /ext"))
+        self.assertFalse(parent.exists())
+        self.assertTrue(sibling.is_file())          # не пересекается — маркер на месте
 
     def test_materialize_fault_injection(self):
         """Сбой любой файловой операции на любом шаге — один источник и общее дерево плана и расширений: наружу

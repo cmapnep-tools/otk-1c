@@ -161,7 +161,9 @@ def _covered(target, rel):
 
 def _drop_markers(target, rel):
     """Снять маркеры готовности источника rel и пересекающихся с ним (один внутри другого, «.» — со всеми; на
-    Windows — без учёта регистра): извлечение rel пишет и в их поддеревья. Нечитаемый маркер снимается тоже."""
+    Windows — без учёта регистра): извлечение rel пишет и в их поддеревья. Нечитаемый маркер снимается тоже.
+    Содержимое сверяется как записано, без strip, — так же, как маркер принимается в _covered: иначе маркер
+    источника `src/A ` (пробел — часть имени на Linux) не снялся бы при сбое извлечения `src/A /ext`."""
     try:
         markers = list(target.parent.glob(f"{target.name}-*.done"))
     except OSError as e:
@@ -169,7 +171,7 @@ def _drop_markers(target, rel):
     mine = _parts(rel.as_posix())
     for m in markers:
         try:
-            other = _parts(m.read_text(encoding="utf-8").strip())
+            other = _parts(m.read_text(encoding="utf-8"))
         except (OSError, ValueError):               # ValueError — оборванная запись посреди символа UTF-8
             other = ()
         n = min(len(other), len(mine))
