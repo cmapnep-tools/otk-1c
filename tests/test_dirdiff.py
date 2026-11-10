@@ -112,13 +112,20 @@ class TestDirDiff(unittest.TestCase):
         write(parent, "Configuration.xml",
               '<Configuration><Properties><ScriptVariant>Russian</ScriptVariant>'
               '<DefaultRunMode>OrdinaryApplication</DefaultRunMode></Properties></Configuration>')
+        write(parent, "CommonModules/М.xml",
+              FLAGS.replace("<ClientOrdinaryApplication>false", "<ClientOrdinaryApplication>true"))
         ext = self.tmp / "расширение"
         write(ext, "Configuration.xml",
               '<Configuration><Properties><ScriptVariant>Russian</ScriptVariant>'
               '<ConfigurationExtensionPurpose>AddOn</ConfigurationExtensionPurpose></Properties></Configuration>')
+        # заимствованный общий модуль: флаги — в основной конфигурации, в расширении их нет
+        write(ext, "CommonModules/М.xml",
+              '<CommonModule><Properties><ObjectBelonging>Adopted</ObjectBelonging></Properties></CommonModule>')
         write(ext, "CommonModules/М/Ext/Module.bsl", HEAD_MODULE)
         plan = collect.collect_dirs(None, ext, CONTEXTS, parent=parent, required_contexts=["OrdinaryClient"])
         self.assertEqual(plan["requiredContexts"], ["OrdinaryClient"])
+        module = next(m for m in plan["modules"] if m["path"] == "CommonModules/М/Ext/Module.bsl")
+        self.assertIn("OrdinaryClient", module["contexts"])
         # у обычной конфигурации режим родителя не наследуется: --parent не делает её обычным приложением
         with self.assertRaises(InfraError):
             collect.collect_dirs(None, self.head, CONTEXTS, parent=parent, required_contexts=["OrdinaryClient"])
