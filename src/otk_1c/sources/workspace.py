@@ -148,7 +148,7 @@ def _covered(target, rel):
     mine = _parts(rel.as_posix())
     for m in target.parent.glob(f"{target.name}-*.done"):
         try:
-            src = m.read_text(encoding="utf-8")     # как записано, без strip: имя сверяется с содержимым целиком
+            src = _marker_text(m)                   # как записано, без strip: имя сверяется с содержимым целиком
         except (FileNotFoundError, ValueError):     # снят параллельным прогоном или оборван посреди символа
             continue                                # недоступен по правам — ошибка окружения ниже, в materialize
         if not src or m.name != done_marker(target, src).name:
@@ -171,7 +171,7 @@ def _drop_markers(target, rel):
     mine = _parts(rel.as_posix())
     for m in markers:
         try:
-            other = _parts(m.read_text(encoding="utf-8"))
+            other = _parts(_marker_text(m))
         except (OSError, ValueError):               # ValueError — оборванная запись посреди символа UTF-8
             other = ()
         n = min(len(other), len(mine))
@@ -180,6 +180,12 @@ def _drop_markers(target, rel):
                 m.unlink(missing_ok=True)
             except OSError as e:
                 raise _env_error("маркер редакции", m, e) from e
+
+
+def _marker_text(m):
+    """Содержимое маркера как записано: байты, затем UTF-8. read_text перевёл бы CRLF в LF, и маркер с парой
+    CRLF прошёл бы за маркер пути с одним переводом строки — имя перестало бы соответствовать содержимому."""
+    return m.read_bytes().decode("utf-8")
 
 
 def _parts(src):

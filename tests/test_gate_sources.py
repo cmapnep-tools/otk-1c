@@ -248,6 +248,16 @@ class TestSources(unittest.TestCase):
         self.assertFalse(parent.exists())
         self.assertTrue(sibling.is_file())          # не пересекается — маркер на месте
 
+    def test_marker_content_compared_as_bytes(self):
+        """Имя маркера сверяется с его байтами: read_text переводит CRLF в LF, и маркер с содержимым b"src\\r\\n",
+        названный от "src\\n", прошёл бы за маркер пути с одним переводом строки (на Linux имя файла может его
+        содержать). Такой маркер — как отсутствующий."""
+        trees = self.tmp / "trees"
+        trees.mkdir()
+        target = trees / ("0" * workspace.TREE_SHA)
+        workspace.done_marker(target, "src\n").write_bytes(b"src\r\n")
+        self.assertFalse(workspace._covered(target, PurePosixPath("src\n")))
+
     def test_materialize_fault_injection(self):
         """Сбой любой файловой операции на любом шаге — один источник и общее дерево плана и расширений: наружу
         только GitError, маркер не стоит на неполном источнике, следующий прогон даёт полное дерево."""
@@ -374,7 +384,7 @@ class TestSources(unittest.TestCase):
             with self.assertRaisesRegex(gitdiff.GitError, r"маркер редакции .+\.done: .*Access is denied"):
                 workspace.materialize(r, sha, ".", trees)
         denied = PermissionError(13, "Access is denied", str(self.tmp / "trees" / "x.done"))
-        with mock.patch.object(workspace.Path, "read_text", side_effect=denied):  # проверка готового дерева
+        with mock.patch.object(workspace.Path, "read_bytes", side_effect=denied):  # проверка готового дерева
             with self.assertRaisesRegex(gitdiff.GitError, r"готовая редакция .+x\.done: .*Access is denied"):
                 workspace.materialize(r, sha, ".", self.tmp / "trees")
         # каталог временных файлов не найден: и TemporaryFile, и gettempdir бросают FileNotFoundError
