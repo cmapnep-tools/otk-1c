@@ -13,10 +13,10 @@
 # (docs/linux.md, «Доверие к коду PR»).
 # Внешнего соединения (COM) на Linux нет: серверные пробы и разбор запросов идут через YAxUnit (OTK_YAXUNIT),
 # контекст внешнего соединения — «не проверено» с причиной.
-# База — первый родитель merge-коммита PR (github.event.pull_request.base.sha): целевая ветка на момент слияния,
-# его коммит есть в истории благодаря fetch-depth: 0. Без --base ОТК взяла бы origin/<ветку> из GITHUB_BASE_REF на
-# момент checkout — она могла уйти вперёд, и в план попали бы чужие правки (или пропала бы правка, уже попавшая
-# в целевую ветку).
+# База — первый родитель merge-коммита, который checkout получил для PR (HEAD^1): ровно то, с чем GitHub сливал
+# ветку. base.sha из события может отставать от этого родителя, а origin/<ветка> из GITHUB_BASE_REF
+# берётся на момент checkout и могла уйти вперёд — тогда в план попали бы чужие правки или пропала бы правка,
+# уже попавшая в целевую ветку. Нужен checkout merge-коммита (для pull_request это умолчание).
 # Артефакт otk-gate: summary.html, summary.md, summary.json, junit.xml, problems.txt, summary.sarif, otk.json.
 name: otk
 
@@ -50,8 +50,9 @@ jobs:
           OTK_RUN_DIR: ${{ env.OTK_HOME }}/runs
           OTK_YAXUNIT: ${{ env.OTK_HOME }}/YAxUnit.cfe
           OTK_BSLLS: ${{ env.OTK_HOME }}/bsl-language-server/bsl-language-server
-        # команда установленной ОТК (pipx или venv — в PATH); база — родитель merge-коммита, а не ушедшая вперёд ветка
-        run: otk ci gate --artifacts otk-artifacts --base ${{ github.event.pull_request.base.sha }}
+        # команда установленной ОТК (pipx или venv — в PATH); база — первый родитель checkout merge-коммита,
+        # а не base.sha из события и не ушедшая вперёд ветка
+        run: otk ci gate --artifacts otk-artifacts --base HEAD^1
 
       - uses: actions/upload-artifact@v4
         if: always()
