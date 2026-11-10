@@ -12,6 +12,7 @@ from unittest import mock
 import otk_1c
 from _fs import rmtree_force
 from otk_1c import cli, config
+from otk_1c.errors import InfraError
 from test_collect import FLAGS, write
 
 EXT_CONFIG = ('<MetaDataObject><Configuration><Properties><ObjectBelonging>Adopted</ObjectBelonging>'
@@ -109,6 +110,25 @@ class TestApplyArgs(unittest.TestCase):
             self.assertEqual(config.apply_args(cfg, args(platform=str(tmp)))["environment"]["platform"],
                              str(tmp.resolve()))
             self.assertNotIn("password", config.load(tmp, {})["environment"])
+        finally:
+            rmtree_force(tmp)
+
+    def test_unknown_context_is_config_error(self):
+        """Опечатка в контексте — ошибка настройки: иначе Ordinaryclient не совпал бы ни с одним контекстом модуля,
+        и обязательное покрытие считалось бы выполненным без проверки."""
+        tmp = Path(tempfile.mkdtemp())
+        try:
+            (tmp / "otk.toml").write_text('[environment]\nrequiredContexts = ["Ordinaryclient"]\n',
+                                          encoding="utf-8")
+            with self.assertRaises(InfraError) as e:
+                config.load(tmp, {})
+            self.assertEqual(e.exception.code, "config-invalid")
+            self.assertIn("Ordinaryclient", str(e.exception))
+            self.assertIn("OrdinaryClient", str(e.exception))        # допустимые значения в сообщении
+            (tmp / "otk.toml").write_text('[environment]\nrequiredContexts = ["OrdinaryClient", "Server"]\n',
+                                          encoding="utf-8")
+            self.assertEqual(config.load(tmp, {})["environment"]["requiredContexts"],
+                             ["OrdinaryClient", "Server"])
         finally:
             rmtree_force(tmp)
 
