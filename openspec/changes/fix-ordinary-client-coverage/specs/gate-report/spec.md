@@ -46,8 +46,9 @@
 
 #### Scenario: Недопустимое значение обязательного контекста
 
-- **WHEN** в `environment.requiredContexts` или `environment.contexts` указано значение не из схемы плана
-  (`Ordinaryclient` вместо `OrdinaryClient`)
+- **WHEN** `environment.requiredContexts` или `environment.contexts` — не список непустых строк из `Server`,
+  `ThinClient`, `OrdinaryClient`, `ExternalConnection` (`Ordinaryclient` вместо `OrdinaryClient`, строка вместо
+  списка, `WebClient` — пробами он не проверяется)
 - **THEN** код выхода 2 с причиной `config-invalid` уже при чтении настроек (и при чтении плана, если значение
   пришло из файла плана): значение, которого нет ни в одном контексте модуля, покрытым не считается
 

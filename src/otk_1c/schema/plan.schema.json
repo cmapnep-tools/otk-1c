@@ -18,9 +18,9 @@
     "sourceFormat": {"enum": ["designer-xml", "edt"]},
     "source": {"type": "string"},
     "scriptVariant": {"enum": ["Russian", "English"]},
-    "contextsAvailable": {"type": "array", "items": {"$ref": "#/$defs/context"}},
-    "requiredContexts": {"type": "array", "items": {"$ref": "#/$defs/context"},
-                         "description": "контексты, покрытие которых обязательно (environment.requiredContexts)"},
+    "contextsAvailable": {"type": "array", "items": {"$ref": "#/$defs/checkContext"}},
+    "requiredContexts": {"type": "array", "items": {"$ref": "#/$defs/checkContext"},
+                         "description": "контексты, покрытие которых обязательно (environment.requiredContexts); WebClient пробами не проверяется и требованием быть не может"},
     "modules": {"type": "array", "items": {"$ref": "#/$defs/module"}},
     "removedModules": {
       "type": "array",
@@ -61,6 +61,8 @@
   },
   "$defs": {
     "context": {"enum": ["Server", "ThinClient", "OrdinaryClient", "WebClient", "ExternalConnection"]},
+    "checkContext": {"enum": ["Server", "ThinClient", "OrdinaryClient", "ExternalConnection"],
+                     "description": "контексты, которые ОТК проверяет и которыми можно требовать покрытие: у веб-клиента проб нет"},
     "form": {"type": "object", "required": ["form", "path", "reason"],
              "properties": {"form": {"type": "string", "description": "полное имя: Справочник.Клиенты.Форма.ФормаСписка"},
                             "path": {"type": "string"}, "reason": {"enum": ["module", "layout"]}}},
