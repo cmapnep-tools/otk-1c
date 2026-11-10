@@ -22,6 +22,10 @@ from ..lang import lexicon
 from ..paths import cache_root
 
 SERVER, THIN, WEB, EXTERNAL = "Server", "ThinClient", "WebClient", "ExternalConnection"
+SERVER, THIN, WEB, EXTERNAL = "Server", "ThinClient", "WebClient", "ExternalConnection"
+ORDINARY = "OrdinaryClient"
+# контексты плана (schema/plan.schema.json): контексты модуля, environment.contexts и environment.requiredContexts
+PLAN_CONTEXTS = (SERVER, THIN, ORDINARY, WEB, EXTERNAL)
 NAMES = {SERVER: "сервер", THIN: "тонкий клиент", WEB: "веб-клиент", EXTERNAL: "внешнее соединение"}
 # символы препроцессора (канонические, из словаря), истинные в контексте
 _TRUE = {SERVER: {"Server"}, EXTERNAL: {"Server", "ExternalConnection"},

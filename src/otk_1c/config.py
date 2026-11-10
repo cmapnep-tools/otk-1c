@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from .errors import InfraError
-from .sources import layout
+from .sources import contexts, layout
 
 # настройки прогона: разделы otk.toml (project, environment, checks, …) -> ключ -> значение
 Config = dict[str, Any]
@@ -108,6 +108,17 @@ def parent_dir(repo: str | Path, cfg: Config, override: str | None = None) -> Pa
     return path
 
 
+def check_contexts(env: Mapping[str, Any]) -> None:
+    """`environment.contexts` и `requiredContexts`: неизвестное значение — ошибка настройки, а не повод молчать.
+    `Ordinaryclient` (опечатка) не совпал бы ни с одним контекстом модуля, и обязательное покрытие считалось бы
+    выполненным при непроверенном контексте."""
+    bad = sorted({str(c) for key in ("contexts", "requiredContexts") for c in env.get(key) or ()
+                  if c not in contexts.PLAN_CONTEXTS})
+    if bad:
+        raise InfraError(f"environment.contexts/requiredContexts: неизвестный контекст {', '.join(bad)}; "
+                         f"допустимые: {', '.join(contexts.PLAN_CONTEXTS)}", code="config-invalid")
+
+
 def load(repo: str | Path, environ: Mapping[str, str] | None = None) -> Config:
     """Настройки проекта: DEFAULTS, otk.toml, otk.local.toml, поверх — переменные OTK_* (environ — для тестов)."""
     cfg, explicit = DEFAULTS, False
@@ -125,7 +136,9 @@ def load(repo: str | Path, environ: Mapping[str, str] | None = None) -> Config:
     root = None if explicit else root_source(repo, project["source"])
     if root:
         project.update(source=root, sourceDetected=True)
-    return {**cfg, "project": project, "environment": {**cfg["environment"], **env_values(environ)}}
+    env = {**cfg["environment"], **env_values(environ)}
+    check_contexts(env)
+    return {**cfg, "project": project, "environment": env}
 
 
 def root_source(repo: str | Path, source: str) -> str | None:

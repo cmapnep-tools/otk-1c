@@ -445,6 +445,11 @@ def build(plan, static, run, timings, infra_errors=(), read=None, designer=None)
     plan = model.with_dependents(plan, static)
     infra = [reasons.entry(x) for x in (list(infra_errors) + static_.get("infra", []) + run_.get("infra", [])
                                         + designer_.get("infra", []))]
+    bad = sorted({str(c) for c in plan.get("requiredContexts") or () if c not in contexts.PLAN_CONTEXTS})
+    if bad:      # план не проходит свою схему: неверное значение пропустило бы непокрытый контекст
+        infra.append(reasons.entry({"message": f"requiredContexts: неизвестный контекст {', '.join(bad)}; "
+                                              f"допустимые: {', '.join(contexts.PLAN_CONTEXTS)}",
+                                    "reasonCode": "config-invalid"}))
     dropped_notes = []
     findings = merge_designer(collect_findings(plan, static, run, dropped_notes), designer, plan["source"])
     findings = locate(findings, plan, read)
