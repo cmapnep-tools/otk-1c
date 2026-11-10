@@ -383,10 +383,15 @@ class TestSources(unittest.TestCase):
         with mock.patch.object(workspace.Path, "unlink", side_effect=denied13):
             with self.assertRaisesRegex(gitdiff.GitError, r"маркер редакции .+\.done: .*Access is denied"):
                 workspace.materialize(r, sha, ".", trees)
+        keep = target / "preserve"                                  # дерево не переизвлекается и не удаляется
+        keep.write_bytes(b"preserve")
         denied = PermissionError(13, "Access is denied", str(self.tmp / "trees" / "x.done"))
-        with mock.patch.object(workspace.Path, "read_bytes", side_effect=denied):  # проверка готового дерева
+        with mock.patch.object(workspace.Path, "read_bytes", side_effect=denied), \
+                mock.patch.object(workspace.tarfile.TarFile, "extractall") as extract:
             with self.assertRaisesRegex(gitdiff.GitError, r"готовая редакция .+x\.done: .*Access is denied"):
                 workspace.materialize(r, sha, ".", self.tmp / "trees")
+        extract.assert_not_called()
+        self.assertEqual(keep.read_bytes(), b"preserve")
         # каталог временных файлов не найден: и TemporaryFile, и gettempdir бросают FileNotFoundError
         none = FileNotFoundError(errno.ENOENT, "No usable temporary directory found")
         with mock.patch.object(workspace.tempfile, "TemporaryFile", side_effect=none), \
