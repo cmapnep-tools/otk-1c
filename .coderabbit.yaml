@@ -11,6 +11,9 @@ reviews:
   auto_review:
     enabled: true
     drafts: false
+    # Не ставить ревью на паузу, когда коммитов подряд больше порога (по умолчанию 5): иначе проверка
+    # коммита пропускается («Review paused»), и последняя правка остаётся без ревью.
+    auto_pause_after_reviewed_commits: 0
   path_filters:
     - "!docs/img/**"
   path_instructions:
