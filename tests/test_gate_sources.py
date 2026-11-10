@@ -209,7 +209,8 @@ class TestSources(unittest.TestCase):
         own = workspace.done_marker(target, ".")
         foreign = trees / f"{target.name}-{'0' * 40}.done"          # имя — не от этого содержимого
         variants = {"пустой": (own, ""),
-                    "чужое имя при содержимом «.»": (foreign, ".")}   # «.» покрывает любой источник
+                    "чужое имя при содержимом «.»": (foreign, "."),   # «.» покрывает любой источник
+                    "лишние символы в содержимом": (own, ".\n")}
         for name, (marker, content) in variants.items():
             with self.subTest(name):
                 for m in trees.glob("*.done"):

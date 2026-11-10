@@ -148,7 +148,7 @@ def _covered(target, rel):
     mine = _parts(rel.as_posix())
     for m in target.parent.glob(f"{target.name}-*.done"):
         try:
-            src = m.read_text(encoding="utf-8").strip()
+            src = m.read_text(encoding="utf-8")     # как записано, без strip: имя сверяется с содержимым целиком
         except (FileNotFoundError, ValueError):     # снят параллельным прогоном или оборван посреди символа
             continue                                # недоступен по правам — ошибка окружения ниже, в materialize
         if not src or m.name != done_marker(target, src).name:
