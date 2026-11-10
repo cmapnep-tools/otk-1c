@@ -21,6 +21,8 @@
 - [x] 3.2 `ruff`, `mypy src`, полный `unittest`, `openspec validate --all --strict`, `mkdocs build --strict`
 - [x] 3.3 Прогон на платформе 8.3.23 с выгрузкой обычного приложения: контекст `OrdinaryClient` снимается,
       `requiredContexts` даёт код 2, пока покрытия нет
+- [x] 3.4 Покрытие только по выполненным проверкам: `--static-only` и `--fast` при `requiredContexts` —
+      код 2 без ошибок и код 1 с ними (проверено на стенде 8.3.23)
 
 ## 4. Документация
 
