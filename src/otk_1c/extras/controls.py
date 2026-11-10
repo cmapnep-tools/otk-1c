@@ -821,7 +821,12 @@ def _run_pack(repo, cfg, run_dir, base, sha, defects, parity, hits, log, ext_hit
 
 
 def step_key(source):
-    return f"static:{source['code']}" if source["step"] == "static" else source["step"]
+    """Ключ шага находки для сверки с ожиданием дефекта: у статики — правило (в сводке это rule), у проб —
+    «run:<исполнитель>»."""
+    if source["step"] != "static":
+        return source["step"]
+    rule = source.get("rule") or source.get("code")
+    return f"static:{rule}" if rule else "static"
 
 
 def evaluate(defects, summary):
