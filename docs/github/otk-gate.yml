@@ -2,7 +2,7 @@
 # и заполнить env: свои пути раннера. Раннер — свой (self-hosted) с меткой 1c: платформа 1С, Python 3.11+
 # и ОТК (python -m pip install otk-1c). Облачные раннеры GitHub не подходят: на них нет платформы и копии ИБ.
 # Копия ИБ и каталог прогонов живут между запусками (частичная загрузка изменённых модулей); первый запуск —
-# полная загрузка выгрузки. Linux-раннер: runs-on [self-hosted, linux, 1c], X-сервер ОТК поднимает сама (docs/linux.md).
+# полная загрузка выгрузки. Linux-раннер: готовое задание — otk-gate-linux.yml (docs/linux.md, «Раннер CI»).
 # База — целевая ветка PR (ОТК берёт её из GITHUB_BASE_REF и догружает сама).
 # Артефакт otk-gate: summary.html, summary.md, summary.json, junit.xml, problems.txt, summary.sarif, otk.json.
 name: otk

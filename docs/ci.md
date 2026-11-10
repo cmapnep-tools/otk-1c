@@ -19,14 +19,17 @@
 | --- | --- | --- | --- |
 | Forgejo, Gitea Actions | [forgejo/otk-gate.yml](forgejo/otk-gate.yml), [forgejo/otk-designer-check.yml](forgejo/otk-designer-check.yml) | `.forgejo/workflows/` (Gitea — `.gitea/workflows/`) | загружает сама ОТК по протоколу `upload-artifact` v3 (проверено на Forgejo): раннеру не нужен node |
 | GitHub Actions | [github/otk-gate.yml](github/otk-gate.yml), [github/otk-designer-check.yml](github/otk-designer-check.yml) | `.github/workflows/` | `actions/upload-artifact@v4` |
+| GitHub Actions, свой Linux-раннер | [github/otk-gate-linux.yml](github/otk-gate-linux.yml) | `.github/workflows/` | `actions/upload-artifact@v4` |
 | GitLab CI | [gitlab/otk.gitlab-ci.yml](gitlab/otk.gitlab-ci.yml) | `.gitlab-ci.yml` или `include` | `artifacts`, отчёт `junit` — в запросе на слияние |
 | Jenkins | [jenkins/Jenkinsfile](jenkins/Jenkinsfile) | `Jenkinsfile` (Multibranch Pipeline) | `archiveArtifacts`, `junit` |
 
 Раннер (агент) — свой, не облачный: на нём установлены платформа 1С, Python 3.11+ и ОТК
 (`python -m pip install otk-1c`), лежат своя файловая копия ИБ и каталог прогонов. Они живут между запусками:
-ОТК грузит в копию только изменённое. Первый запуск — полная загрузка выгрузки. На Linux-раннере всё так же,
-X-сервер для Конфигуратора и клиента ОТК поднимает сама ([linux.md](linux.md)). Раннер, запущенный службой
-Windows, требует дополнительную лицензию 1С ([licensing.md](licensing.md)).
+ОТК грузит в копию только изменённое. Первый запуск — полная загрузка выгрузки. На Linux-раннере стенд тот же,
+но внешнего соединения нет: серверные пробы и разбор запросов идут через YAxUnit, а X-сервер для Конфигуратора и
+клиента ОТК поднимает сама; что установить на раннер, где лежит стенд и какой профиль окружения задаёт задание —
+[linux.md](linux.md#раннер-ci). Раннер, запущенный службой Windows, требует дополнительную лицензию 1С
+([licensing.md](licensing.md)).
 
 Машинные пути задание передаёт переменными `OTK_*` (`IB`, `USER`, `PASSWORD`, `PLATFORM`, `YAXUNIT`,
 `BSLLS`, `RUN_DIR`; полный список — [«Настройки»](configuration.md)); они, как и везде, важнее `otk.toml` и
