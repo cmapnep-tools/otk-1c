@@ -204,6 +204,7 @@ def apply_args(cfg: Config, a: Namespace) -> Config:
         project["parent"] = str(Path(a.parent).resolve())
     if getattr(a, "extension", None):
         project["extension"] = a.extension
+    check_contexts(env)          # --set может поставить опечатку в контекст
     return cfg
 
 

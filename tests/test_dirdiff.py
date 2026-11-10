@@ -94,8 +94,16 @@ class TestDirDiff(unittest.TestCase):
     def test_required_contexts_in_plan(self):
         """environment.requiredContexts попадает в план — report по файлам даёт тот же код, что и gate."""
         self.assertEqual(collect.collect_dirs(None, self.head, CONTEXTS)["requiredContexts"], [])
-        plan = collect.collect_dirs(None, self.head, CONTEXTS, required_contexts=["OrdinaryClient"])
-        self.assertEqual(plan["requiredContexts"], ["OrdinaryClient"])
+        plan = collect.collect_dirs(None, self.head, CONTEXTS, required_contexts=["Server"])
+        self.assertEqual(plan["requiredContexts"], ["Server"])
+
+    def test_ordinary_client_requires_ordinary_configuration(self):
+        """Требовать OrdinaryClient у управляемой конфигурации нечем: такого контекста не будет ни у одного
+        модуля, и требование молча считалось бы выполненным. Это ошибка конфигурации, а не код 0."""
+        with self.assertRaises(InfraError) as e:
+            collect.collect_dirs(None, self.head, CONTEXTS, required_contexts=["OrdinaryClient"])
+        self.assertEqual(e.exception.code, "config-invalid")
+        self.assertIn("OrdinaryClient", str(e.exception))
 
     def test_lines_like_git_diff(self):
         ch = gitdiff.FileChange("M", "м")
