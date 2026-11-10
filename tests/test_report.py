@@ -647,12 +647,13 @@ class TestRequiredContexts(unittest.TestCase):
                "notes": []}
         self.assertEqual(report.build(plan, {"findings": []}, run, {})["code"], 2)
 
-    def test_unknown_context_in_plan_is_error(self):
-        """Значение не из схемы (опечатка, старый план) не даёт код 0: это ошибка конфигурации."""
-        plan = {**self.plan(), "requiredContexts": ["Ordinaryclient"]}
-        result = report.build(plan, {"findings": []}, {"results": [], "notes": []}, {})
-        self.assertEqual((result["code"], result["verdict"]), (2, "сбой инфраструктуры"))
-        self.assertEqual([i["reasonCode"] for i in result["infra"]], ["config-invalid"])
+    def test_unknown_required_context_value(self):
+        """Неизвестное значение или не список — требование выполнено быть не может: ошибка конфигурации."""
+        for value in ("Server", ["Ordinaryclient"], [""], [None]):
+            plan = {**self.plan(), "requiredContexts": value}
+            result = report.build(plan, {"findings": []}, {"results": [], "notes": []}, {})
+            self.assertEqual(result["code"], 2, value)
+            self.assertEqual([i["reasonCode"] for i in result["infra"]], ["config-invalid"], value)
 
     def test_no_module_in_context_is_ok(self):
         plan = {**self.plan(contexts=["Server"]), "requiredContexts": ["OrdinaryClient"]}

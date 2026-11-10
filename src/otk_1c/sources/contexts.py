@@ -24,9 +24,25 @@ from ..paths import cache_root
 SERVER, THIN, WEB, EXTERNAL = "Server", "ThinClient", "WebClient", "ExternalConnection"
 SERVER, THIN, WEB, EXTERNAL = "Server", "ThinClient", "WebClient", "ExternalConnection"
 ORDINARY = "OrdinaryClient"
-# контексты плана (schema/plan.schema.json): контексты модуля, environment.contexts и environment.requiredContexts
-PLAN_CONTEXTS = (SERVER, THIN, ORDINARY, WEB, EXTERNAL)
+# контексты, которые ОТК проверяет и которые можно требовать (environment.contexts, environment.requiredContexts);
+# WebClient — контекст модуля для статики, пробами он не проверяется, поэтому требованием быть не может
+PLAN_CONTEXTS = (SERVER, THIN, ORDINARY, EXTERNAL)
 NAMES = {SERVER: "сервер", THIN: "тонкий клиент", WEB: "веб-клиент", EXTERNAL: "внешнее соединение"}
+
+
+def values_error(value: object) -> str | None:
+    """Ошибка в списке контекстов (None — всё в порядке): нужен список непустых строк из PLAN_CONTEXTS. Строка
+    вместо списка итерировалась бы по буквам, а неизвестное имя (`Ordinaryclient`) не совпало бы ни с одним
+    контекстом модуля — обязательное покрытие считалось бы выполненным без проверки."""
+    if not isinstance(value, (list, tuple)):
+        return f"нужен список контекстов, а не {type(value).__name__}"
+    empty = [c for c in value if not isinstance(c, str) or not c]
+    if empty:
+        return f"пустое или не строковое значение: {empty[0]!r}"
+    unknown = sorted({c for c in value if c not in PLAN_CONTEXTS})
+    if unknown:
+        return f"неизвестный контекст {', '.join(unknown)}; допустимые: {', '.join(PLAN_CONTEXTS)}"
+    return None
 # символы препроцессора (канонические, из словаря), истинные в контексте
 _TRUE = {SERVER: {"Server"}, EXTERNAL: {"Server", "ExternalConnection"},
          THIN: {"Client", "ThinClient"}, WEB: {"Client", "WebClient"}}

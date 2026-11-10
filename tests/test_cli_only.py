@@ -132,6 +132,21 @@ class TestApplyArgs(unittest.TestCase):
         finally:
             rmtree_force(tmp)
 
+    def test_contexts_must_be_list_of_names(self):
+        """Строка вместо списка итерировалась бы по буквам, пустая строка и веб-клиент не проверяются пробами."""
+        for toml in ('[environment]\ncontexts = "Server"\n',
+                     '[environment]\nrequiredContexts = [""]\n',
+                     '[environment]\nrequiredContexts = ["WebClient"]\n',
+                     '[environment]\nrequiredContexts = [1]\n'):
+            tmp = Path(tempfile.mkdtemp())
+            try:
+                (tmp / "otk.toml").write_text(toml, encoding="utf-8")
+                with self.assertRaises(InfraError) as e:
+                    config.load(tmp, {})
+                self.assertEqual(e.exception.code, "config-invalid")
+            finally:
+                rmtree_force(tmp)
+
     def test_unknown_keys(self):
         cfg = config._merge(config.DEFAULTS, {"smoke": {"exlude": []}, "hooks": {}, "checks": {"x": "on"}})
         self.assertEqual(config.unknown_keys(cfg), ["smoke.exlude", "[hooks]"])

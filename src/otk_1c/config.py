@@ -109,14 +109,13 @@ def parent_dir(repo: str | Path, cfg: Config, override: str | None = None) -> Pa
 
 
 def check_contexts(env: Mapping[str, Any]) -> None:
-    """`environment.contexts` и `requiredContexts`: неизвестное значение — ошибка настройки, а не повод молчать.
-    `Ordinaryclient` (опечатка) не совпал бы ни с одним контекстом модуля, и обязательное покрытие считалось бы
-    выполненным при непроверенном контексте."""
-    bad = sorted({str(c) for key in ("contexts", "requiredContexts") for c in env.get(key) or ()
-                  if c not in contexts.PLAN_CONTEXTS})
-    if bad:
-        raise InfraError(f"environment.contexts/requiredContexts: неизвестный контекст {', '.join(bad)}; "
-                         f"допустимые: {', '.join(contexts.PLAN_CONTEXTS)}", code="config-invalid")
+    """`environment.contexts` и `requiredContexts`: список непустых строк из допустимых контекстов. Неизвестное
+    значение (`Ordinaryclient`, строка вместо списка, пустая строка) — ошибка настройки, а не тишина: иначе оно не
+    совпало бы ни с одним контекстом модуля и покрытие считалось бы выполненным."""
+    for key in ("contexts", "requiredContexts"):
+        err = contexts.values_error(env.get(key))
+        if err is not None:
+            raise InfraError(f"environment.{key}: {err}", code="config-invalid")
 
 
 def load(repo: str | Path, environ: Mapping[str, str] | None = None) -> Config:
