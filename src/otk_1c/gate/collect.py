@@ -206,6 +206,16 @@ def _collect(header, source_dir, changes, everything, read_base, read_head, cont
         for q in found:
             all_queries.append({"module": rel, **q})
 
+    if "OrdinaryClient" in required_contexts:
+        # заимствованный общий модуль без --parent: его флаги (и контексты) неизвестны, требование могло бы
+        # считаться выполненным при непроверенном OrdinaryClient
+        unknown = [m for m in modules if m["kind"] == "CommonModule"
+                   and (m.get("probe") or {}).get("strategy") == "none"]
+        if unknown:
+            raise InfraError(f"requiredContexts: OrdinaryClient, но без --parent неизвестны флаги заимствованных "
+                             f"общих модулей ({', '.join(m['owner'] for m in unknown)}): контекст не определить",
+                             code="config-invalid")
+
     for n, q in enumerate(all_queries, 1):
         q["id"] = f"q{n}"
     forms = changed_forms(modules, metadata, read_head, variant, ordinary_application, lay, read_parent, parent_lay)
