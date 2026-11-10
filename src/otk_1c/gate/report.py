@@ -378,15 +378,21 @@ def verdict(plan, findings, static, run, infra_errors, designer=None, missing=()
     return 0, "можно отправлять"
 
 
-def missing_required(plan, closes, uncovered_, not_checked_=()):
-    """Обязательные контексты (`environment.requiredContexts`) без покрытия: «не покрыто» и «не проверено»
-    модулей в этих контекстах, которые не закрыла выполненная проверка Конфигуратором. Порядок — как в настройке."""
+def missing_required(plan, closes, uncovered_, not_checked_=(), run=None):
+    """Обязательные контексты (`environment.requiredContexts`) без покрытия. Порядок — как в настройке.
+
+    Покрытие — по выполненным проверкам каждого модуля: проба в этом контексте, расширенная проверка в нём
+    (run.extCheck) или полная проверка Конфигуратором в его режиме. Записи «не покрыто» и «не проверено» —
+    то, что этими проверками не закрыто; само отсутствие записей покрытия не подтверждает: при
+    `--static-only` пробы не выполнялись, и записей о непокрытых модулях нет."""
     required = list(plan.get("requiredContexts") or [])
     if not required:
         return []
     # контексты модуля по его пути: запись «не покрыто» с context "*" — модуль без пробы, не проверен целиком
     contexts_of = {m["path"]: set(m.get("contexts") or []) for m in plan["modules"]}
     prefix = plan["source"].rstrip("/") + "/"
+    ext = (run or {}).get("extCheck") or {}
+    ext_modules, ext_contexts = set(ext.get("modules") or ()), set(ext.get("contexts") or ())
 
     def about_ctx(entry, ctx):
         if entry.get("context") == ctx:
@@ -396,13 +402,26 @@ def missing_required(plan, closes, uncovered_, not_checked_=()):
         rel = (entry.get("file") or "")[len(prefix):] if (entry.get("file") or "").startswith(prefix) else None
         return ctx in contexts_of.get(rel, ())
 
+    def checked(module, ctx):
+        """Выполненная проверка модуля в контексте (пропуск и запись «не покрыто» — не проверка)."""
+        if closes("designer:*", ctx):
+            return True                    # полная проверка Конфигуратором проверяет все модули конфигурации
+        if module["path"] in ext_modules and ctx in ext_contexts:
+            return True                    # расширенная проверка в этом режиме
+        return any(r.get("module") == module["path"] and r.get("context") == ctx
+                   and r.get("outcome") not in ("skipped", "uncovered")
+                   for r in (run or {}).get("results", []))
+
     out = []
     for ctx in required:
+        modules = [m for m in plan["modules"] if ctx in (m.get("contexts") or [])]
+        if not modules:
+            continue
         # designer:* закрывает wildcard-запись только если режим этого контекста тоже был в проверке
         lost = [i for i in uncovered_ if about_ctx(i, ctx) and not closes(i.get("needs"), ctx)]
         lost += [i for i in not_checked_ if i.get("needs") == f"designer:{ctx}"
                  and not closes(i.get("needs"), ctx)]
-        if lost:
+        if lost or any(not checked(m, ctx) for m in modules):
             out.append(ctx)
     return out
 
@@ -424,7 +443,7 @@ def build(plan, static, run, timings, infra_errors=(), read=None, designer=None)
     not_checked_ = [{**i, "reasonCode": i.get("reasonCode") or reasons.classify(i.get("reason"))}
                     for i in static_.get("notChecked", []) + run_.get("notChecked", []) + not_checked(plan, run)]
     uncovered_ = uncovered(plan, run)
-    missing = missing_required(plan, closes, uncovered_, not_checked_)
+    missing = missing_required(plan, closes, uncovered_, not_checked_, run_)
     code, text = verdict(plan, findings, static, run, infra, designer, missing)
     an_info = static_.get("analyzerInfo") or {}
     bslls_error = an_info.get("error")

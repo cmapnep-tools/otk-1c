@@ -601,7 +601,9 @@ class TestRequiredContexts(unittest.TestCase):
             {"path": other, "kind": "Unknown", "owner": "ОбщийМодуль.М", "contexts": ["OrdinaryClient"]}]}
         run = {"results": [{"executor": "plan", "kind": "uncovered", "module": other, "owner": "ОбщийМодуль.М",
                             "context": "*", "needs": "designer:*", "outcome": "skipped",
-                            "message": "неизвестный вид модуля", "line": None}], "notes": []}
+                            "message": "неизвестный вид модуля", "line": None},
+                           {"executor": "com", "kind": "probe", "module": self.MOD, "owner": "ОбщийМодуль.М",
+                            "context": "Server", "outcome": "ok", "message": "", "line": None}], "notes": []}
         s = report.build(plan, {"findings": []}, run, {})
         self.assertEqual(s["code"], 0)
         self.assertEqual([(i["context"], i["file"]) for i in s["uncovered"]],
@@ -631,6 +633,25 @@ class TestRequiredContexts(unittest.TestCase):
         plan = {**self.plan(contexts=["Server"]), "requiredContexts": ["OrdinaryClient"]}
         s = report.build(plan, {"findings": []}, {"results": [], "notes": []}, {})
         self.assertEqual(s["code"], 0)
+
+    def test_covered_by_done_check_not_by_silence(self):
+        """Покрытие — по выполненной проверке модуля, а не по отсутствию записей: расширенная проверка закрывает
+        требование и без записей, а --static-only (пробы не выполнялись, записей нет) — не закрывает."""
+        plan = {**self.plan(), "requiredContexts": ["OrdinaryClient"]}
+        run = {"results": [], "extCheck": {"modules": [self.MOD], "contexts": ["Server", "OrdinaryClient"]},
+               "notes": []}
+        s = report.build(plan, {"findings": []}, run, {})
+        self.assertEqual((s["code"], s["verdict"]), (0, "можно отправлять"))
+        s = report.build(plan, {"findings": []}, {"results": [], "notes": []}, {})
+        self.assertEqual((s["code"], s["verdict"]), (2, "не покрыто обязательное: OrdinaryClient"))
+
+    def test_probe_result_covers_context(self):
+        plan = {**self.plan(), "requiredContexts": ["Server"]}
+        run = {"results": [{"executor": "com", "kind": "probe", "module": self.MOD, "owner": "ОбщийМодуль.М",
+                            "context": "Server", "outcome": "ok", "message": "", "line": None}], "notes": []}
+        self.assertEqual(report.build(plan, {"findings": []}, run, {})["code"], 0)
+        run["results"][0]["outcome"] = "skipped"           # пропуск пробы — не проверка
+        self.assertEqual(report.build(plan, {"findings": []}, run, {})["code"], 2)
 
     def test_skipped_probe_by_context(self):
         plan = {**self.plan(), "requiredContexts": ["OrdinaryClient"]}

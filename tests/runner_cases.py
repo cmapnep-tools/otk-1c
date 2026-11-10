@@ -263,7 +263,7 @@ def play(name):
         out = runner._run(tmp, plan, cfg, tmp / "run", tmp / "tree", log=lambda *a: None, session=session,
                           gate=gate)
     return {"results": out["results"], "notes": out["notes"], **gate.take(), "calls": calls,
-            "timings": sorted(out["timings"])}
+            "timings": sorted(out["timings"]), "extCheck": out["extCheck"]}
 
 
 def main():
