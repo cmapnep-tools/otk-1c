@@ -198,6 +198,27 @@ class TestSources(unittest.TestCase):
         if os.name == "nt":                         # пересечение источников на Windows — без учёта регистра
             self.assertEqual(workspace._parts("Src/Objects"), workspace._parts("src/objects"))
 
+    def test_marker_must_match_name_and_content(self):
+        """Испорченный маркер готовности (пустой, с чужим содержимым, с именем не от содержимого) — как
+        отсутствующий: дерево извлекается заново, а не отдаётся неполным."""
+        r = self._repo()
+        sha = gitdiff.rev(r, "HEAD")
+        trees = self.tmp / "trees"
+        target = workspace.materialize(r, sha, ".", trees)
+        module = target / "CommonModules/М/Ext/Module.bsl"
+        own = workspace.done_marker(target, ".")
+        foreign = trees / f"{target.name}-{'0' * 40}.done"          # имя — не от этого содержимого
+        variants = {"пустой": (own, ""),
+                    "чужое имя при содержимом «.»": (foreign, ".")}   # «.» покрывает любой источник
+        for name, (marker, content) in variants.items():
+            with self.subTest(name):
+                for m in trees.glob("*.done"):
+                    m.unlink()
+                module.unlink()
+                marker.write_text(content, encoding="utf-8")
+                self.assertEqual(workspace.materialize(r, sha, ".", trees), target)
+                self.assertTrue(module.is_file())
+
     def test_materialize_fault_injection(self):
         """Сбой любой файловой операции на любом шаге — один источник и общее дерево плана и расширений: наружу
         только GitError, маркер не стоит на неполном источнике, следующий прогон даёт полное дерево."""
