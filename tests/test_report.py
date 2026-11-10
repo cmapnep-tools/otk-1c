@@ -648,9 +648,18 @@ class TestRequiredContexts(unittest.TestCase):
         self.assertEqual(report.build(plan, {"findings": []}, run, {})["code"], 2)
 
     def test_unknown_required_context_value(self):
-        """Неизвестное значение или не список — требование выполнено быть не может: ошибка конфигурации."""
-        for value in ("Server", ["Ordinaryclient"], [""], [None]):
+        """Неизвестное значение или не список (в том числе null) — требование выполнено быть не может: ошибка
+        конфигурации; проверка покрытия тогда не выполняется и сводка не падает."""
+        for value in ("Server", ["Ordinaryclient"], [""], [None], 1, None):
             plan = {**self.plan(), "requiredContexts": value}
+            result = report.build(plan, {"findings": []}, {"results": [], "notes": []}, {})
+            self.assertEqual(result["code"], 2, value)
+            self.assertEqual([i["reasonCode"] for i in result["infra"]], ["config-invalid"], value)
+
+    def test_invalid_contexts_available(self):
+        """contextsAvailable — только проверяемые контексты (без WebClient): иначе план не проходит схему."""
+        for value in (["WebClient"], ["Server", "Ordinaryclient"], "Server"):
+            plan = {**self.plan(), "requiredContexts": ["Server"], "contextsAvailable": value}
             result = report.build(plan, {"findings": []}, {"results": [], "notes": []}, {})
             self.assertEqual(result["code"], 2, value)
             self.assertEqual([i["reasonCode"] for i in result["infra"]], ["config-invalid"], value)

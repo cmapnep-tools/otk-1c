@@ -166,7 +166,7 @@ def _collect(header, source_dir, changes, everything, read_base, read_head, cont
     # обычное приложение — по настройке проекта или основному режиму запуска конфигурации; у расширения своего
     # режима может не быть — тогда он берётся у основной конфигурации (у неё же и флаги модулей)
     run_mode = props.run_mode
-    if parent_lay and read_parent:
+    if props.extension and parent_lay and read_parent:
         parent_text = read_parent(parent_lay.config_file)
         run_mode = run_mode or (parent_lay.properties(parent_text).run_mode if parent_text else "")
     ordinary_application = ordinary_application or run_mode == "OrdinaryApplication"
