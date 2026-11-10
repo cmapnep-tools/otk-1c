@@ -103,7 +103,8 @@ CASES = {
     # контекст OrdinaryClient у модуля: extcheck включает режим обычного клиента и снимает «не покрыто»
     "ordinary-client": {"modules": ["ordinary"], "uncovered": True,
                         "contexts": ["Server", "ThinClient", "ExternalConnection"]},
-    "ordinary-client-ext": {"modules": ["ordinary"], "extension": "Расш"},
+    "ordinary-client-ext": {"modules": ["ordinary"], "extension": "Расш", "uncovered": True,
+                            "contexts": ["Server", "ThinClient", "ExternalConnection"]},
     "ordinary-client-no-ext": {"modules": ["ordinary"], "uncovered": True,
                                "contexts": ["Server", "ThinClient", "ExternalConnection"],
                                "checks": {"extcheck": "off"}},

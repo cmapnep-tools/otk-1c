@@ -425,6 +425,9 @@ class ExtCheck:
             ordinary = needed_ordinary(items)
             res, note = run_extension(ctx.platform, extension, items, read_ext, lay, ordinary)
             ctx.ext_contexts = covered_contexts(ordinary)
+            # расширение загружено в ИБ целиком и проверяется как есть (без перехватчиков и канарейки): модуль,
+            # который не скомпилировался, даёт ошибку, «частично проверенных» здесь нет
+            ctx.covered |= {m["path"] for m in items}
             return res, note
         changed = [m for m in items if m.get("reason") == "changed"
                    and m["kind"] in ("CommonModule", "FormModule") + OBJECT_MODULES]

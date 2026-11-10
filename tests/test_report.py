@@ -592,6 +592,21 @@ class TestRequiredContexts(unittest.TestCase):
         self.assertEqual((s["code"], s["verdict"]), (0, "можно отправлять"))
         self.assertEqual(s["uncovered"], [])
 
+    def test_wildcard_of_its_own_module(self):
+        """Запись «не покрыто» с context "*" относится к своему модулю (по пути), а не ко всем модулям того же
+        владельца: иначе неизвестный файл дал бы ложный код 2 по чужому контексту."""
+        other = "CommonModules/Н/Ext/Module.bsl"
+        plan = {**PLAN, "queries": [], "requiredContexts": ["Server"], "modules": [
+            {"path": self.MOD, "kind": "CommonModule", "owner": "ОбщийМодуль.М", "contexts": ["Server"]},
+            {"path": other, "kind": "Unknown", "owner": "ОбщийМодуль.М", "contexts": ["OrdinaryClient"]}]}
+        run = {"results": [{"executor": "plan", "kind": "uncovered", "module": other, "owner": "ОбщийМодуль.М",
+                            "context": "*", "needs": "designer:*", "outcome": "skipped",
+                            "message": "неизвестный вид модуля", "line": None}], "notes": []}
+        s = report.build(plan, {"findings": []}, run, {})
+        self.assertEqual(s["code"], 0)
+        self.assertEqual([(i["context"], i["file"]) for i in s["uncovered"]],
+                         [("*", "src/cf/" + other)])
+
     def test_module_without_probe_counts(self):
         plan = {**self.plan(), "requiredContexts": ["OrdinaryClient"]}
         s = report.build(plan, {"findings": []},

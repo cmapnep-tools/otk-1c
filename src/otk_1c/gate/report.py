@@ -379,17 +379,17 @@ def missing_required(plan, closes, uncovered_, not_checked_=()):
     required = list(plan.get("requiredContexts") or [])
     if not required:
         return []
-    # контексты модуля по владельцу: запись «не покрыто» с context "*" — модуль без пробы, не проверен целиком
-    contexts_of = {}
-    for m in plan["modules"]:
-        contexts_of.setdefault(m.get("owner"), set()).update(m.get("contexts") or [])
+    # контексты модуля по его пути: запись «не покрыто» с context "*" — модуль без пробы, не проверен целиком
+    contexts_of = {m["path"]: set(m.get("contexts") or []) for m in plan["modules"]}
+    prefix = plan["source"].rstrip("/") + "/"
 
     def about_ctx(entry, ctx):
         if entry.get("context") == ctx:
             return True
-        if entry.get("context") == "*":
-            return ctx in contexts_of.get(entry.get("owner"), ())
-        return False
+        if entry.get("context") != "*":
+            return False
+        rel = (entry.get("file") or "")[len(prefix):] if (entry.get("file") or "").startswith(prefix) else None
+        return ctx in contexts_of.get(rel, ())
 
     out = []
     for ctx in required:
