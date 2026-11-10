@@ -31,6 +31,14 @@ class BatchesTest(unittest.TestCase):
         packs = controls.batches([removed, defect("other", ["Caller.bsl"])], "src")
         self.assertEqual(len(packs), 2)
 
+    def test_step_key(self):
+        """Источник сводки — {step, rule}: статика сверяется с ожиданием по правилу, пробы — по исполнителю."""
+        self.assertEqual(controls.step_key({"step": "static", "rule": "platform-api"}), "static:platform-api")
+        self.assertEqual(controls.step_key({"step": "static", "code": "handler"}), "static:handler")
+        self.assertEqual(controls.step_key({"step": "static"}), "static")
+        self.assertEqual(controls.step_key({"step": "run:extcheck", "rule": "extcheck/compile-error"}),
+                         "run:extcheck")
+
     def test_pick_reuses_least_used(self):
         used, uses = set(), collections.Counter()
         picks = [controls._pick(["A", "B"], used, uses) for _ in range(5)]
