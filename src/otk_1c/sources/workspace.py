@@ -140,13 +140,20 @@ def done_marker(target, src):
 
 def _covered(target, rel):
     """Источник rel извлечён целиком: есть его маркер или маркер объемлющего источника (расширение сценариев
-    внутри источника плана готово вместе с ним — без повторного извлечения и снятия маркера источника)."""
+    внутри источника плана готово вместе с ним — без повторного извлечения и снятия маркера источника).
+
+    Маркер принимается, только если его имя посчитано от его же содержимого и содержимое непустое: пустой
+    маркер иначе «покрывает» любой источник (его сегменты — (), префикс чего угодно), а чужой файл с подходящим
+    именем выдаёт себя за готовое дерево. Испорченный маркер — как отсутствующий, дерево извлечётся заново."""
     mine = _parts(rel.as_posix())
     for m in target.parent.glob(f"{target.name}-*.done"):
         try:
-            other = _parts(m.read_text(encoding="utf-8").strip())
+            src = m.read_text(encoding="utf-8").strip()
         except (FileNotFoundError, ValueError):     # снят параллельным прогоном или оборван посреди символа
+            continue                                # недоступен по правам — ошибка окружения ниже, в materialize
+        if not src or m.name != done_marker(target, src).name:
             continue
+        other = _parts(src)
         if mine[:len(other)] == other:
             return True
     return False
