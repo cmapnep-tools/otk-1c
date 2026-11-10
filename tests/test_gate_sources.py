@@ -202,6 +202,10 @@ class TestSources(unittest.TestCase):
         """Испорченный маркер готовности (пустой, с чужим содержимым, с именем не от содержимого) — как
         отсутствующий: дерево извлекается заново, а не отдаётся неполным."""
         r = self._repo()
+        write(r, "ext/ТестыА/Configuration.xml", CONFIG)
+        write(r, "ext/ТестыА/README.md", "расширение")
+        run(r, "add", "-A")
+        run(r, "commit", "-q", "-m", "ext")
         sha = gitdiff.rev(r, "HEAD")
         trees = self.tmp / "trees"
         target = workspace.materialize(r, sha, ".", trees)
@@ -210,7 +214,6 @@ class TestSources(unittest.TestCase):
         foreign = trees / f"{target.name}-{'0' * 40}.done"          # имя — не от этого содержимого
         variants = {"пустой": (own, ""),
                     "чужое имя при содержимом «.»": (foreign, "."),   # «.» покрывает любой источник
-                    "чужой путь в своём имени": (own, "CommonModules"),  # маркер «.» с путём другого источника
                     "лишние символы в содержимом": (own, ".\n")}
         for name, (marker, content) in variants.items():
             with self.subTest(name):
@@ -220,6 +223,15 @@ class TestSources(unittest.TestCase):
                 marker.write_text(content, encoding="utf-8")
                 self.assertEqual(workspace.materialize(r, sha, ".", trees), target)
                 self.assertTrue(module.is_file())
+        # маркер «.» с путём объемлющего источника: по содержимому он источник покрывает, по имени — не его.
+        # Без проверки имени дерево отдалось бы неполным: файл не восстановлен, формат источника на месте.
+        readme = target / "ext/ТестыА/README.md"
+        for m in trees.glob("*.done"):
+            m.unlink()
+        own.write_text("ext/ТестыА", encoding="utf-8")
+        readme.unlink()
+        self.assertEqual(workspace.materialize(r, sha, "ext/ТестыА", trees), target)
+        self.assertTrue(readme.is_file())
 
     def test_drop_markers_compares_content_as_written(self):
         """Снятие пересекающихся маркеров сверяет содержимое так же, как приём: без strip. Иначе маркер источника
