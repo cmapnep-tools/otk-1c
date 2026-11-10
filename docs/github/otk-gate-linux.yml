@@ -6,22 +6,26 @@
 # Стенд — каталог OTK_HOME вне рабочего каталога задания: actions/checkout очищает рабочее дерево, а копия ИБ и
 # прогоны живут между запусками (частичная загрузка изменённых модулей; первый запуск — полная загрузка выгрузки).
 # Копия ИБ одна: параллельные задания с ней — «база занята» (код 2), поэтому задания идут по очереди (queue: max).
+# Очередь — в пределах репозитория: другому репозиторию на этом раннере нужна своя копия ИБ (свой OTK_HOME).
 # Раннер не изолирован: код PR исполняется на нём, а на стенде — копия ИБ и секрет входа. Условие в job — фильтр,
 # не граница доверия: push-доступ к репозиторию = доверие к раннеру, ревью workflows прогон не останавливает.
 # Недоверенные вклады — в отдельном репозитории без доступа к группе раннеров, форки — статикой на облачном
 # (docs/linux.md, «Доверие к коду PR»).
 # Внешнего соединения (COM) на Linux нет: серверные пробы и разбор запросов идут через YAxUnit (OTK_YAXUNIT),
 # контекст внешнего соединения — «не проверено» с причиной.
-# База — целевая ветка PR (ОТК берёт её из GITHUB_BASE_REF и догружает сама).
+# База — первый родитель merge-коммита PR (github.event.pull_request.base.sha): целевая ветка на момент слияния,
+# его коммит есть в истории благодаря fetch-depth: 0. Без --base ОТК взяла бы origin/<ветку> из GITHUB_BASE_REF на
+# момент checkout — она могла уйти вперёд, и в план попали бы чужие правки (или пропала бы правка, уже попавшая
+# в целевую ветку).
 # Артефакт otk-gate: summary.html, summary.md, summary.json, junit.xml, problems.txt, summary.sarif, otk.json.
 name: otk
 
 on:
   pull_request:
 
-concurrency:                                 # одна копия ИБ на раннер: до 100 заданий ждут в очереди (FIFO),
+concurrency:                                 # очередь в пределах репозитория: до 100 заданий ждут по порядку,
   group: otk-gate-${{ github.repository }}   # лишние отменяются; cancel-in-progress с queue: max не сочетается
-  queue: max
+  queue: max                                 # другой репозиторий в эту очередь не встанет — ему свой OTK_HOME
 
 env:
   OTK_HOME: /srv/otk-ci                    # стенд раннера: копии ИБ, прогоны, YAxUnit, BSL LS (пути — в шаге otk gate)
@@ -46,7 +50,8 @@ jobs:
           OTK_RUN_DIR: ${{ env.OTK_HOME }}/runs
           OTK_YAXUNIT: ${{ env.OTK_HOME }}/YAxUnit.cfe
           OTK_BSLLS: ${{ env.OTK_HOME }}/bsl-language-server/bsl-language-server
-        run: otk ci gate --artifacts otk-artifacts       # команда установленной ОТК (pipx или venv — в PATH)
+        # команда установленной ОТК (pipx или venv — в PATH); база — родитель merge-коммита, а не ушедшая вперёд ветка
+        run: otk ci gate --artifacts otk-artifacts --base ${{ github.event.pull_request.base.sha }}
 
       - uses: actions/upload-artifact@v4
         if: always()
