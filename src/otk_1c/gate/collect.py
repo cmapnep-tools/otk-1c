@@ -163,12 +163,17 @@ def _collect(header, source_dir, changes, everything, read_base, read_head, cont
     props = lay.properties(cfg_text)
     variant = props.variant
     words = lang.dictionary(variant)       # UnsupportedScriptVariant -> код 2 в CLI
-    # обычное приложение — по настройке проекта или основному режиму запуска конфигурации
-    ordinary_application = ordinary_application or props.run_mode == "OrdinaryApplication"
+    # обычное приложение — по настройке проекта или основному режиму запуска конфигурации; у расширения своего
+    # режима может не быть — тогда он берётся у основной конфигурации (у неё же и флаги модулей)
+    run_mode = props.run_mode
+    if parent_lay and read_parent:
+        parent_text = read_parent(parent_lay.config_file)
+        run_mode = run_mode or (parent_lay.properties(parent_text).run_mode if parent_text else "")
+    ordinary_application = ordinary_application or run_mode == "OrdinaryApplication"
     if "OrdinaryClient" in required_contexts and not ordinary_application:
         # без этого контекста не будет ни у одного модуля плана, и требование молча считалось бы выполненным
         raise InfraError("requiredContexts: OrdinaryClient, но конфигурация не работает в обычном приложении "
-                         f"(DefaultRunMode = {props.run_mode or 'не задан'}, environment.ordinaryApplication = false) "
+                         f"(DefaultRunMode = {run_mode or 'не задан'}, environment.ordinaryApplication = false) "
                          "— проверить этот контекст нечем", code="config-invalid")
 
     modules, removed_modules, metadata, all_queries = [], [], [], []

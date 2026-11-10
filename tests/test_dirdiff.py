@@ -105,6 +105,17 @@ class TestDirDiff(unittest.TestCase):
         self.assertEqual(e.exception.code, "config-invalid")
         self.assertIn("OrdinaryClient", str(e.exception))
 
+    def test_ordinary_client_of_extension_by_parent(self):
+        """У расширения своего режима запуска может не быть — он берётся у основной конфигурации, как и флаги
+        модулей: обычное приложение родителя делает OrdinaryClient проверяемым."""
+        parent = self.tmp / "родитель"
+        write(parent, "Configuration.xml",
+              '<Configuration><Properties><ScriptVariant>Russian</ScriptVariant>'
+              '<DefaultRunMode>OrdinaryApplication</DefaultRunMode></Properties></Configuration>')
+        plan = collect.collect_dirs(None, self.head, CONTEXTS, parent=parent,
+                                    required_contexts=["OrdinaryClient"])
+        self.assertEqual(plan["requiredContexts"], ["OrdinaryClient"])
+
     def test_lines_like_git_diff(self):
         ch = gitdiff.FileChange("M", "м")
         dirdiff.fill_lines(ch, "а\nб\nв\nг\n", "а\nБ\nв\nновая\nг\n")
