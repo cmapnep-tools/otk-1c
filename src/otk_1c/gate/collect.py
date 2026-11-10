@@ -165,6 +165,11 @@ def _collect(header, source_dir, changes, everything, read_base, read_head, cont
     words = lang.dictionary(variant)       # UnsupportedScriptVariant -> код 2 в CLI
     # обычное приложение — по настройке проекта или основному режиму запуска конфигурации
     ordinary_application = ordinary_application or props.run_mode == "OrdinaryApplication"
+    if "OrdinaryClient" in required_contexts and not ordinary_application:
+        # без этого контекста не будет ни у одного модуля плана, и требование молча считалось бы выполненным
+        raise InfraError("requiredContexts: OrdinaryClient, но конфигурация не работает в обычном приложении "
+                         f"(DefaultRunMode = {props.run_mode or 'не задан'}, environment.ordinaryApplication = false) "
+                         "— проверить этот контекст нечем", code="config-invalid")
 
     modules, removed_modules, metadata, all_queries = [], [], [], []
     for ch in changes:

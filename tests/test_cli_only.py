@@ -96,6 +96,15 @@ class TestApplyArgs(unittest.TestCase):
             with self.assertRaises(ValueError):
                 config.apply_args(config.DEFAULTS, args(set=[bad]))
 
+    def test_set_of_contexts_is_checked(self):
+        """--set меняет настройки после чтения файлов: опечатка в контексте — ошибка настройки, а не тишина."""
+        with self.assertRaises(InfraError) as e:
+            config.apply_args(config.DEFAULTS,
+                              args(set=['environment.requiredContexts=["Ordinaryclient"]']))
+        self.assertEqual(e.exception.code, "config-invalid")
+        out = config.apply_args(config.DEFAULTS, args(set=['environment.requiredContexts=["OrdinaryClient"]']))
+        self.assertEqual(out["environment"]["requiredContexts"], ["OrdinaryClient"])
+
     def test_env_over_files(self):
         """Порядок: аргумент > OTK_* > otk.local.toml > otk.toml; логическая переменная — 0/false/no."""
         tmp = Path(tempfile.mkdtemp())
