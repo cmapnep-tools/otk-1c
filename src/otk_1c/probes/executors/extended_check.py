@@ -438,7 +438,8 @@ def _new_findings(by_rel, base, after, before, skipped):
 
 def compare(by_rel, head, base, after, before, covered=None):
     """Новые замечания «стало» относительно «было» (ключ — модуль, сообщение, режим) и примечания по модулям:
-    «проверен частично» (маскировка), «не скомпилирован» (нет канарейки), нет сравнения с «было». covered —
+    «проверен частично» (маскировка), «не скомпилирован» (нет канарейки и ошибок модуля) либо «контрольная ошибка
+    не достигнута» (компиляция остановилась на ошибке модуля), нет сравнения с «было». covered —
     необязательный словарь пар «путь модуля -> контексты с доказанной компиляцией» для отчёта о покрытии."""
     results, notes, skipped = [], [], {}
     if "failed" in before:                # «было» не проверилось: замечания модулей с базой не отличить от старых
@@ -446,15 +447,17 @@ def compare(by_rel, head, base, after, before, covered=None):
             skipped[rel] = f"не сравнить с «было» ({before['failed'][:200]})"
         before = {"findings": [], "masked": {}, "compiled": {}}
     compared = compared_contexts(by_rel, base, after, before)
-    # без канарейки и без новых ошибок — модуль отброшен; ошибка разбора останавливает компиляцию до канарейки,
-    # поэтому модуль с новыми ошибками — скомпилирован
+    # без канарейки и без ошибок в выводе — модуль отброшен; ошибка останавливает компиляцию до канарейки, поэтому
+    # модуль с ошибкой не отброшен, но проверен не полностью (и находкой она не становится, если была в «было»)
     dropped = {rel for rel in by_rel if rel not in after["compiled"] and rel not in after["masked"]}
     new, possible_dropped, uncompared, proven = _new_findings(by_rel, base, after, before, skipped)
     errors = {rel for rel, _, msg, _ in after["findings"] if not msg.startswith("Возможно")}
     for rel in dropped - {r for r, _, msg in new if not msg.startswith("Возможно")}:
-        if rel in skipped and rel in errors:
-            continue                      # ошибка остановила компиляцию до канарейки, модуль не отброшен
-        why = "модуль не скомпилирован во временном расширении (Конфигуратор его отбросил)"
+        if rel in errors:     # ошибка модуля в выводе: компиляция остановилась до канарейки, но модуль не отброшен
+            why = ("контрольная ошибка не достигнута: компиляция остановилась на ошибке модуля — полнота "
+                   "проверки не подтверждена")
+        else:
+            why = "модуль не скомпилирован во временном расширении (Конфигуратор его отбросил)"
         # причина, по которой модуль уже пропущен (сбой проверки «было»), не теряется
         skipped[rel] = f"{skipped[rel]}; {why}" if rel in skipped else why
     new = {key: modes for key, modes in new.items() if key[0] not in skipped}

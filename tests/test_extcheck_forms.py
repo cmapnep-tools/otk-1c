@@ -216,16 +216,34 @@ class ExtCheckFormsTest(unittest.TestCase):
         self.assertFalse([r for r in res if r["outcome"] == "compile-error"])
 
     def test_before_failed_with_parse_error_is_not_dropped(self):
-        """Сбой «было» и ошибка разбора в «после» до канарейки: модуль не отброшен — запись только о сравнении,
-        сама ошибка находкой не выдаётся."""
+        """Сбой «было» и ошибка разбора в «после» до канарейки: модуль не отброшен — в записи и отсутствие
+        сравнения, и недостигнутая контрольная ошибка; сама ошибка находкой не выдаётся."""
         err = (f"{{otk_check {FORM_OBJ}(12,2)}}: Ожидается выражение\n"
                "\tА = ; (Проверка: Сервер)\n")
         _, res, _ = self.run_check(FakePlatform(before="", after=err, rc=1))
         msgs = {r["module"]: r["message"] for r in res if r["outcome"] == "skipped"}
         self.assertIn("не сравнить с «было»", msgs[FORM_PATH])
-        self.assertNotIn("модуль не скомпилирован", msgs[FORM_PATH])
+        self.assertIn("контрольная ошибка не достигнута", msgs[FORM_PATH])
+        self.assertNotIn("отбросил", msgs[FORM_PATH])
         self.assertIn("модуль не скомпилирован", msgs[OBJ_PATH])
         self.assertFalse([r for r in res if r["outcome"] == "compile-error"])
+
+    def test_same_error_without_canary_is_not_dropped(self):
+        """Одинаковая ошибка режима в обеих редакциях без канареек: находки нет (она была и в «было»), но модуль не
+        «отброшен»: Конфигуратор сообщил его ошибку, компиляция остановилась до контрольной."""
+        err = (f"{{otk_check {FORM_OBJ}(12,2)}}: Процедура или функция с указанным именем не определена (Нет)\n"
+               f"\tНет(); (Проверка: {self.ORDINARY})\n")
+        covered = {}
+        _, res, note = self.run_check(FakePlatform(after=err, before=err), contexts=["OrdinaryClient"],
+                                      covered=covered)
+        self.assertFalse([r for r in res if r["outcome"] == "compile-error"])
+        msgs = {r["module"]: r["message"] for r in res if r["outcome"] == "skipped"}
+        self.assertIn("контрольная ошибка не достигнута", msgs[FORM_PATH])
+        self.assertNotIn("отбросил", msgs[FORM_PATH])
+        self.assertIn("модуль не скомпилирован", msgs[OBJ_PATH])
+        self.assertNotIn(FORM_PATH, covered)          # пара не подтверждена — модуль не покрыт
+        s = self.summary(res, note, covered)
+        self.assertEqual((s["code"], s["verdict"]), (2, "не покрыто обязательное: OrdinaryClient"))
 
     def test_new_modules_without_possible(self):
         """Новые модули (без «было»): «Возможно ошибочн…» не показываются — без сравнения не отличить от ложных."""
