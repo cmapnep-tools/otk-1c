@@ -35,6 +35,8 @@ from .base import result
 
 NAME = "extcheck"
 EXT = "otk_check"
+# пометка находки, чью новизну сравнить с редакцией «было» нельзя (канарейка «после» не подтвердила режим)
+UNCOMPARED = " — ошибка в текущей редакции, сравнение с «было» недоступно"
 
 
 class Failed(Exception):
@@ -401,11 +403,13 @@ def _uncompared_notes(by_rel, compared, after, skipped, uncompared):
 def _new_findings(by_rel, base, after, before, compared, skipped):
     """Находки «стало», которые доказуемо новые: их не было в «было» (ключ — модуль, сообщение, режим) и режим
     сравним с «было». Возвращает ({ключ: режимы}, число отброшенных «Возможно…», {модуль: {режим: число}} —
-    находки режимов, подтверждённых только в «после»)."""
+    находки режимов, подтверждённых только в «после», ключи с доказанной новизной). Находка в режиме изменённого
+    модуля, где канарейка «после» не подтвердилась (ошибка не дошла до контрольной), остаётся находкой, но
+    доказуемо новой не считается — сравнить её не с чем."""
     old_keys = {}
     for rel, _, msg, mode in before["findings"]:
         old_keys[(rel, msg, mode)] = old_keys.get((rel, msg, mode), 0) + 1
-    new, possible_dropped, uncompared = {}, 0, {}
+    new, possible_dropped, uncompared, proven = {}, 0, {}, set()
     for rel, line, msg, mode in after["findings"]:
         if old_keys.get((rel, msg, mode), 0) > 0:
             old_keys[(rel, msg, mode)] -= 1
@@ -415,15 +419,18 @@ def _new_findings(by_rel, base, after, before, compared, skipped):
         if msg.startswith("Возможно") and rel in by_rel and rel not in base:
             possible_dropped += 1         # без «было» не отличить от имён метаданных строкой, стилей и т. п.
             continue
+        key = (rel, line, msg)
         ctx = MODE_CONTEXTS.get(mode)
-        if ctx is not None and rel in compared and ctx in after["compiled"].get(rel, ()) \
-                and ctx not in compared[rel]:
+        uncomparable = rel in base and ctx is not None and ctx not in compared.get(rel, ())
+        if uncomparable and ctx in after["compiled"].get(rel, ()):
             # режим подтверждён только в «после»: сравнить его диагностику с «было» нечем — не новая находка
             hidden = uncompared.setdefault(rel, {})
             hidden[mode] = hidden.get(mode, 0) + 1
             continue
-        new.setdefault((rel, line, msg), []).append(mode)
-    return new, possible_dropped, uncompared
+        new.setdefault(key, []).append(mode)
+        if not uncomparable:
+            proven.add(key)
+    return new, possible_dropped, uncompared, proven
 
 
 def compare(by_rel, head, base, after, before, covered=None):
@@ -439,12 +446,13 @@ def compare(by_rel, head, base, after, before, covered=None):
     # без канарейки и без новых ошибок — модуль отброшен; ошибка разбора останавливает компиляцию до канарейки,
     # поэтому модуль с новыми ошибками — скомпилирован
     dropped = {rel for rel in by_rel if rel not in after["compiled"] and rel not in after["masked"]}
-    new, possible_dropped, uncompared = _new_findings(by_rel, base, after, before, compared, skipped)
+    new, possible_dropped, uncompared, proven = _new_findings(by_rel, base, after, before, compared, skipped)
     for rel in dropped - {r for r, _, msg in new if not msg.startswith("Возможно")}:
         skipped[rel] = "модуль не скомпилирован во временном расширении (Конфигуратор его отбросил)"
     new = {key: modes for key, modes in new.items() if key[0] not in skipped}
     for (rel, line, msg), modes in new.items():
         entry = by_rel.get(rel, (None, None))[1]
+        unproven = (rel, line, msg) not in proven
         if rel is None:                   # ошибка без модуля (вид объекта не из словаря) — не «чисто»
             results.append(result(NAME, "extcheck", None, "Designer", "skipped", f"ошибка без модуля: {msg}"))
             continue
@@ -457,8 +465,9 @@ def compare(by_rel, head, base, after, before, covered=None):
                         line = i
                         break
         shown = sorted(m for m in modes if m)
+        text = msg + (f" ({', '.join(shown)})" if shown else "")
         results.append(result(NAME, "extcheck", entry, "Designer", "compile-error",
-                              msg + (f" ({', '.join(shown)})" if shown else ""), line))
+                              text + (UNCOMPARED if unproven else ""), line))
     for rel in sorted(set(after["masked"]) | set(before["masked"])):
         if rel in by_rel and rel not in skipped:
             modes = sorted(after["masked"].get(rel, set()) | before["masked"].get(rel, set()))
