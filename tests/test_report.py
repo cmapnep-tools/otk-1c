@@ -176,6 +176,44 @@ class TestReport(unittest.TestCase):
                 self.assertTrue(f["message"].endswith(extended_check.UNCOMPARED))
                 self.assertEqual(f["message"].count(extended_check.UNCOMPARED), 1)
 
+    def test_compile_error_marker_does_not_break_merge(self):
+        """Пометка сравнения не мешает слиянию: третья проверка той же ошибки с другим префиксом места — источник
+        той же находки, а не вторая находка."""
+        mod = "CommonModules/М/Ext/Module.bsl"
+
+        def r(ex, kind, msg, ctx="Server"):
+            return {"executor": ex, "kind": kind, "module": mod, "owner": "ОбщийМодуль.М", "context": ctx,
+                    "outcome": "compile-error", "line": 189, "message": msg}
+        ext = r("extcheck", "extcheck", "Переменная не определена (Х)" + extended_check.UNCOMPARED, "Designer")
+        com = r("com", "probe", "demo ОбщийМодуль.М.Модуль(189,6): Переменная не определена (Х)")
+        yax = r("yaxunit", "probe", "ОбщийМодуль.М.Модуль(189,6): Переменная не определена (Х)", "ThinClient")
+        for first, rest in ((ext, (com, yax)), (com, (ext, yax)), (yax, (ext, com))):
+            with self.subTest(first=first["executor"]):
+                f, = report.build(PLAN, {"findings": []}, {"results": [first, *rest], "notes": []},
+                                  {})["findings"]
+                self.assertEqual(len(f["sources"]), 3)
+                self.assertTrue(f["message"].endswith(extended_check.UNCOMPARED))
+                self.assertEqual(f["message"].count(extended_check.UNCOMPARED), 1)
+
+    def test_static_replacement_keeps_uncompared_marker(self):
+        """Ошибка extcheck заменена находкой статики: пометка сравнения переходит в сообщение находки после
+        объединения повторов (счётчик сохраняется) и видна в Markdown, Problems и JUnit."""
+        mod = "CommonModules/М/Ext/Module.bsl"
+        one = {"check": "platform-api", "severity": "error", "module": mod, "line": 12, "message": "Метод новее"}
+        static = {"findings": [dict(one), dict(one)]}
+        run = {"results": [{"executor": "extcheck", "kind": "extcheck", "module": mod, "owner": "ОбщийМодуль.М",
+                            "context": "Designer", "outcome": "compile-error", "line": 12,
+                            "message": "Тип не определен (Х)" + extended_check.UNCOMPARED}], "notes": []}
+        s = report.build(PLAN, static, run, {})
+        f, = s["findings"]
+        self.assertEqual((f["rule"], f["count"]), ("platform-api", 2))
+        self.assertTrue(f["message"].endswith(extended_check.UNCOMPARED))
+        self.assertEqual(f["message"].count(extended_check.UNCOMPARED), 1)
+        self.assertEqual([x["step"] for x in f["sources"]], ["static", "run:extcheck"])
+        self.assertIn(extended_check.UNCOMPARED, report.markdown(s))
+        self.assertIn("error platform-api: Метод новее" + extended_check.UNCOMPARED, report.problems(s, "D:/r")[0])
+        self.assertIn(extended_check.UNCOMPARED, report.junit(s))
+
     def test_object_method_and_code(self):
         """Объект, метод, место для Конфигуратора и строка кода проверенной редакции."""
         mod, form = "CommonModules/М/Ext/Module.bsl", "Catalogs/Т/Forms/Ф/Ext/Form/Module.bsl"

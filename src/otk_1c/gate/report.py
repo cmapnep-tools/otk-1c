@@ -136,10 +136,18 @@ def compile_text(message):
     return _COMPILE_PREFIX.sub("", " ".join((message or "").split()), count=1)
 
 
+def uncompared():
+    """Пометка extcheck «сравнение с «было» недоступно» (импорт локальный: модули не должны ссылаться друг на
+    друга при загрузке)."""
+    from ..probes.executors.extended_check import UNCOMPARED
+    return UNCOMPARED
+
+
 def same_compile_error(a, b):
-    """Одна ошибка компиляции от разных проверок: тексты без префикса места равны или один — другой плюс
-    « (режимы)» extcheck. «… (Х)» и «… (Y)» — разные ошибки."""
-    a, b = compile_text(a), compile_text(b)
+    """Одна ошибка компиляции от разных проверок: тексты без префикса места и пометки сравнения равны или один —
+    другой плюс « (режимы)» extcheck. «… (Х)» и «… (Y)» — разные ошибки."""
+    a = compile_text(a).removesuffix(uncompared())
+    b = compile_text(b).removesuffix(uncompared())
     return a == b or b.startswith(a + " (") or a.startswith(b + " (")
 
 
@@ -151,9 +159,13 @@ def _add_source(finding, source):
 def _keep_uncompared(finding, message):
     """Пометка extcheck «сравнение с «было» недоступно» остаётся у слитой находки, какой бы источник ни пришёл
     первым: у extcheck она в сообщении, у пробы COM её нет."""
-    from ..probes.executors.extended_check import UNCOMPARED
-    if UNCOMPARED in (message or "") and UNCOMPARED not in finding["message"]:
-        finding["message"] += UNCOMPARED
+    if uncompared() in (message or "") and uncompared() not in finding["message"]:
+        finding["message"] += uncompared()
+
+
+def _finding_key(f):
+    """Ключ объединения повторов статики: одна ошибка одного места — одна находка."""
+    return (f["severity"], f["step"], f["rule"], f["file"], f["line"], f["message"])
 
 
 def collect_findings(plan, static, run, notes=None):
@@ -163,7 +175,7 @@ def collect_findings(plan, static, run, notes=None):
     results = (run or {}).get("results", [])
     static_findings = (static or {}).get("findings", [])
     dropped, replaced = platform_duplicates(plan, static_findings, results)
-    out, of_result = [], {}
+    out, of_result, marked = [], {}, set()
     for f in static_findings:
         if id(f) in dropped:
             continue
@@ -174,8 +186,11 @@ def collect_findings(plan, static, run, notes=None):
         out.append(item)
         for r in results:
             if replaced.get(id(r)) is f:
-                _add_source(item, _run_source(r))
+                source = _run_source(r)
+                _add_source(item, source)
                 of_result[id(r)] = item
+                if uncompared() in (source["message"] or ""):   # ошибка extcheck заменена находкой статики
+                    marked.add(_finding_key(item))
     # одна ошибка одного места от разных исполнителей и контекстов — одна находка с источниками; разные запросы
     # в одной строке — разные находки. Ошибки компиляции — по тексту без префикса места и суффикса режимов
     by_place, compiled = {}, collections.defaultdict(list)
@@ -223,12 +238,16 @@ def collect_findings(plan, static, run, notes=None):
     # повторов); пробы разных запросов в одной строке — разные находки
     seen, uniq = {}, []
     for f in out:
-        key = (f["severity"], f["step"], f["rule"], f["file"], f["line"], f["message"])
+        key = _finding_key(f)
         if f["step"] == "static" and key in seen:
             seen[key]["count"] = seen[key].get("count", 1) + 1
         else:
             seen[key] = f
             uniq.append(f)
+    # пометка — после объединения повторов: в ключе и счётчике её быть не должно
+    for f in uniq:
+        if _finding_key(f) in marked and uncompared() not in f["message"]:
+            f["message"] += uncompared()
     return uniq
 
 
