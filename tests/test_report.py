@@ -609,6 +609,19 @@ class TestRequiredContexts(unittest.TestCase):
         self.assertEqual([(i["context"], i["file"]) for i in s["uncovered"]],
                          [("*", "src/cf/" + other)])
 
+    def test_unknown_flags_block_requirement(self):
+        """Заимствованный общий модуль без --parent: контексты неизвестны, и требование подтвердить нечем, даже
+        если остальные модули проверены, — этот модуль мог быть в требуемом контексте."""
+        dep = "CommonModules/З/Ext/Module.bsl"
+        plan = {**PLAN, "queries": [], "requiredContexts": ["Server"], "modules": [
+            {"path": self.MOD, "kind": "CommonModule", "owner": "ОбщийМодуль.М", "contexts": ["Server"]},
+            {"path": dep, "kind": "CommonModule", "owner": "ОбщийМодуль.З", "contexts": [],
+             "probe": {"strategy": "none", "reason": "заимствованный общий модуль: флаги — в основной конфигурации"}}]}
+        run = {"results": [{"executor": "com", "kind": "probe", "module": self.MOD, "owner": "ОбщийМодуль.М",
+                            "context": "Server", "outcome": "ok", "message": "", "line": None}], "notes": []}
+        s = report.build(plan, {"findings": []}, run, {})
+        self.assertEqual((s["code"], s["verdict"]), (2, "не покрыто обязательное: Server"))
+
     def test_module_without_probe_counts(self):
         plan = {**self.plan(), "requiredContexts": ["OrdinaryClient"]}
         s = report.build(plan, {"findings": []},

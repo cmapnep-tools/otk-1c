@@ -418,10 +418,15 @@ def missing_required(plan, closes, uncovered_, not_checked_=(), run=None):
         file = entry.get("file") or ""
         return file[len(prefix):] if file.startswith(prefix) else None
 
+    # контексты заимствованного общего модуля без --parent неизвестны: он может быть в любом требуемом контексте,
+    # и требование по нему подтвердить нечем (запись «не покрыто» с needs designer:* это и означает)
+    unknown = any(m.get("kind") == "CommonModule" and (m.get("probe") or {}).get("strategy") == "none"
+                  for m in plan["modules"])
+
     out = []
     for ctx in required:
         modules = [m for m in plan["modules"] if ctx in (m.get("contexts") or [])]
-        if not modules:
+        if not modules and not unknown:
             continue
         done = {m["path"] for m in modules if checked(m, ctx)}
         # designer:* закрывает wildcard-запись только если режим этого контекста тоже был в проверке; запись
@@ -430,7 +435,7 @@ def missing_required(plan, closes, uncovered_, not_checked_=(), run=None):
                 and module_of(i) not in done]
         lost += [i for i in not_checked_ if i.get("needs") == f"designer:{ctx}"
                  and not closes(i.get("needs"), ctx)]
-        if lost or any(m["path"] not in done for m in modules):
+        if unknown or lost or any(m["path"] not in done for m in modules):
             out.append(ctx)
     return out
 
