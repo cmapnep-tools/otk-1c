@@ -42,6 +42,9 @@ MODULES = {
     "ecmodule": module("ВнешнееСоединение", "ExternalConnectionModule", "session-start", ["ExternalConnection"]),
     "econly": module("ТолькоВС", "CommonModule", "missing-method", ["ExternalConnection"]),
     "ordinary": module("Обычный", "CommonModule", "missing-method", ["Server", "OrdinaryClient"]),
+    "unknown": module("Неизвестный", "CommonModule", "none", [], uncovered=[
+        {"context": "*", "needs": "designer:*",
+         "reason": "заимствованный общий модуль: флаги — в основной конфигурации"}]),
 }
 QUERIES = [{"id": "q1", "module": "Сервер/Module.bsl", "line": 10, "text": "ВЫБРАТЬ 1", "complete": True},
            {"id": "q2", "module": "Сервер/Module.bsl", "line": 20, "text": "ВЫБРАТЬ", "complete": False}]
@@ -108,6 +111,9 @@ CASES = {
     "ordinary-client-no-ext": {"modules": ["ordinary"], "uncovered": True,
                                "contexts": ["Server", "ThinClient", "ExternalConnection"],
                                "checks": {"extcheck": "off"}},
+    # заимствованный общий модуль без флагов: extcheck контексты не подтверждает, запись остаётся
+    "extension-unknown-contexts": {"modules": ["unknown"], "extension": "Расш",
+                                   "requiredContexts": ["Server"]},
 }
 
 
@@ -163,6 +169,7 @@ def play(name):
                 "sourceFormat": layout.DESIGNER.format,
                 "queries": QUERIES if case.get("queries") else [],
                 "contextsAvailable": case.get("contexts", ["Server", "ThinClient", "ExternalConnection"]),
+                "requiredContexts": case.get("requiredContexts", []),
                 "smoke": [{"path": "Форма/Form.xml", "form": "Документ.Д.Форма.Ф"}] if case.get("smoke") else [],
                 "scenarios": [{"id": "s1"}] if case.get("scenarios") else [],
                 "scenarioExtensions": [{"name": "Тесты", "dir": "tests/Тесты"}] if case.get("scenarios") else []}

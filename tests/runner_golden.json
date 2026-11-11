@@ -4029,5 +4029,59 @@
    "modules": [],
    "contexts": []
   }
+ },
+ "extension-unknown-contexts": {
+  "results": [
+   {
+    "executor": "plan",
+    "kind": "uncovered",
+    "module": "Неизвестный/Module.bsl",
+    "owner": "ОбщийМодуль.Неизвестный",
+    "context": "*",
+    "needs": "designer:*",
+    "outcome": "skipped",
+    "message": "заимствованный общий модуль: флаги — в основной конфигурации",
+    "line": null
+   }
+  ],
+  "notes": [
+   "примечание расширения"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    "Расш"
+   ],
+   [
+    "extcheck.run_extension",
+    "Расш",
+    [
+     "Неизвестный/Module.bsl"
+    ],
+    [
+     "ОбщийМодуль.Неизвестный",
+     null
+    ],
+    false
+   ]
+  ],
+  "timings": [
+   "build",
+   "extcheck"
+  ],
+  "extCheck": {
+   "modules": [
+    "Неизвестный/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ]
+  }
  }
 }
