@@ -636,6 +636,37 @@ class TestRequiredContexts(unittest.TestCase):
         s = report.build(plan, {"findings": []}, run, {})
         self.assertEqual((s["code"], s["verdict"]), (2, "не покрыто обязательное: Server"))
 
+    def test_unknown_flags_record_kept_without_required_mode(self):
+        """Запись «не покрыто» модуля с неизвестными контекстами не закрывается проверкой Конфигуратором в
+        другом режиме: иначе требование не видно, чем закрыть."""
+        dep = "CommonModules/З/Ext/Module.bsl"
+        plan = {**PLAN, "queries": [], "requiredContexts": ["Server"], "modules": [
+            {"path": self.MOD, "kind": "CommonModule", "owner": "ОбщийМодуль.М", "contexts": ["Server"]},
+            {"path": dep, "kind": "CommonModule", "owner": "ОбщийМодуль.З", "contexts": [],
+             "probe": {"strategy": "none", "reason": "заимствованный общий модуль: флаги — в основной конфигурации"}}]}
+        rec = {"executor": "plan", "kind": "uncovered", "module": dep, "owner": "ОбщийМодуль.З",
+               "context": "*", "needs": "designer:*", "outcome": "skipped",
+               "message": "заимствованный общий модуль: флаги — в основной конфигурации", "line": None}
+        designer = {"ran": True, "modes": ["-ThinClient"], "findings": [], "notes": []}
+        s = report.build(plan, {"findings": []}, {"results": [rec], "notes": []}, {}, designer=designer)
+        self.assertEqual((s["code"], s["verdict"]), (2, "не покрыто обязательное: Server"))
+        self.assertEqual([i["needs"] for i in s["uncovered"]], ["designer:*"])
+
+    def test_unknown_flags_record_closed_by_required_mode(self):
+        """Проверка Конфигуратором в обязательном режиме закрывает запись модуля с неизвестными контекстами."""
+        dep = "CommonModules/З/Ext/Module.bsl"
+        plan = {**PLAN, "queries": [], "requiredContexts": ["Server"], "modules": [
+            {"path": self.MOD, "kind": "CommonModule", "owner": "ОбщийМодуль.М", "contexts": ["Server"]},
+            {"path": dep, "kind": "CommonModule", "owner": "ОбщийМодуль.З", "contexts": [],
+             "probe": {"strategy": "none", "reason": "заимствованный общий модуль: флаги — в основной конфигурации"}}]}
+        rec = {"executor": "plan", "kind": "uncovered", "module": dep, "owner": "ОбщийМодуль.З",
+               "context": "*", "needs": "designer:*", "outcome": "skipped",
+               "message": "заимствованный общий модуль: флаги — в основной конфигурации", "line": None}
+        designer = {"ran": True, "modes": ["-Server"], "findings": [], "notes": []}
+        s = report.build(plan, {"findings": []}, {"results": [rec], "notes": []}, {}, designer=designer)
+        self.assertEqual((s["code"], s["verdict"]), (0, "можно отправлять"))
+        self.assertEqual(s["uncovered"], [])
+
     def test_unknown_flags_closed_by_designer(self):
         """Полная проверка Конфигуратором в режиме контекста проверяет и модуль с неизвестными контекстами:
         требование закрыто, код 2 за него не выставляется."""

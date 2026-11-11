@@ -406,16 +406,14 @@ def missing_required(plan, closes, uncovered_, not_checked_=(), run=None):
     # и требование по нему подтвердить нечем (запись «не покрыто» с needs designer:* это и означает)
     unknown_modules = [m for m in plan["modules"]
                        if m.get("kind") == "CommonModule" and (m.get("probe") or {}).get("strategy") == "none"]
-    unknown_paths = {m["path"] for m in unknown_modules}
 
     def checked(module, ctx):
         """Выполненная проверка модуля в контексте: проба или сеанс этого модуля (пропуск — не проверка),
         расширенная проверка целиком в этом режиме, полная проверка Конфигуратором в режиме контекста. Результат
-        запроса проверяет текст запроса, а не модуль, поэтому покрытием не считается. Расширенная проверка не
-        подтверждает контекст модуля с неизвестными контекстами: во временном расширении его флаги не заданы."""
+        запроса проверяет текст запроса, а не модуль, поэтому покрытием не считается."""
         if closes("designer:*", ctx):
             return True                    # полная проверка Конфигуратором проверяет все модули конфигурации
-        if module["path"] in ext_modules and ctx in ext_contexts and module["path"] not in unknown_paths:
+        if module["path"] in ext_modules and ctx in ext_contexts:
             return True                    # расширенная проверка в этом режиме
         return any(r.get("kind") in ("probe", "session") and r.get("module") == module["path"]
                    and r.get("context") == ctx and r.get("outcome") not in ("skipped", "uncovered")
@@ -428,7 +426,9 @@ def missing_required(plan, closes, uncovered_, not_checked_=(), run=None):
     out = []
     for ctx in required:
         modules = [m for m in plan["modules"] if ctx in (m.get("contexts") or [])]
-        unknown = [m for m in unknown_modules if not checked(m, ctx)]
+        # у модуля с неизвестными контекстами подтвердить контекст может только проверка Конфигуратором в его
+        # режиме: расширенная проверка во временном расширении его флаги не задаёт, проба не выполнялась
+        unknown = [] if closes("designer:*", ctx) else unknown_modules
         if not modules and not unknown:
             continue
         done = {m["path"] for m in modules if checked(m, ctx)}
@@ -485,6 +485,9 @@ def build(plan, static, run, timings, infra_errors=(), read=None, designer=None)
     # needs designer:* — модуль целиком: закрыт, только если в режимах проверки были все его контексты
     # (сокращённый набор режимов проверяет модуль частично, и «не покрыто» должно остаться)
     contexts_of = {m["path"]: list(m.get("contexts") or []) for m in plan["modules"]}
+    unknown_paths = {m["path"] for m in plan["modules"]
+                     if m.get("kind") == "CommonModule" and (m.get("probe") or {}).get("strategy") == "none"}
+    required = [] if bad else list(plan.get("requiredContexts") or [])    # неверное значение уже дало config-invalid
     prefix = plan["source"].rstrip("/") + "/"
 
     def closes_item(i):
@@ -494,6 +497,9 @@ def build(plan, static, run, timings, infra_errors=(), read=None, designer=None)
         file = i.get("file") or ""
         rel = file[len(prefix):] if file.startswith(prefix) else None
         contexts = contexts_of.get(rel)
+        if not contexts and rel in unknown_paths:
+            # контексты неизвестны: запись закрыта, только если проверены все обязательные режимы
+            return all(closes(needs, ctx) for ctx in required) if required else closes(needs)
         return closes(needs) if not contexts else all(closes(needs, ctx) for ctx in contexts)
 
     closed = sum(1 for i in not_checked_ + uncovered_ if closes_item(i))
