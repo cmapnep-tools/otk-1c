@@ -183,7 +183,7 @@ class SettingTest(unittest.TestCase):
 
     def test_no_designer_binary(self):
         """Каталог платформы без 1cv8 (серверная установка): резервный запуск Конфигуратора — понятный сбой."""
-        p = self.make({"ibTool": "ibcmd"}, {"OTK_IB_TOOL": ""})
+        p = self.make({"ibTool": "ibcmd", "platform": tempfile.mkdtemp()}, {"OTK_IB_TOOL": ""})
         with self.assertRaisesRegex(InfraError, "пакетный Конфигуратор не установлен"):
             p.designer("/LoadConfigFromFiles", "D:/dump")
 
