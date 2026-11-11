@@ -415,8 +415,9 @@ def _new_findings(by_rel, base, after, before, compared, skipped):
         if msg.startswith("Возможно") and rel in by_rel and rel not in base:
             possible_dropped += 1         # без «было» не отличить от имён метаданных строкой, стилей и т. п.
             continue
-        if mode is not None and rel in compared and mode in after["compiled"].get(rel, ()) \
-                and mode not in compared[rel]:
+        ctx = MODE_CONTEXTS.get(mode)
+        if ctx is not None and rel in compared and ctx in after["compiled"].get(rel, ()) \
+                and ctx not in compared[rel]:
             # режим подтверждён только в «после»: сравнить его диагностику с «было» нечем — не новая находка
             hidden = uncompared.setdefault(rel, {})
             hidden[mode] = hidden.get(mode, 0) + 1

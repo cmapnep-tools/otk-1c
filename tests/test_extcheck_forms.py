@@ -305,18 +305,22 @@ class ExtCheckFormsTest(unittest.TestCase):
         return "".join(canary(obj, mode) for obj in objs for mode in modes)
 
     def test_context_only_in_after_is_not_compared(self):
-        """Режим подтверждён только в «после»: диагностику с «было» не сравнить — пара не закрывается, а
-        обязательный OrdinaryClient без ошибок даёт код 2."""
-        after = self.canaries(("Сервер", self.ORDINARY))
+        """Режим подтверждён только в «после»: диагностику с «было» не сравнить — она не выдаётся за новую
+        (скрыта), пара не закрывается, а обязательный OrdinaryClient даёт код 2."""
+        err = (f"{{otk_check {FORM_OBJ}(12,2)}}: Процедура или функция с указанным именем не определена (Нет)\n"
+               f"\tНет(); (Проверка: {self.ORDINARY})\n")
+        after = err + self.canaries(("Сервер", self.ORDINARY))
         before = self.canaries(("Сервер",))
         covered = {}
         _, res, note = self.run_check(FakePlatform(after=after, before=before),
                                       contexts=["Server", "OrdinaryClient"], covered=covered)
         self.assertEqual(covered[FORM_PATH], frozenset({"Server"}))
         self.assertEqual(covered[OBJ_PATH], frozenset({"Server"}))
-        self.assertEqual([r["message"] for r in res if r["outcome"] == "skipped"],
-                         ["нет сравнения с «было» (OrdinaryClient): режим подтверждён только в редакции «после» — "
-                          "его диагностика не выдаётся за новую"] * 2)
+        self.assertFalse([r for r in res if r["outcome"] == "compile-error"])
+        msg = ("нет сравнения с «было» (OrdinaryClient): режим подтверждён только в редакции «после» — "
+               "его диагностика не выдаётся за новую")
+        self.assertEqual({r["module"]: r["message"] for r in res if r["outcome"] == "skipped"},
+                         {OBJ_PATH: msg, FORM_PATH: msg + " (скрыто: 1)"})
         s = self.summary(res, note, covered)
         self.assertEqual((s["code"], s["verdict"]), (2, "не покрыто обязательное: OrdinaryClient"))
 
