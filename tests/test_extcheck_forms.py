@@ -206,6 +206,15 @@ class ExtCheckFormsTest(unittest.TestCase):
         self.assertTrue(all("не сравнить с «было»" in r["message"] for r in res if not r["message"].startswith(
             "проверен частично")))
 
+    def test_before_failed_keeps_comparison_reason(self):
+        """Сбой проверки «было» и модуль без канарейки в «после»: в записи — и отсутствие сравнения, и некомпиляция."""
+        _, res, _ = self.run_check(FakePlatform(before="", after=canary(OBJ_OBJ), rc=1))
+        msgs = {r["module"]: r["message"] for r in res if r["outcome"] == "skipped"}
+        self.assertIn("не сравнить с «было»", msgs[FORM_PATH])
+        self.assertIn("модуль не скомпилирован", msgs[FORM_PATH])
+        self.assertIn("не сравнить с «было»", msgs[OBJ_PATH])
+        self.assertFalse([r for r in res if r["outcome"] == "compile-error"])
+
     def test_new_modules_without_possible(self):
         """Новые модули (без «было»): «Возможно ошибочн…» не показываются — без сравнения не отличить от ложных."""
         _, res, note = self.run_check(status="A")
