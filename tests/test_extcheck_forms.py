@@ -353,6 +353,31 @@ class ExtCheckFormsTest(unittest.TestCase):
                                       f"({self.ORDINARY})" + extended_check.UNCOMPARED)])
         self.assertEqual(self.summary(res, note, covered)["code"], 1)
 
+    def test_marker_is_per_mode(self):
+        """Одна ошибка в двух режимах: подтверждённый в «было» серверный режим не скрывает отсутствие сравнения у
+        обычного клиента — пометка ставится."""
+        err = (f"{{otk_check {FORM_OBJ}(12,2)}}: Процедура или функция с указанным именем не определена (Нет)\n"
+               "\tНет(); (Проверка: Сервер)\n"
+               f"{{otk_check {FORM_OBJ}(12,2)}}: Процедура или функция с указанным именем не определена (Нет)\n"
+               f"\tНет(); (Проверка: {self.ORDINARY})\n")
+        _, res, _ = self.run_check(FakePlatform(after=err + self.canaries(("Сервер",)),
+                                                before=self.canaries(("Сервер",))),
+                                   contexts=["Server", "OrdinaryClient"])
+        self.assertEqual([r["message"] for r in res if r["outcome"] == "compile-error"],
+                         ["Процедура или функция с указанным именем не определена (Нет) "
+                          f"(Сервер, {self.ORDINARY})" + extended_check.UNCOMPARED])
+
+    def test_mode_confirmed_by_before_is_new(self):
+        """«Было» подтвердило режим канарейкой, в «после» ошибка остановила компиляцию до канарейки: ошибка новая —
+        пометки нет, в «было» все ошибки этого режима были видны."""
+        err = (f"{{otk_check {FORM_OBJ}(12,2)}}: Процедура или функция с указанным именем не определена (Нет)\n"
+               f"\tНет(); (Проверка: {self.ORDINARY})\n")
+        _, res, _ = self.run_check(FakePlatform(after=err + self.canaries(("Сервер",)),
+                                                before=self.canaries(("Сервер", self.ORDINARY))),
+                                   contexts=["Server", "OrdinaryClient"])
+        self.assertEqual([r["message"] for r in res if r["outcome"] == "compile-error"],
+                         [f"Процедура или функция с указанным именем не определена (Нет) ({self.ORDINARY})"])
+
     def test_context_confirmed_in_both_revisions_is_covered(self):
         """Обе редакции подтвердили оба режима — сравнение доступно, обязательный контекст закрыт, код 0."""
         canaries = self.canaries(("Сервер", self.ORDINARY))

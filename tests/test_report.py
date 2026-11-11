@@ -8,6 +8,7 @@ from _fs import rmtree_force
 from otk_1c import model, public
 from otk_1c.extras import controls
 from otk_1c.gate import output, report, report_html
+from otk_1c.probes.executors import extended_check
 
 PLAN = {"base": "a", "head": "b", "source": "src/cf", "modules": [{"path": "CommonModules/М/Ext/Module.bsl"}],
         "queries": [{"id": "q1", "module": "CommonModules/М/Ext/Module.bsl", "line": 5, "complete": False,
@@ -156,6 +157,24 @@ class TestReport(unittest.TestCase):
         # исход выполнения (runtime-error) так не склеивается
         rt = [{**x, "outcome": "runtime-error"} for x in run["results"][:2]]
         self.assertEqual(len(report.build(PLAN, {"findings": []}, {"results": rt, "notes": []}, {})["findings"]), 2)
+
+    def test_compile_error_keeps_uncompared_marker(self):
+        """Пометка «сравнение с «было» недоступно» остаётся у находки при слиянии ошибок extcheck и COM — в любом
+        порядке источников."""
+        mod = "CommonModules/М/Ext/Module.bsl"
+        com = {"executor": "com", "kind": "probe", "module": mod, "owner": "ОбщийМодуль.М", "context": "Server",
+               "outcome": "compile-error", "line": 189,
+               "message": "demo ОбщийМодуль.М.Модуль(189,6): Переменная не определена (Х)"}
+        ext = {"executor": "extcheck", "kind": "extcheck", "module": mod, "owner": "ОбщийМодуль.М",
+               "context": "Designer", "outcome": "compile-error", "line": 189,
+               "message": "Переменная не определена (Х) (Сервер)" + extended_check.UNCOMPARED}
+        for first, second in ((com, ext), (ext, com)):
+            with self.subTest(first=first["executor"]):
+                f, = report.build(PLAN, {"findings": []}, {"results": [first, second], "notes": []},
+                                  {})["findings"]
+                self.assertEqual(len(f["sources"]), 2)
+                self.assertTrue(f["message"].endswith(extended_check.UNCOMPARED))
+                self.assertEqual(f["message"].count(extended_check.UNCOMPARED), 1)
 
     def test_object_method_and_code(self):
         """Объект, метод, место для Конфигуратора и строка кода проверенной редакции."""
