@@ -158,6 +158,14 @@ class Designer:
             return None
         return content_path[:-len("Form.xml")] + "Form/Module.bsl"
 
+    def form_content(self, desc_path):
+        """Описание формы -> файл её содержимого (None — это не описание формы)."""
+        parts = desc_path.split("/")
+        is_form = (len(parts) == 4 and parts[2] == "Forms") or (len(parts) == 2 and parts[0] == "CommonForms")
+        if is_form and parts[-1].endswith(".xml"):
+            return f"{desc_path[:-len('.xml')]}/Ext/Form.xml"
+        return None
+
     def owner_key(self, path):
         """Объект, которому принадлежит файл: «Catalogs/N» (модули, формы, описания объекта); файлы корня — сами."""
         parts = path.split("/")
