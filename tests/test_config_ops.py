@@ -64,6 +64,67 @@ class ConfigOpsTest(unittest.TestCase):
         p.load_files("D:/dump", lst)
         self.assertEqual(p.calls[0][:2], ("designer", "/LoadConfigFromFiles"))
 
+    def test_ibcmd_without_partial_uses_designer(self):
+        """ibcmd платформы не знает --partial (8.3.23): частичная загрузка — Конфигуратором."""
+        p, lst = Recorder("ibcmd"), Path(self.tmp) / "load.list"
+        lst.write_text("CommonForms/Ф.xml\n", encoding="utf-8")
+        p.probe_ibcmd_partial = lambda: False
+        p.load_files("D:/dump", lst, extension="otk")
+        self.assertEqual(p.calls, [("designer", "/LoadConfigFromFiles", "D:/dump", "-listFile", str(lst),
+                                    "-Format", "Hierarchical", "-Extension", "otk")])
+
+    def test_partial_probe_once_per_run(self):
+        p, lst = Recorder("ibcmd"), Path(self.tmp) / "load.list"
+        lst.write_text("CommonForms/Ф.xml\n", encoding="utf-8")
+        probes = []
+        p.probe_ibcmd_partial = lambda: probes.append(1) or True
+        p.load_files("D:/dump", lst)
+        p.load_files("D:/dump", lst)
+        self.assertEqual(len(probes), 1)                       # проба кешируется на прогон
+        self.assertEqual([c[0] for c in p.calls], ["ibcmd", "ibcmd"])
+        self.assertIn("--partial", p.calls[0])
+
+
+class PartialProbeTest(unittest.TestCase):
+    """Поддержка --partial: проба двумя одинаковыми командами на отсутствующем файле, а не по версии платформы."""
+
+    def platform(self, rc_with, rc_without):
+        p = object.__new__(pf.Platform)                        # только проба: поиск платформы и ИБ не нужны
+        p.run_dir = Path(tempfile.mkdtemp())
+        calls = []
+
+        def ibcmd(*args, timeout=0, label=None):
+            calls.append(args)
+            return (rc_with if "--partial" in args else rc_without), 0.1, ""
+
+        p.ibcmd = ibcmd
+        return p, calls
+
+    def test_supported(self):
+        p, calls = self.platform(0xFFFFFFFF, 0xFFFFFFFF)       # ключ есть: ошибка данных (-1), не разбор
+        self.assertTrue(p.ibcmd_partial())
+        self.assertEqual(len(calls), 1)                        # вторая проба не нужна
+        self.assertEqual(calls[0][:5], ("infobase", "config", "import", "files", f"--base-dir={p.run_dir}"))
+        self.assertEqual(calls[0][5:], ("--partial", pf.PARTIAL_PROBE))
+
+    def test_key_unknown(self):
+        p, calls = self.platform(pf.IBCMD_PARSE_ERROR, 0xFFFFFFFF)   # 8.3.23: --partial не разобран
+        self.assertFalse(p.ibcmd_partial())
+        self.assertEqual(len(calls), 2)
+        self.assertNotIn("--partial", calls[1])                # та же команда без ключа — дело в нём
+
+    def test_parse_error_not_about_key(self):
+        """Код 2 у обеих проб — ошибка командной строки по другой причине: ключ разобран, судить будет загрузка."""
+        p, calls = self.platform(pf.IBCMD_PARSE_ERROR, pf.IBCMD_PARSE_ERROR)
+        self.assertTrue(p.ibcmd_partial())
+        self.assertEqual(len(calls), 2)
+
+    def test_cached(self):
+        p, calls = self.platform(pf.IBCMD_PARSE_ERROR, 0xFFFFFFFF)
+        self.assertFalse(p.ibcmd_partial())
+        self.assertFalse(p.ibcmd_partial())
+        self.assertEqual(len(calls), 2)                        # две команды пробы на весь прогон
+
 
 class NoIbcmdTest(unittest.TestCase):
     """Клиентская установка платформы: ibcmd нет — полная загрузка Конфигуратором, безопасный режим — через COM."""
