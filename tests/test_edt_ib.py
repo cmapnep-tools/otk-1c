@@ -138,8 +138,7 @@ class LoadTest(Base):
         self.assertEqual(p.lists[0], ["Catalog.Товары.Form.ФормаЭлемента"])
         load = next(c for c in p.calls if c[0] == "/LoadConfigFromFiles")
         self.assertEqual(Path(load[1]), self.tmp / "прогон" / "edt-ib" / "load")
-        self.assertEqual(p.lists[1], ["Catalogs/Товары/Forms/ФормаЭлемента/Ext/Form.xml",
-                                      "Catalogs/Товары/Forms/ФормаЭлемента/Ext/Form/Module.bsl",
+        self.assertEqual(p.lists[1], ["Catalogs/Товары/Forms/ФормаЭлемента.xml",
                                       "CommonModules/М/Ext/Module.bsl"])
 
     def test_common_module_no_dump(self):

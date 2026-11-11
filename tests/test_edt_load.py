@@ -178,12 +178,11 @@ class ToDesignerTest(unittest.TestCase):
 
     def test_module_and_form(self):
         self.assertEqual(self.lst(("M", "Documents/Д/ObjectModule.bsl")), ["Documents/Д/Ext/ObjectModule.bsl"])
-        self.assertEqual(self.lst(("M", "Documents/Д/Forms/Ф/Module.bsl")),
-                         ["Documents/Д/Forms/Ф/Ext/Form.xml", "Documents/Д/Forms/Ф/Ext/Form/Module.bsl"])
-        self.assertEqual(self.lst(("M", "Documents/Д/Forms/Ф/Form.form")), ["Documents/Д/Forms/Ф/Ext/Form.xml"])
+        # форма (модуль и содержимое) грузится описанием формы: файлы внутри Ext Конфигуратор не разбирает
+        self.assertEqual(self.lst(("M", "Documents/Д/Forms/Ф/Module.bsl")), ["Documents/Д/Forms/Ф.xml"])
+        self.assertEqual(self.lst(("M", "Documents/Д/Forms/Ф/Form.form")), ["Documents/Д/Forms/Ф.xml"])
         self.assertEqual(self.lst(("M", "CommonModules/М/Module.bsl")), ["CommonModules/М/Ext/Module.bsl"])
-        self.assertEqual(self.lst(("M", "CommonForms/Ф/Module.bsl")),
-                         ["CommonForms/Ф/Ext/Form.xml", "CommonForms/Ф/Ext/Form/Module.bsl"])
+        self.assertEqual(self.lst(("M", "CommonForms/Ф/Module.bsl")), ["CommonForms/Ф.xml"])
         self.assertEqual(self.lst(("A", "CommonModules/Н/Module.bsl")), ["CommonModules/Н/Ext/Module.bsl"])
 
     def test_mdo(self):
@@ -258,8 +257,7 @@ class LoadTest(unittest.TestCase):
         with mock.patch.object(edt, "export", return_value=(self.dump, 0.0)):
             res = build._load(self.platform, self.tmp / "прогон", self.project / "src", files, None, None, self.state())
         self.assertEqual(res["action"], "partial")
-        self.assertEqual(self.platform.lists, [["Catalogs/Товары/Forms/ФормаЭлемента/Ext/Form.xml",
-                                                "Catalogs/Товары/Forms/ФормаЭлемента/Ext/Form/Module.bsl",
+        self.assertEqual(self.platform.lists, [["Catalogs/Товары/Forms/ФормаЭлемента.xml",
                                                 "CommonModules/М/Ext/Module.bsl"]])
         self.assertEqual(str(self.platform.calls[0][1]), str(self.dump))
 
