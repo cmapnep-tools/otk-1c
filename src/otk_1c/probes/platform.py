@@ -21,6 +21,11 @@ BUSY = "Ошибка блокировки информационной базы"
 IB_TOOLS = ("designer", "ibcmd")
 # длина списка файлов в командной строке ibcmd (у Windows предел 32 767 символов на всю строку)
 IBCMD_ARGS_MAX = 24000
+# ibcmd: код возврата разбора командной строки — неизвестный ключ («Ошибка разбора параметра: --partial»)
+# и пропущенный обязательный; ошибки данных, путей и импорта — -1 (проверено на 8.3.27)
+IBCMD_PARSE_ERROR = 2
+# файл для пробы поддержки --partial: заведомо отсутствует в любой выгрузке (нужен только разбор аргументов)
+PARTIAL_PROBE = "otk-partial-probe.xml"
 # тайм-аут полной загрузки Конфигуратором (без ibcmd): ERP — дольше 15 минут, втрое медленнее ibcmd (930 с)
 FULL_LOAD_DESIGNER = 4 * 3600
 # Режимы /CheckModules: ключ командной строки и контекст исполнения (None — расширенная проверка, не контекст);
@@ -185,6 +190,7 @@ class ConfigOps:
     ib_tool = "designer"
     ib: Path | None = None
     has_ibcmd = True
+    partial_supported: bool | None = None
 
     def lock(self):
         """Межпроцессная блокировка базы (Platform.lock); у подделок — нет."""
@@ -197,6 +203,16 @@ class ConfigOps:
     def ibcmd_usable(self):
         """ibcmd есть и база файловая: полная загрузка и снятие безопасного режима — им при любом ibTool."""
         return self.has_ibcmd and self.ib is not None
+
+    def probe_ibcmd_partial(self):
+        """Знает ли ibcmd платформы ключ --partial (у ConfigOps и подделок — знает); у Platform — проба."""
+        return True
+
+    def ibcmd_partial(self):
+        """Частичная загрузка через ibcmd: ключ --partial есть у ibcmd платформы (проба один раз за прогон)."""
+        if self.partial_supported is None:
+            self.partial_supported = self.probe_ibcmd_partial()
+        return self.partial_supported
 
     def full_load(self, dump, extension=None, label="load"):
         """Полная загрузка выгрузки. ibcmd втрое быстрее пакетного Конфигуратора (УМЦ, 12,9 тыс. файлов, в пустую
@@ -219,8 +235,9 @@ class ConfigOps:
         raise InfraError(f"снять безопасный режим с расширения {name} нечем: нет ibcmd и COM", code="no-ibcmd")
 
     def load_files(self, dump, list_file, extension=None, label="load", timeout=3600):
-        """Частичная загрузка файлов выгрузки dump по списку (пути относительно dump, по строке в list_file)."""
-        if self.via_ibcmd():
+        """Частичная загрузка файлов выгрузки dump по списку (пути относительно dump, по строке в list_file).
+        ibcmd и Конфигуратор дают одинаковый результат; ibcmd — когда знает --partial (8.3.23 не знает)."""
+        if self.via_ibcmd() and self.ibcmd_partial():
             files = [s.strip() for s in Path(list_file).read_text(encoding="utf-8-sig").splitlines() if s.strip()]
             if sum(len(f) + 3 for f in files) < IBCMD_ARGS_MAX:
                 return self.ibcmd("infobase", "config", "import", "files", f"--base-dir={dump}", "--partial",
@@ -425,6 +442,18 @@ class Platform(ConfigOps):
         except subprocess.TimeoutExpired:
             raise InfraError(f"CREATEINFOBASE не завершился за {timeout} с", code="timeout") from None
         return rc, decode(out.read_bytes()).strip() if out.exists() else ""
+
+    def probe_ibcmd_partial(self):
+        """Знает ли ibcmd ключ --partial: по версии не определить (8.3.24–8.3.26 не проверить), поэтому проба —
+        та же команда import files на заведомо отсутствующем файле, с ключом и без него. Ключ не разобран — rc=2
+        («Ошибка разбора параметра: --partial», 8.3.23). Отличать от rc=2 по другой причине (нет обязательного ключа)
+        позволяет вторая проба: если код тот же, дело не в --partial — ключ есть, ошибку покажет сама загрузка."""
+        probe = ("infobase", "config", "import", "files", f"--base-dir={self.run_dir}")
+        rc, _, _ = self.ibcmd(*probe, "--partial", PARTIAL_PROBE, timeout=600, label="probe-partial")
+        if rc != IBCMD_PARSE_ERROR:
+            return True
+        rc, _, _ = self.ibcmd(*probe, PARTIAL_PROBE, timeout=600, label="probe-partial-off")
+        return rc == IBCMD_PARSE_ERROR
 
     def ibcmd(self, *args, timeout=3600, label=None, db=None):
         """ibcmd над своей файловой ИБ (db — другая файловая ИБ, например создаваемая). (rc, секунды, вывод);

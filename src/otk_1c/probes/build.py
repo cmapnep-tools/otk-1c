@@ -328,6 +328,8 @@ def _load(platform, run_dir, dump, files, extension, state, new_state, modules=N
     result = {"action": "full" if files is None else "partial", "files": len(files or [])}
     if files is None and not platform.ibcmd_usable():
         result["loadNote"] = "полная загрузка Конфигуратором: ibcmd нет, с ним втрое быстрее"
+    if files and platform.via_ibcmd() and not platform.ibcmd_partial():
+        result["loadNote"] = "частичная загрузка Конфигуратором: ibcmd этой платформы не знает --partial"
     loaded = None
     if files and modules:
         try:
