@@ -400,8 +400,7 @@ class Platform(ConfigOps):
         if not exe.is_file():
             # серверная установка платформы: ibcmd есть, клиентских компонентов нет — Конфигуратором нечем
             raise InfraError(f"в {self.bin} нет {exe.name}: пакетный Конфигуратор не установлен — установите "
-                             "клиентские компоненты платформы 1С:Предприятия или выберите ibTool = ibcmd",
-                             code="no-platform")
+                             "клиентские компоненты платформы 1С:Предприятия", code="no-platform")
         self.unlock()
         logs = self.run_dir / "logs"
         logs.mkdir(parents=True, exist_ok=True)
