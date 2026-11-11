@@ -362,12 +362,67 @@ def run(platform, run_dir, config_root, entries, read_base, read_head, read_xml,
     return compare(by_rel, head, base, after, before, covered)
 
 
-def _fill_covered(by_rel, after, skipped, covered):
-    """Пары «путь модуля в плане -> контексты» по канарейке «стало»; модуль без сравнения с «было» — не покрыт."""
+def compared_contexts(by_rel, base, after, before):
+    """Контексты, в которых диагностику модуля можно сравнить с «было»: канарейка подтвердила компиляцию обеих
+    редакций (сравнение находок идёт с before.findings, поэтому подтверждённый только в «после» режим новой
+    находки не доказывает). Новый модуль сравнивать не с чем — его режимы подтверждает одна редакция «после»."""
+    out = {}
+    for rel in by_rel:
+        found = after["compiled"].get(rel) or frozenset()
+        out[rel] = found if rel not in base else found & (before["compiled"].get(rel) or frozenset())
+    return out
+
+
+def _fill_covered(by_rel, compared, skipped, covered):
+    """Пары «путь модуля в плане -> контексты» по сравнимым режимам: контекст, подтверждённый только в одной
+    редакции, пару не закрывает (сравнить его диагностику не с чем). Модуль без сравнения с «было» — не покрыт."""
     for rel, (_, entry) in by_rel.items():
-        found = after["compiled"].get(rel) if rel not in skipped else None
+        found = compared.get(rel) if rel not in skipped else None
         if found:
             covered[entry["path"]] = found
+
+
+def _uncompared_notes(by_rel, compared, after, skipped, uncompared):
+    """Записи «нет сравнения с «было»»: режим подтверждён канарейкой только в редакции «после» — его диагностику
+    не с чем сравнить, и находкой она не выдаётся (uncompared — число скрытых находок по режимам)."""
+    out = []
+    for rel in sorted(compared):
+        lost = (after["compiled"].get(rel) or frozenset()) - compared[rel]
+        if not lost or rel in skipped:
+            continue
+        hidden = sum(uncompared.get(rel, {}).values())
+        out.append(result(NAME, "extcheck", by_rel[rel][1], "Designer", "skipped",
+                          f"нет сравнения с «было» ({', '.join(sorted(lost))}): режим подтверждён только в "
+                          "редакции «после» — его диагностика не выдаётся за новую"
+                          + (f" (скрыто: {hidden})" if hidden else "")))
+    return out
+
+
+def _new_findings(by_rel, base, after, before, compared, skipped):
+    """Находки «стало», которые доказуемо новые: их не было в «было» (ключ — модуль, сообщение, режим) и режим
+    сравним с «было». Возвращает ({ключ: режимы}, число отброшенных «Возможно…», {модуль: {режим: число}} —
+    находки режимов, подтверждённых только в «после»)."""
+    old_keys = {}
+    for rel, _, msg, mode in before["findings"]:
+        old_keys[(rel, msg, mode)] = old_keys.get((rel, msg, mode), 0) + 1
+    new, possible_dropped, uncompared = {}, 0, {}
+    for rel, line, msg, mode in after["findings"]:
+        if old_keys.get((rel, msg, mode), 0) > 0:
+            old_keys[(rel, msg, mode)] -= 1
+            continue
+        if rel in skipped:
+            continue
+        if msg.startswith("Возможно") and rel in by_rel and rel not in base:
+            possible_dropped += 1         # без «было» не отличить от имён метаданных строкой, стилей и т. п.
+            continue
+        if mode is not None and rel in compared and mode in after["compiled"].get(rel, ()) \
+                and mode not in compared[rel]:
+            # режим подтверждён только в «после»: сравнить его диагностику с «было» нечем — не новая находка
+            hidden = uncompared.setdefault(rel, {})
+            hidden[mode] = hidden.get(mode, 0) + 1
+            continue
+        new.setdefault((rel, line, msg), []).append(mode)
+    return new, possible_dropped, uncompared
 
 
 def compare(by_rel, head, base, after, before, covered=None):
@@ -379,23 +434,11 @@ def compare(by_rel, head, base, after, before, covered=None):
         for rel in base:
             skipped[rel] = f"не сравнить с «было» ({before['failed'][:200]})"
         before = {"findings": [], "masked": {}, "compiled": {}}
+    compared = compared_contexts(by_rel, base, after, before)
     # без канарейки и без новых ошибок — модуль отброшен; ошибка разбора останавливает компиляцию до канарейки,
     # поэтому модуль с новыми ошибками — скомпилирован
     dropped = {rel for rel in by_rel if rel not in after["compiled"] and rel not in after["masked"]}
-    old_keys = {}
-    for rel, _, msg, mode in before["findings"]:
-        old_keys[(rel, msg, mode)] = old_keys.get((rel, msg, mode), 0) + 1
-    new, possible_dropped = {}, 0
-    for rel, line, msg, mode in after["findings"]:
-        if old_keys.get((rel, msg, mode), 0) > 0:
-            old_keys[(rel, msg, mode)] -= 1
-            continue
-        if rel in skipped:
-            continue
-        if msg.startswith("Возможно") and rel in by_rel and rel not in base:
-            possible_dropped += 1         # без «было» не отличить от имён метаданных строкой, стилей и т. п.
-            continue
-        new.setdefault((rel, line, msg), []).append(mode)
+    new, possible_dropped, uncompared = _new_findings(by_rel, base, after, before, compared, skipped)
     for rel in dropped - {r for r, _, msg in new if not msg.startswith("Возможно")}:
         skipped[rel] = "модуль не скомпилирован во временном расширении (Конфигуратор его отбросил)"
     new = {key: modes for key, modes in new.items() if key[0] not in skipped}
@@ -421,10 +464,11 @@ def compare(by_rel, head, base, after, before, covered=None):
             results.append(result(NAME, "extcheck", by_rel[rel][1], "Designer", "skipped",
                                   f"проверен частично ({', '.join(modes)}): ошибка первой стадии компиляции скрывает "
                                   "в этом режиме неизвестные имена"))
+    results += _uncompared_notes(by_rel, compared, after, skipped, uncompared)
     for rel, why in sorted(skipped.items()):
         results.append(result(NAME, "extcheck", by_rel[rel][1], "Designer", "skipped", why))
-    if covered is not None:               # покрытие — по парам: режим без канарейки не подтверждён
-        _fill_covered(by_rel, after, skipped, covered)
+    if covered is not None:               # покрытие — по парам: режим без канарейки в обеих редакциях не подтверждён
+        _fill_covered(by_rel, compared, skipped, covered)
     if possible_dropped:
         notes.append(f"extcheck: новые модули без «было» — «Возможно ошибочн…» не показаны ({possible_dropped})")
     return results, "; ".join(notes)
