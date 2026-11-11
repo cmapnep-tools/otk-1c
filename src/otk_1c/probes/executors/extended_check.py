@@ -448,7 +448,9 @@ def compare(by_rel, head, base, after, before, covered=None):
         before = {"findings": [], "masked": {}, "compiled": {}}
     compared = compared_contexts(by_rel, base, after, before)
     # без канарейки и без ошибок в выводе — модуль отброшен; ошибка останавливает компиляцию до канарейки, поэтому
-    # модуль с ошибкой не отброшен, но проверен не полностью (и находкой она не становится, если была в «было»)
+    # модуль с ошибкой не отброшен, но проверен не полностью (и находкой она не становится, если была в «было»).
+    # Модуль с ошибкой первой стадии («Тип не определен» и т. п.) уже помечен «проверен частично» по режимам: общая
+    # запись о недостигнутой канарейке ему не нужна — в других режимах канарейка могла дойти до вывода
     dropped = {rel for rel in by_rel if rel not in after["compiled"] and rel not in after["masked"]}
     new, possible_dropped, uncompared, proven = _new_findings(by_rel, base, after, before, skipped)
     errors = {rel for rel, _, msg, _ in after["findings"] if not msg.startswith("Возможно")}

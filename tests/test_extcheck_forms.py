@@ -199,6 +199,17 @@ class ExtCheckFormsTest(unittest.TestCase):
             self.run_check(platform)
         self.assertIn("Неизвестная версия формата", e.exception.reason)
 
+    def test_masked_module_is_partial_not_unreached(self):
+        """Ошибка первой стадии в одном режиме и канарейка в другом: модуль помечен «проверен частично» по режиму,
+        общей записи о недостигнутой канарейке нет — в серверном режиме канарейка до вывода дошла."""
+        mask = (f"{{otk_check {OBJ_OBJ}(3,7)}}: Тип не определен (Х)\n"
+                "\tХ = Новый Х; (Проверка: Веб-клиент)\n")
+        after = mask + canary(FORM_OBJ) + canary(OBJ_OBJ)
+        _, res, _ = self.run_check(FakePlatform(after=after, before=after))
+        self.assertEqual([r["message"] for r in res if r["module"] == OBJ_PATH],
+                         ["проверен частично (Веб-клиент): ошибка первой стадии компиляции скрывает в этом режиме "
+                          "неизвестные имена"])
+
     def test_before_failed(self):
         """«Было» не проверилось — находки «стало» не выдаются за новые."""
         _, res, _ = self.run_check(FakePlatform(before="", rc=1))
