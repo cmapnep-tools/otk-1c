@@ -156,7 +156,8 @@ class ExtCheckFormsTest(unittest.TestCase):
         self.assertEqual(note, "")
         errors = [(r["module"], r["line"], r["message"]) for r in res if r["outcome"] == "compile-error"]
         self.assertEqual(errors, [
-            (FORM_PATH, 10, "Процедура или функция с указанным именем не определена (Нет) (Тонкий клиент)"),
+            (FORM_PATH, 10, "Процедура или функция с указанным именем не определена (Нет) (Тонкий клиент)"
+                            + extended_check.UNCOMPARED),                 # канарейки тонкого клиента в «после» нет
             (OBJ_PATH, 3, "Тип не определен (Х) (Сервер)")])            # «Возможно…» было и раньше — не новое
         partial = [r for r in res if r["outcome"] == "skipped"]
         self.assertEqual([r["module"] for r in partial], [OBJ_PATH])
@@ -220,7 +221,7 @@ class ExtCheckFormsTest(unittest.TestCase):
                                 before=err.replace("{}", "Сервер") + COMPILED)
         _, res, _ = self.run_check(platform)
         self.assertEqual([r["message"] for r in res if r["outcome"] == "compile-error"],
-                         ["Ожидается выражение (Тонкий клиент)"])
+                         ["Ожидается выражение (Тонкий клиент)" + extended_check.UNCOMPARED])
 
     def test_ordinary_client_mode(self):
         """Контекст OrdinaryClient у проверяемого модуля — режим -ThickClientOrdinaryApplication и покрытие этого
@@ -336,6 +337,21 @@ class ExtCheckFormsTest(unittest.TestCase):
         self.assertEqual(covered[OBJ_PATH], frozenset({"Server"}))
         self.assertTrue([r for r in res if r["outcome"] == "skipped"])
         self.assertEqual(self.summary(res, note, covered)["code"], 2)
+
+    def test_error_without_comparison_is_marked(self):
+        """Ошибка OrdinaryClient в «после» есть, канарейки обычного клиента нет ни в одной редакции: находка
+        блокирует (код 1), но помечена «сравнение с «было» недоступно» — новизну её не доказать."""
+        err = (f"{{otk_check {FORM_OBJ}(12,2)}}: Процедура или функция с указанным именем не определена (Нет)\n"
+               f"\tНет(); (Проверка: {self.ORDINARY})\n")
+        covered = {}
+        _, res, note = self.run_check(FakePlatform(after=err + self.canaries(("Сервер",)),
+                                                   before=self.canaries(("Сервер",))),
+                                      contexts=["Server", "OrdinaryClient"], covered=covered)
+        self.assertEqual(covered[FORM_PATH], frozenset({"Server"}))
+        self.assertEqual([(r["module"], r["message"]) for r in res if r["outcome"] == "compile-error"],
+                         [(FORM_PATH, "Процедура или функция с указанным именем не определена (Нет) "
+                                      f"({self.ORDINARY})" + extended_check.UNCOMPARED)])
+        self.assertEqual(self.summary(res, note, covered)["code"], 1)
 
     def test_context_confirmed_in_both_revisions_is_covered(self):
         """Обе редакции подтвердили оба режима — сравнение доступно, обязательный контекст закрыт, код 0."""
