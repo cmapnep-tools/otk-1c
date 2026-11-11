@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 
 from _fs import rmtree_force
+from otk_1c.gate import report
 from otk_1c.probes.executors import extended_check
 from otk_1c.probes.platform import ConfigOps
 from otk_1c.sources import layout
@@ -105,11 +106,15 @@ class ExtCheckFormsTest(unittest.TestCase):
         out = extended_check.strip_vars(text)
         self.assertEqual(out, "\r\n\r\nПеремВ = 1;\r\n")
 
+    @staticmethod
+    def entries(contexts=(), status="M"):
+        return [{"path": FORM_PATH, "owner": "Справочник.Товары.Форма.Форма", "kind": "FormModule",
+                 "status": status, "reason": "changed", "contexts": list(contexts)},
+                {"path": OBJ_PATH, "owner": "Справочник.Товары", "kind": "ObjectModule", "status": status,
+                 "reason": "changed", "contexts": list(contexts)}]
+
     def run_check(self, platform=None, status="M", contexts=(), covered=None):
-        entries = [{"path": FORM_PATH, "owner": "Справочник.Товары.Форма.Форма", "kind": "FormModule",
-                    "status": status, "reason": "changed", "contexts": list(contexts)},
-                   {"path": OBJ_PATH, "owner": "Справочник.Товары", "kind": "ObjectModule", "status": status,
-                    "reason": "changed", "contexts": list(contexts)}]
+        entries = self.entries(contexts, status)
         head = {FORM_PATH: FORM_HEAD, OBJ_PATH: OBJ.replace("Тогда", "Тогда\n\t\tХ = Новый Х;")}
         base = {FORM_PATH: FORM_BASE, OBJ_PATH: OBJ}
         platform = platform or FakePlatform()
@@ -281,6 +286,63 @@ class ExtCheckFormsTest(unittest.TestCase):
                        covered=covered)
         self.assertEqual(covered[FORM_PATH], extended_check.covered_contexts(True))
         self.assertEqual(covered[OBJ_PATH], extended_check.covered_contexts(True))
+
+    ORDINARY = "Толстый клиент (обычное приложение)"
+
+    def summary(self, res, note, covered):
+        """Сводка прогона по результатам extcheck — как собирает runner: run.json с extCheck.coverage и вердикт по
+        обязательному OrdinaryClient."""
+        run = {"results": res, "notes": [note] if note else [], "extCheck": {
+            "modules": sorted(covered), "contexts": sorted(extended_check.covered_contexts(True)),
+            "coverage": [{"module": p, "contexts": sorted(c)} for p, c in sorted(covered.items())]}}
+        plan = {"base": "a", "head": "b", "source": "cf", "modules": self.entries(["Server", "OrdinaryClient"]),
+                "queries": [], "removedModules": [], "metadata": [], "requiredContexts": ["OrdinaryClient"],
+                "contextsAvailable": ["Server", "ThinClient", "OrdinaryClient", "ExternalConnection"]}
+        return report.build(plan, {"findings": []}, run, {})
+
+    @staticmethod
+    def canaries(modes, objs=(FORM_OBJ, OBJ_OBJ)):
+        return "".join(canary(obj, mode) for obj in objs for mode in modes)
+
+    def test_context_only_in_after_is_not_compared(self):
+        """Режим подтверждён только в «после»: диагностику с «было» не сравнить — пара не закрывается, а
+        обязательный OrdinaryClient без ошибок даёт код 2."""
+        after = self.canaries(("Сервер", self.ORDINARY))
+        before = self.canaries(("Сервер",))
+        covered = {}
+        _, res, note = self.run_check(FakePlatform(after=after, before=before),
+                                      contexts=["Server", "OrdinaryClient"], covered=covered)
+        self.assertEqual(covered[FORM_PATH], frozenset({"Server"}))
+        self.assertEqual(covered[OBJ_PATH], frozenset({"Server"}))
+        self.assertEqual([r["message"] for r in res if r["outcome"] == "skipped"],
+                         ["нет сравнения с «было» (OrdinaryClient): режим подтверждён только в редакции «после» — "
+                          "его диагностика не выдаётся за новую"] * 2)
+        s = self.summary(res, note, covered)
+        self.assertEqual((s["code"], s["verdict"]), (2, "не покрыто обязательное: OrdinaryClient"))
+
+    def test_context_confirmed_in_both_revisions_is_covered(self):
+        """Обе редакции подтвердили оба режима — сравнение доступно, обязательный контекст закрыт, код 0."""
+        canaries = self.canaries(("Сервер", self.ORDINARY))
+        covered = {}
+        _, res, note = self.run_check(FakePlatform(after=canaries, before=canaries),
+                                      contexts=["Server", "OrdinaryClient"], covered=covered)
+        self.assertEqual(covered[FORM_PATH], frozenset({"Server", "OrdinaryClient"}))
+        self.assertEqual(covered[OBJ_PATH], frozenset({"Server", "OrdinaryClient"}))
+        self.assertFalse([r for r in res if r["outcome"] == "skipped"])
+        self.assertEqual(self.summary(res, note, covered)["code"], 0)
+
+    def test_new_error_of_confirmed_context_is_new(self):
+        """Новая ошибка режима, подтверждённого обеими редакциями, — находка (код 1), а не «нет сравнения»."""
+        err = (f"{{otk_check {FORM_OBJ}(12,2)}}: Процедура или функция с указанным именем не определена (Нет)\n"
+               f"\tНет(); (Проверка: {self.ORDINARY})\n")
+        canaries = self.canaries(("Сервер", self.ORDINARY))
+        covered = {}
+        _, res, note = self.run_check(FakePlatform(after=err + canaries, before=canaries),
+                                      contexts=["Server", "OrdinaryClient"], covered=covered)
+        self.assertEqual([(r["module"], r["line"], r["message"]) for r in res if r["outcome"] == "compile-error"],
+                         [(FORM_PATH, 10, f"Процедура или функция с указанным именем не определена (Нет) "
+                                          f"({self.ORDINARY})")])
+        self.assertEqual(self.summary(res, note, covered)["code"], 1)
 
     def test_needed_ordinary(self):
         self.assertTrue(extended_check.needed_ordinary([{"contexts": ["Server", "OrdinaryClient"]}]))
