@@ -622,6 +622,20 @@ class TestRequiredContexts(unittest.TestCase):
         s = report.build(plan, {"findings": []}, run, {})
         self.assertEqual((s["code"], s["verdict"]), (2, "не покрыто обязательное: Server"))
 
+    def test_unknown_flags_closed_by_designer(self):
+        """Полная проверка Конфигуратором в режиме контекста проверяет и модуль с неизвестными контекстами:
+        требование закрыто, код 2 за него не выставляется."""
+        dep = "CommonModules/З/Ext/Module.bsl"
+        plan = {**PLAN, "queries": [], "requiredContexts": ["OrdinaryClient"], "modules": [
+            {"path": self.MOD, "kind": "CommonModule", "owner": "ОбщийМодуль.М", "contexts": ["OrdinaryClient"]},
+            {"path": dep, "kind": "CommonModule", "owner": "ОбщийМодуль.З", "contexts": [],
+             "probe": {"strategy": "none", "reason": "заимствованный общий модуль: флаги — в основной конфигурации"}}]}
+        designer = {"ran": True, "modes": ["-ThickClientOrdinaryApplication"], "findings": [], "notes": []}
+        s = report.build(plan, {"findings": []}, {"results": [self.unc(needs="designer:*")], "notes": []}, {},
+                         designer=designer)
+        self.assertEqual((s["code"], s["verdict"]), (0, "можно отправлять"))
+        self.assertEqual(s["uncovered"], [])
+
     def test_module_without_probe_counts(self):
         plan = {**self.plan(), "requiredContexts": ["OrdinaryClient"]}
         s = report.build(plan, {"findings": []},

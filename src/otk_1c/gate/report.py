@@ -420,12 +420,13 @@ def missing_required(plan, closes, uncovered_, not_checked_=(), run=None):
 
     # контексты заимствованного общего модуля без --parent неизвестны: он может быть в любом требуемом контексте,
     # и требование по нему подтвердить нечем (запись «не покрыто» с needs designer:* это и означает)
-    unknown = any(m.get("kind") == "CommonModule" and (m.get("probe") or {}).get("strategy") == "none"
-                  for m in plan["modules"])
+    unknown_modules = [m for m in plan["modules"]
+                       if m.get("kind") == "CommonModule" and (m.get("probe") or {}).get("strategy") == "none"]
 
     out = []
     for ctx in required:
         modules = [m for m in plan["modules"] if ctx in (m.get("contexts") or [])]
+        unknown = [m for m in unknown_modules if not checked(m, ctx)]
         if not modules and not unknown:
             continue
         done = {m["path"] for m in modules if checked(m, ctx)}
