@@ -423,7 +423,8 @@ def _new_findings(by_rel, base, after, before, skipped):
             continue
         key = (rel, line, msg)
         ctx = MODE_CONTEXTS.get(mode)
-        uncomparable = rel in base and ctx is not None and ctx not in before["compiled"].get(rel, ())
+        # режим без метки неизвестен: к какому контексту относится ошибка, не понять — сравнение не доказано
+        uncomparable = rel in base and (ctx is None or ctx not in before["compiled"].get(rel, ()))
         if uncomparable and ctx in after["compiled"].get(rel, ()):
             # режим подтверждён только в «после»: сравнить его диагностику с «было» нечем — не новая находка
             hidden = uncompared.setdefault(rel, {})

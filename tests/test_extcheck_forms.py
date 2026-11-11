@@ -367,6 +367,19 @@ class ExtCheckFormsTest(unittest.TestCase):
                          ["Процедура или функция с указанным именем не определена (Нет) "
                           f"(Сервер, {self.ORDINARY})" + extended_check.UNCOMPARED])
 
+    def test_unknown_mode_is_not_compared(self):
+        """Метка режима вне словаря: к какому контексту относится ошибка, не понять — сравнение с «было» не
+        доказано, пометка ставится."""
+        err = (f"{{otk_check {FORM_OBJ}(12,2)}}: Процедура или функция с указанным именем не определена (Нет)\n"
+               "\tНет(); (Проверка: Мобильный клиент)\n")
+        self.assertIsNone(extended_check.MODE_CONTEXTS.get("Мобильный клиент"))
+        _, res, _ = self.run_check(FakePlatform(after=err + self.canaries(("Сервер",)),
+                                                before=self.canaries(("Сервер",))),
+                                   contexts=["Server", "OrdinaryClient"])
+        self.assertEqual([r["message"] for r in res if r["outcome"] == "compile-error"],
+                         ["Процедура или функция с указанным именем не определена (Нет) "
+                          "(Мобильный клиент)" + extended_check.UNCOMPARED])
+
     def test_mode_confirmed_by_before_is_new(self):
         """«Было» подтвердило режим канарейкой, в «после» ошибка остановила компиляцию до канарейки: ошибка новая —
         пометки нет, в «было» все ошибки этого режима были видны."""
