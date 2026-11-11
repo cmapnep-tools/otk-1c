@@ -14,7 +14,7 @@ from unittest import mock
 from otk_1c import checks
 from otk_1c.gate import runner
 from otk_1c.probes import build
-from otk_1c.probes.executors import com, result, yaxunit
+from otk_1c.probes.executors import com, extended_check, result, yaxunit
 from otk_1c.sources import layout
 
 GOLDEN = Path(__file__).with_name("runner_golden.json")
@@ -114,6 +114,10 @@ CASES = {
     # заимствованный общий модуль без флагов: extcheck контексты не подтверждает, запись остаётся
     "extension-unknown-contexts": {"modules": ["unknown"], "extension": "Расш",
                                    "requiredContexts": ["Server"]},
+    # канарейка только в серверном режиме: обязательный OrdinaryClient не подтверждён, запись остаётся
+    "ordinary-client-server-only": {"modules": ["ordinary"], "uncovered": True,
+                                    "contexts": ["Server", "ThinClient", "ExternalConnection"],
+                                    "requiredContexts": ["OrdinaryClient"], "coverage": ["Server"]},
 }
 
 
@@ -226,9 +230,12 @@ def play(name):
             return "установлены"
 
         def fake_extcheck(platform, run_dir, config_root, entries, read_base, read_head, read_xml, lay=None,
-                          ordinary=False):
+                          ordinary=False, covered=None):
             calls.append(["extcheck.run", [e["path"] for e in entries],
                           [[read_base(e), read_head(e), read_xml(e)] for e in entries], ordinary])
+            if covered is not None:       # по умолчанию канарейка во всех режимах; coverage — частичное покрытие
+                found = frozenset(case.get("coverage") or extended_check.covered_contexts(ordinary))
+                covered.update({e["path"]: found for e in entries if found})
             return [result("extcheck", "extcheck", e, "Designer", "ok") for e in entries], ""
 
         def fake_extcheck_ext(platform, extension, entries, read_text, lay=None, ordinary=False):

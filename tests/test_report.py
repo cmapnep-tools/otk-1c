@@ -711,6 +711,45 @@ class TestRequiredContexts(unittest.TestCase):
         s = report.build(plan, {"findings": []}, run, {})
         self.assertEqual((s["code"], s["verdict"]), (0, "можно отправлять"))
 
+    def test_extcheck_coverage_is_per_module_and_context(self):
+        """Покрытие extcheck — по паре «модуль × контекст»: канарейка только в серверном режиме не подтверждает
+        обязательный OrdinaryClient, хотя режим обычного клиента запрашивался и модуль скомпилировался."""
+        plan = {**self.plan(), "requiredContexts": ["OrdinaryClient"]}
+        run = {"results": [], "notes": [], "extCheck": {
+            "modules": [self.MOD], "contexts": ["Server", "OrdinaryClient"],
+            "coverage": [{"module": self.MOD, "contexts": ["Server"]}]}}
+        s = report.build(plan, {"findings": []}, run, {})
+        self.assertEqual((s["code"], s["verdict"]), (2, "не покрыто обязательное: OrdinaryClient"))
+
+    def test_extcheck_coverage_closes_required_context(self):
+        plan = {**self.plan(), "requiredContexts": ["OrdinaryClient"]}
+        run = {"results": [], "notes": [], "extCheck": {
+            "coverage": [{"module": self.MOD, "contexts": ["Server", "OrdinaryClient"]}]}}
+        self.assertEqual(report.build(plan, {"findings": []}, run, {})["code"], 0)
+
+    def test_extcheck_coverage_keeps_uncovered_record(self):
+        """Запись «не покрыто» по контексту не блокирует требование, только когда канарейка пары этого модуля и
+        контекста доказала компиляцию; компиляция модуля в другом режиме запись не закрывает."""
+        plan = {**self.plan(), "requiredContexts": ["OrdinaryClient"]}
+        for coverage, code in ((["Server"], 2), (["Server", "OrdinaryClient"], 0)):
+            run = {"results": [self.unc()], "notes": [], "extCheck": {
+                "modules": [self.MOD], "contexts": ["Server", "OrdinaryClient"],
+                "coverage": [{"module": self.MOD, "contexts": coverage}]}}
+            s = report.build(plan, {"findings": []}, run, {})
+            self.assertEqual(s["code"], code, coverage)
+
+    def test_extcheck_wildcard_needs_all_module_contexts(self):
+        """Запись «не покрыто» с context "*" (модуль без пробы) не блокирует требование только когда покрыты все
+        контексты модуля, а не когда модуль скомпилировался в одном режиме."""
+        plan = {**self.plan(), "requiredContexts": ["OrdinaryClient"]}
+        rec = {**self.unc("*", "designer:*"), "file": "src/cf/" + self.MOD}
+        run = {"results": [rec], "notes": [], "extCheck": {
+            "modules": [self.MOD], "contexts": ["Server"],
+            "coverage": [{"module": self.MOD, "contexts": ["Server"]}]}}
+        self.assertEqual(report.build(plan, {"findings": []}, run, {})["code"], 2)
+        run["extCheck"]["coverage"][0]["contexts"] = ["Server", "OrdinaryClient"]
+        self.assertEqual(report.build(plan, {"findings": []}, run, {})["code"], 0)
+
     def test_query_result_does_not_cover(self):
         """Результат запроса проверяет текст запроса, а не модуль: покрытием контекста он не считается."""
         plan = {**self.plan(), "requiredContexts": ["OrdinaryClient"]}

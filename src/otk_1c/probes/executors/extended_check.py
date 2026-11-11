@@ -51,9 +51,18 @@ _POSSIBLE = re.compile(r"^" + EXT + r" (\S+) (Возможно ошибочн\w+
 _MASKING = re.compile(r"Тип не определен|фактических параметров|уже определен", re.I)
 _VAR = re.compile(r"\s*(Перем|Var)\s", re.I)
 # канарейка: процедура с заведомо неизвестным вызовом в конце каждого модуля; её ошибка — доказательство, что
-# Конфигуратор модуль скомпилировал (форму он может молча отбросить); номера строк не сдвигает
+# Конфигуратор модуль скомпилировал (форму он может молча отбросить); номера строк не сдвигает.
+# В модуле формы метод без директивы компилируется только на сервере, поэтому клиентские контексты доказывает
+# отдельная канарейка &НаКлиенте: каждый режим /CheckModules подтверждает только свою пару «модуль × контекст»
 CANARY = "ОТККанарейкаНетТакой"
-_CANARY_CODE = f"\r\nПроцедура kc_ОТККанарейка()\r\n\t{CANARY}();\r\nКонецПроцедуры\r\n"
+_SERVER_CANARY = f"\r\nПроцедура kc_ОТККанарейка()\r\n\t{CANARY}();\r\nКонецПроцедуры\r\n"
+_CLIENT_CANARY = (f"\r\n&НаКлиенте\r\nПроцедура kc_ОТККанарейкаКлиент()\r\n\t{CANARY}();\r\nКонецПроцедуры\r\n")
+# контексты, в которых компилируется клиентский метод модуля (нужна канарейка &НаКлиенте)
+CLIENT_CONTEXTS = frozenset({"ThinClient", "WebClient", "OrdinaryClient"})
+# метка режима в выводе /CheckModules -> контекст исполнения (ключи CHECK_MODES)
+MODE_CONTEXTS = {"Тонкий клиент": "ThinClient", "Веб-клиент": "WebClient", "Сервер": "Server",
+                 "Внешнее соединение": "ExternalConnection",
+                 "Толстый клиент (обычное приложение)": "OrdinaryClient"}
 _END = re.compile(r"\s*(КонецПроцедуры|КонецФункции|EndProcedure|EndFunction)\b", re.I)
 _FORM_MD = ('<?xml version="1.0" encoding="UTF-8"?>\n<MetaDataObject {ns}><{tag} uuid="{uid}"><InternalInfo>'
             "<xr:PropertyState><xr:Property>Form</xr:Property><xr:State>Extended</xr:State></xr:PropertyState>"
@@ -71,6 +80,19 @@ def needed_ordinary(entries):
 def covered_contexts(ordinary=False):
     """Контексты, которые проверка закрывает в этом прогоне (все её режимы, кроме расширенной проверки)."""
     return frozenset(ctx for key, ctx in CHECK_MODES if (ordinary or ctx != "OrdinaryClient") and ctx)
+
+
+def mode_contexts(modes):
+    """Контексты исполнения по меткам режимов из вывода /CheckModules (неизвестная метка — не контекст)."""
+    return frozenset(MODE_CONTEXTS[m] for m in modes or () if m in MODE_CONTEXTS)
+
+
+def canary_code(entry):
+    """Канарейки модуля: серверная — всегда, клиентская — когда у модуля есть клиентский контекст
+    (в модуле формы метод без директивы на клиенте не компилируется, и серверная канарейка клиента не докажет)."""
+    if CLIENT_CONTEXTS & set(entry.get("contexts") or ()):
+        return _SERVER_CANARY + _CLIENT_CANARY
+    return _SERVER_CANARY
 
 
 def to_interceptors(text):
@@ -212,12 +234,14 @@ def ib_names(source, lay, units, texts):
 
 
 def _check(platform, run_dir, props, config_root, units, side, objects=(), fmt=None, ordinary=False):
-    """units — {путь в выгрузке: (Addr, описание общего модуля или None, текст)}. Возвращает словарь: findings
-    [(путь или None, строка, сообщение, режим или None)] — по записи на режим; masked {путь: режимы с ошибкой
-    первой стадии}; compiled {пути, где найдена канарейка}. Не загрузилось или не проверилось — {"failed": причина}."""
+    """units — {путь в выгрузке: (Addr, описание общего модуля или None, текст, модуль плана)}. Возвращает словарь:
+    findings [(путь или None, строка, сообщение, режим или None)] — по записи на режим; masked {путь: режимы с
+    ошибкой первой стадии}; compiled {путь: контексты, в которых канарейка доказала компиляцию}. Не загрузилось или
+    не проверилось — {"failed": причина}."""
     target = Path(run_dir) / f"extcheck-{side}"
     gen, maps, files, objects = {}, {}, [], list(objects)
-    for rel, (a, xml, text) in units.items():
+    for rel, (a, xml, text, entry) in units.items():
+        canary = canary_code(entry)
         if a.kind == "Module":
             flags = {f: (re.search(rf"<{f}>(\w+)</{f}>", xml) or [None, "false"])[1]
                      for f in ("Global", "ClientManagedApplication", "Server", "ExternalConnection",
@@ -226,10 +250,10 @@ def _check(platform, run_dir, props, config_root, units, side, objects=(), fmt=N
             flags["__head__"] = (f"<ObjectBelonging>Adopted</ObjectBelonging><Name>{a.name}</Name><Comment/>"
                                  f"<ExtendedConfigurationObject>{uid}</ExtendedConfigurationObject>")
             new_text, maps[rel] = to_interceptors(text)
-            gen[a.name] = (flags, new_text + _CANARY_CODE)
+            gen[a.name] = (flags, new_text + canary)
             continue
         new_text, maps[rel] = to_interceptors(strip_vars(text))
-        files.append((a, new_text + _CANARY_CODE))
+        files.append((a, new_text + canary))
         if a.collection == "CommonForms":   # общая форма — объект верхнего уровня (описание пишет _form_files)
             objects.append({"collection": "CommonForms", "name": a.name, "tag": "CommonForm", "xml": ""})
     ib_tools.generate_test_extension(target, props, name=EXT, prefix="kc_", modules=gen, objects=objects)
@@ -246,12 +270,13 @@ def _check(platform, run_dir, props, config_root, units, side, objects=(), fmt=N
         return {"failed": f"загрузка {EXT}: {out[-300:]}"}
     rc, _, out = platform.designer("/CheckModules", *(check_modes(ordinary)), "-Extension", EXT,
                                    label=f"extcheck-{side}")
-    findings, masked, compiled = [], {}, set()
+    findings, masked, compiled = [], {}, {}
     for f in parse(out):
         rel = f["file"]
         msg = f["message"].split(" (Проверка:")[0].strip()
         if CANARY in msg:
-            compiled.add(rel)
+            if rel:                    # канарейка доказывает компиляцию только в режимах из её сообщения
+                compiled[rel] = compiled.get(rel, frozenset()) | mode_contexts(f["modes"])
             continue
         line = source_line(f["line"], maps.get(rel, [])) if rel else f["line"]
         findings += [(rel, line, msg if rel else f"{f['object']}: {msg}", mode) for mode in f["modes"] or [None]]
@@ -297,9 +322,10 @@ def run_extension(platform, extension, entries, read_text, lay=layout.DESIGNER, 
 
 
 def run(platform, run_dir, config_root, entries, read_base, read_head, read_xml, lay=layout.DESIGNER,
-        ordinary=False):
+        ordinary=False, covered=None):
     """entries — изменённые модули плана: общие, а в выгрузке Конфигуратора и модули управляемых форм, объектов,
-    менеджеров, наборов записей. ordinary — режим обычного клиента (см. needed_ordinary). Возвращает
+    менеджеров, наборов записей. ordinary — режим обычного клиента (см. needed_ordinary). covered — необязательный
+    словарь: заполняется парами «путь модуля -> контексты, в которых канарейка доказала компиляцию». Возвращает
     (результаты, примечание); не выполнилось целиком — Failed."""
     if not entries:
         return [], ""
@@ -313,7 +339,7 @@ def run(platform, run_dir, config_root, entries, read_base, read_head, read_xml,
             by_rel[rel] = (a, e)
 
     def unit(rel, a, e, text):
-        return a, (read_xml(e) if a.kind == "Module" else None), text
+        return a, (read_xml(e) if a.kind == "Module" else None), text, e
 
     head = {rel: unit(rel, a, e, read_head(e)) for rel, (a, e) in by_rel.items()}
     base = {}
@@ -323,27 +349,36 @@ def run(platform, run_dir, config_root, entries, read_base, read_head, read_xml,
             base[rel] = unit(rel, a, e, text)
     # объекты основной конфигурации, на которые ссылаются модули, заимствуются: иначе расширенная проверка в
     # расширении считает их «возможно ошибочными свойствами»; один набор для обеих редакций
-    texts = [t for _, _, t in head.values()] + [t for _, _, t in base.values()]
+    texts = [t for _, _, t, _ in head.values()] + [t for _, _, t, _ in base.values()]
     objects = objects_for(config_root, [a for a, _ in by_rel.values()], texts, fmt)
     try:
         after = _check(platform, run_dir, props, config_root, head, "after", objects, fmt, ordinary)
         if "failed" in after:             # временное расширение не загрузилось — модули не проверены, а не «чисто»
             raise Failed(after["failed"])
         before = _check(platform, run_dir, props, config_root, base, "before", objects, fmt, ordinary) if base else \
-            {"findings": [], "masked": {}, "compiled": set()}
+            {"findings": [], "masked": {}, "compiled": {}}
     finally:
         platform.delete_extension(EXT, label="extcheck-delete")
-    return compare(by_rel, head, base, after, before)
+    return compare(by_rel, head, base, after, before, covered)
 
 
-def compare(by_rel, head, base, after, before):
+def _fill_covered(by_rel, after, skipped, covered):
+    """Пары «путь модуля в плане -> контексты» по канарейке «стало»; модуль без сравнения с «было» — не покрыт."""
+    for rel, (_, entry) in by_rel.items():
+        found = after["compiled"].get(rel) if rel not in skipped else None
+        if found:
+            covered[entry["path"]] = found
+
+
+def compare(by_rel, head, base, after, before, covered=None):
     """Новые замечания «стало» относительно «было» (ключ — модуль, сообщение, режим) и примечания по модулям:
-    «проверен частично» (маскировка), «не скомпилирован» (нет канарейки), нет сравнения с «было»."""
+    «проверен частично» (маскировка), «не скомпилирован» (нет канарейки), нет сравнения с «было». covered —
+    необязательный словарь пар «путь модуля -> контексты с доказанной компиляцией» для отчёта о покрытии."""
     results, notes, skipped = [], [], {}
     if "failed" in before:                # «было» не проверилось: замечания модулей с базой не отличить от старых
         for rel in base:
             skipped[rel] = f"не сравнить с «было» ({before['failed'][:200]})"
-        before = {"findings": [], "masked": {}, "compiled": set()}
+        before = {"findings": [], "masked": {}, "compiled": {}}
     # без канарейки и без новых ошибок — модуль отброшен; ошибка разбора останавливает компиляцию до канарейки,
     # поэтому модуль с новыми ошибками — скомпилирован
     dropped = {rel for rel in by_rel if rel not in after["compiled"] and rel not in after["masked"]}
@@ -388,6 +423,8 @@ def compare(by_rel, head, base, after, before):
                                   "в этом режиме неизвестные имена"))
     for rel, why in sorted(skipped.items()):
         results.append(result(NAME, "extcheck", by_rel[rel][1], "Designer", "skipped", why))
+    if covered is not None:               # покрытие — по парам: режим без канарейки не подтверждён
+        _fill_covered(by_rel, after, skipped, covered)
     if possible_dropped:
         notes.append(f"extcheck: новые модули без «было» — «Возможно ошибочн…» не показаны ({possible_dropped})")
     return results, "; ".join(notes)
@@ -396,7 +433,8 @@ def compare(by_rel, head, base, after, before):
 class ExtCheck:
     """Расширенная проверка: проект-расширение — целиком (run_extension), конфигурация — изменённые общие
     модули (в выгрузке Конфигуратора и модули форм и объектов) во временном расширении, новые замечания
-    относительно «было» (run). Проверенные целиком модули — в ctx.covered (снимают «не покрыто этим прогоном»)."""
+    относительно «было» (run). Покрытие — парами «модуль × контекст» в ctx.covered: канарейка подтверждает
+    компиляцию только в тех режимах, где её ошибка есть в выводе (снимают «не покрыто этим прогоном»)."""
     name = NAME
     checks = ("extcheck",)
 
@@ -426,8 +464,8 @@ class ExtCheck:
             res, note = run_extension(ctx.platform, extension, items, read_ext, lay, ordinary)
             ctx.ext_contexts = covered_contexts(ordinary)
             # расширение загружено в ИБ целиком и проверяется как есть (без перехватчиков и канарейки): модуль,
-            # который не скомпилировался, даёт ошибку, «частично проверенных» здесь нет
-            ctx.covered |= {m["path"] for m in items}
+            # который не скомпилировался, даёт ошибку, «частично проверенных» здесь нет — режимы проверены все
+            ctx.covered.update({m["path"]: ctx.ext_contexts for m in items})
             return res, note
         changed = [m for m in items if m.get("reason") == "changed"
                    and m["kind"] in ("CommonModule", "FormModule") + OBJECT_MODULES]
@@ -458,11 +496,8 @@ class ExtCheck:
             ctx.platform, ctx.run_dir, root, units,
             read_base=base_text, read_head=head_text,
             read_xml=lambda e: (root / layout.DESIGNER.object_file("CommonModules", e["owner"].split(".", 1)[1]))
-            .read_bytes().decode("utf-8-sig"), lay=lay, ordinary=ordinary)
+            .read_bytes().decode("utf-8-sig"), lay=lay, ordinary=ordinary, covered=ctx.covered)
         ctx.ext_contexts = covered_contexts(ordinary)
-        partial = {r["module"] for r in res if r["outcome"] == "skipped"}
-        if None not in partial:           # ошибка без модуля — неизвестно, чей модуль не проверен
-            ctx.covered |= {m["path"] for m in units} - partial
         return res, note
 
     @staticmethod

@@ -275,6 +275,44 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Клиент/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "Плоский/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "Плохой/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "Сервер/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -426,6 +464,35 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Клиент/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "Плоский/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "Сервер/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -587,6 +654,35 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Клиент/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "Плоский/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "Сервер/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -724,6 +820,35 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Клиент/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "Плоский/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "Сервер/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -856,6 +981,35 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Клиент/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "Плоский/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "Сервер/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -1010,6 +1164,35 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Клиент/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "Плоский/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "Сервер/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -1123,6 +1306,17 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Сервер/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -1181,7 +1375,8 @@
     "Server",
     "ThinClient",
     "WebClient"
-   ]
+   ],
+   "coverage": []
   }
  },
  "session-start-off": {
@@ -1213,7 +1408,8 @@
     "Server",
     "ThinClient",
     "WebClient"
-   ]
+   ],
+   "coverage": []
   }
  },
  "conflict": {
@@ -1304,6 +1500,17 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Клиент/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -1337,7 +1544,8 @@
   ],
   "extCheck": {
    "modules": [],
-   "contexts": []
+   "contexts": [],
+   "coverage": []
   }
  },
  "extension": {
@@ -1430,6 +1638,26 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Клиент/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "Сервер/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -1516,7 +1744,8 @@
   ],
   "extCheck": {
    "modules": [],
-   "contexts": []
+   "contexts": [],
+   "coverage": []
   }
  },
  "checks-on-missing": {
@@ -1578,6 +1807,17 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Клиент/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -1631,6 +1871,17 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Клиент/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -1787,6 +2038,26 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Клиент/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "Сервер/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -1852,6 +2123,17 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Сервер/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -1965,6 +2247,26 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Клиент/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "Сервер/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -1985,7 +2287,8 @@
   ],
   "extCheck": {
    "modules": [],
-   "contexts": []
+   "contexts": [],
+   "coverage": []
   }
  },
  "conflict-exhausted": {
@@ -2100,6 +2403,17 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Клиент/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -2212,6 +2526,17 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Клиент/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -2372,6 +2697,26 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Клиент/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "Сервер/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -2433,7 +2778,8 @@
   ],
   "extCheck": {
    "modules": [],
-   "contexts": []
+   "contexts": [],
+   "coverage": []
   }
  },
  "conflict-scenarios": {
@@ -2503,7 +2849,8 @@
   ],
   "extCheck": {
    "modules": [],
-   "contexts": []
+   "contexts": [],
+   "coverage": []
   }
  },
  "conflict-exhausted-smoke-scen": {
@@ -2636,6 +2983,17 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Клиент/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -2798,6 +3156,35 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "ВетвьВС/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "Клиент/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "ТолькоВС/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -2843,7 +3230,8 @@
     "Server",
     "ThinClient",
     "WebClient"
-   ]
+   ],
+   "coverage": []
   }
  },
  "com-ok-ec": {
@@ -2898,7 +3286,8 @@
     "Server",
     "ThinClient",
     "WebClient"
-   ]
+   ],
+   "coverage": []
   }
  },
  "contexts-no-ec": {
@@ -3073,6 +3462,44 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "ВетвьВС/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "Клиент/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "Сервер/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "ТолькоВС/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -3160,6 +3587,26 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Сервер/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "ТолькоВС/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -3222,6 +3669,17 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Сервер/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -3286,6 +3744,17 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "ТолькоВС/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -3422,6 +3891,35 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "ВетвьВС/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "Сервер/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "ТолькоВС/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -3524,6 +4022,17 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Плоский/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -3604,6 +4113,17 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Сервер/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -3684,6 +4204,17 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Сервер/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -3826,6 +4357,26 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Клиент/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    },
+    {
+     "module": "Сервер/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -3904,6 +4455,18 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Обычный/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "OrdinaryClient",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -3971,6 +4534,18 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Обычный/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "OrdinaryClient",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
    ]
   }
  },
@@ -4027,7 +4602,8 @@
   ],
   "extCheck": {
    "modules": [],
-   "contexts": []
+   "contexts": [],
+   "coverage": []
   }
  },
  "extension-unknown-contexts": {
@@ -4081,6 +4657,114 @@
     "Server",
     "ThinClient",
     "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Неизвестный/Module.bsl",
+     "contexts": [
+      "ExternalConnection",
+      "Server",
+      "ThinClient",
+      "WebClient"
+     ]
+    }
+   ]
+  }
+ },
+ "ordinary-client-server-only": {
+  "results": [
+   {
+    "executor": "com",
+    "kind": "probe",
+    "module": "Обычный/Module.bsl",
+    "owner": "ОбщийМодуль.Обычный",
+    "context": "Server",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "extcheck",
+    "kind": "extcheck",
+    "module": "Обычный/Module.bsl",
+    "owner": "ОбщийМодуль.Обычный",
+    "context": "Designer",
+    "outcome": "ok",
+    "message": "",
+    "line": null
+   },
+   {
+    "executor": "plan",
+    "kind": "uncovered",
+    "module": "Обычный/Module.bsl",
+    "owner": "ОбщийМодуль.Обычный",
+    "context": "OrdinaryClient",
+    "needs": "designer:OrdinaryClient",
+    "outcome": "skipped",
+    "message": "контекст недоступен локально",
+    "line": null
+   }
+  ],
+  "notes": [
+   "примечание COM"
+  ],
+  "notChecked": [],
+  "infra": [],
+  "calls": [
+   [
+    "build",
+    "abc",
+    null
+   ],
+   [
+    "com.available",
+    "V85.COMConnector"
+   ],
+   [
+    "com.run",
+    [
+     "Обычный/Module.bsl"
+    ],
+    []
+   ],
+   [
+    "extcheck.run",
+    [
+     "Обычный/Module.bsl"
+    ],
+    [
+     [
+      null,
+      "ОбщийМодуль.Обычный",
+      "<xml/>"
+     ]
+    ],
+    true
+   ]
+  ],
+  "timings": [
+   "build",
+   "com",
+   "extcheck"
+  ],
+  "extCheck": {
+   "modules": [
+    "Обычный/Module.bsl"
+   ],
+   "contexts": [
+    "ExternalConnection",
+    "OrdinaryClient",
+    "Server",
+    "ThinClient",
+    "WebClient"
+   ],
+   "coverage": [
+    {
+     "module": "Обычный/Module.bsl",
+     "contexts": [
+      "Server"
+     ]
+    }
    ]
   }
  }

@@ -130,7 +130,7 @@ class RunContext:
     timings: dict = field(default_factory=dict)
     tools_ready: bool = False
     tools_conflict: str = ""   # конфликт имён YAxUnit не устранён — следующим запускам YAxUnit не повторять
-    covered: set = field(default_factory=set)   # модули, целиком проверенные extcheck во всех его режимах
+    covered: dict = field(default_factory=dict)  # {путь модуля: frozenset контекстов}, проверенных extcheck
     ext_contexts: frozenset = frozenset()      # контексты, в которых extcheck эту проверку выполнил
     designer_dump: str | None = None  # исходники EDT: выгрузка экспорта, загруженная сборкой (build: результат "dump")
 

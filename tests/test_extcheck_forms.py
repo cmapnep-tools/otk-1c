@@ -105,7 +105,7 @@ class ExtCheckFormsTest(unittest.TestCase):
         out = extended_check.strip_vars(text)
         self.assertEqual(out, "\r\n\r\nПеремВ = 1;\r\n")
 
-    def run_check(self, platform=None, status="M", contexts=()):
+    def run_check(self, platform=None, status="M", contexts=(), covered=None):
         entries = [{"path": FORM_PATH, "owner": "Справочник.Товары.Форма.Форма", "kind": "FormModule",
                     "status": status, "reason": "changed", "contexts": list(contexts)},
                    {"path": OBJ_PATH, "owner": "Справочник.Товары", "kind": "ObjectModule", "status": status,
@@ -116,7 +116,7 @@ class ExtCheckFormsTest(unittest.TestCase):
         res, note = extended_check.run(platform, self.tmp / "run", self.root, entries,
                                        read_base=lambda e: base[e["path"]],
                                  read_head=lambda e: head[e["path"]], read_xml=lambda e: None,
-                                 ordinary=extended_check.needed_ordinary(entries))
+                                 ordinary=extended_check.needed_ordinary(entries), covered=covered)
         return platform, res, note
 
     def test_extension_layout(self):
@@ -230,6 +230,57 @@ class ExtCheckFormsTest(unittest.TestCase):
         self.assertTrue(all("-ThickClientOrdinaryApplication" in a for a in checks))
         self.assertIn("OrdinaryClient", extended_check.covered_contexts(True))
         self.assertIn("Server", extended_check.covered_contexts(True))
+
+    def test_mode_contexts(self):
+        """Метка режима в выводе /CheckModules -> контекст исполнения; неизвестная метка контекстом не считается."""
+        self.assertEqual(extended_check.mode_contexts(["Сервер", "Толстый клиент (обычное приложение)"]),
+                         frozenset({"Server", "OrdinaryClient"}))
+        self.assertEqual(extended_check.mode_contexts(["Внешнее соединение", "Веб-клиент", "Тонкий клиент"]),
+                         frozenset({"ExternalConnection", "WebClient", "ThinClient"}))
+        self.assertEqual(extended_check.mode_contexts(["неизвестный режим"]), frozenset())
+        self.assertEqual(extended_check.mode_contexts(None), frozenset())
+
+    def test_canary_code_for_client_contexts(self):
+        """Клиентская канарейка — только у модуля с клиентским контекстом: в модуле формы метод без директивы
+        компилируется на сервере, и серверная канарейка клиентский контекст не докажет."""
+        server = extended_check.canary_code({"contexts": ["Server", "ExternalConnection"]})
+        self.assertIn(f"\t{extended_check.CANARY}();", server)
+        self.assertNotIn("&НаКлиенте", server)
+        for ctx in ("ThinClient", "WebClient", "OrdinaryClient"):
+            with self.subTest(ctx):
+                code = extended_check.canary_code({"contexts": ["Server", ctx]})
+                self.assertIn("&НаКлиенте", code)
+                self.assertIn("kc_ОТККанарейкаКлиент", code)
+
+    def test_client_canary_proves_client_context(self):
+        """Канарейка в режиме «Тонкий клиент» подтверждает пару ThinClient, хотя серверная канарейка клиента не
+        доказывает; покрытие — объединение пар обеих канареек."""
+        canaries = canary(FORM_OBJ, "Сервер") + canary(FORM_OBJ, "Тонкий клиент") + canary(OBJ_OBJ, "Сервер")
+        covered = {}
+        self.run_check(FakePlatform(after=AFTER + canaries, before=BEFORE + canaries),
+                       contexts=["Server", "ThinClient"], covered=covered)
+        self.assertEqual(covered[FORM_PATH], frozenset({"Server", "ThinClient"}))
+        self.assertEqual(covered[OBJ_PATH], frozenset({"Server"}))
+
+    def test_coverage_by_module_and_context(self):
+        """Покрытие — по паре «модуль × контекст»: канарейка только в режиме «Сервер» не подтверждает обычный
+        клиент, хотя режим запрашивался и модуль скомпилировался в серверном режиме."""
+        covered = {}
+        self.run_check(contexts=["Server", "OrdinaryClient"], covered=covered)
+        self.assertEqual(covered[FORM_PATH], frozenset({"Server"}))
+        self.assertEqual(covered[OBJ_PATH], frozenset({"Server"}))
+        self.assertNotIn("OrdinaryClient", covered[FORM_PATH])
+
+    def test_coverage_of_all_modes(self):
+        """Канарейка есть в каждом режиме — покрыты все контексты, включая обычный клиент и веб-клиент."""
+        modes = ("Тонкий клиент", "Веб-клиент", "Сервер", "Внешнее соединение",
+                 "Толстый клиент (обычное приложение)")
+        canaries = "".join(canary(obj, mode) for obj in (FORM_OBJ, OBJ_OBJ) for mode in modes)
+        covered = {}
+        self.run_check(FakePlatform(after=AFTER + canaries, before=BEFORE + canaries), contexts=["Server"],
+                       covered=covered)
+        self.assertEqual(covered[FORM_PATH], extended_check.covered_contexts(True))
+        self.assertEqual(covered[OBJ_PATH], extended_check.covered_contexts(True))
 
     def test_needed_ordinary(self):
         self.assertTrue(extended_check.needed_ordinary([{"contexts": ["Server", "OrdinaryClient"]}]))
