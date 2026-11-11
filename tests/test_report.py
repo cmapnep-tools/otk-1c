@@ -622,6 +622,20 @@ class TestRequiredContexts(unittest.TestCase):
         s = report.build(plan, {"findings": []}, run, {})
         self.assertEqual((s["code"], s["verdict"]), (2, "не покрыто обязательное: Server"))
 
+    def test_unknown_flags_not_closed_by_extcheck(self):
+        """Во временном расширении флаги заимствованного модуля не заданы: расширенная проверка в режиме
+        контекста его контекст не подтверждает — нужна полная проверка Конфигуратором."""
+        dep = "CommonModules/З/Ext/Module.bsl"
+        plan = {**PLAN, "queries": [], "requiredContexts": ["Server"], "modules": [
+            {"path": self.MOD, "kind": "CommonModule", "owner": "ОбщийМодуль.М", "contexts": ["Server"]},
+            {"path": dep, "kind": "CommonModule", "owner": "ОбщийМодуль.З", "contexts": [],
+             "probe": {"strategy": "none", "reason": "заимствованный общий модуль: флаги — в основной конфигурации"}}]}
+        run = {"results": [{"executor": "com", "kind": "probe", "module": self.MOD, "owner": "ОбщийМодуль.М",
+                            "context": "Server", "outcome": "ok", "message": "", "line": None}],
+               "extCheck": {"modules": [self.MOD, dep], "contexts": ["Server"]}, "notes": []}
+        s = report.build(plan, {"findings": []}, run, {})
+        self.assertEqual((s["code"], s["verdict"]), (2, "не покрыто обязательное: Server"))
+
     def test_unknown_flags_closed_by_designer(self):
         """Полная проверка Конфигуратором в режиме контекста проверяет и модуль с неизвестными контекстами:
         требование закрыто, код 2 за него не выставляется."""
