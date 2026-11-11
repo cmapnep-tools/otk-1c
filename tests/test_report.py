@@ -722,6 +722,7 @@ class TestRequiredContexts(unittest.TestCase):
         self.assertEqual((s["code"], s["verdict"]), (2, "не покрыто обязательное: OrdinaryClient"))
 
     def test_extcheck_coverage_closes_required_context(self):
+        """Канарейка в режиме обязательного контекста подтверждает пару — требование закрыто и записи нет."""
         plan = {**self.plan(), "requiredContexts": ["OrdinaryClient"]}
         run = {"results": [], "notes": [], "extCheck": {
             "coverage": [{"module": self.MOD, "contexts": ["Server", "OrdinaryClient"]}]}}
