@@ -215,6 +215,18 @@ class ExtCheckFormsTest(unittest.TestCase):
         self.assertIn("не сравнить с «было»", msgs[OBJ_PATH])
         self.assertFalse([r for r in res if r["outcome"] == "compile-error"])
 
+    def test_before_failed_with_parse_error_is_not_dropped(self):
+        """Сбой «было» и ошибка разбора в «после» до канарейки: модуль не отброшен — запись только о сравнении,
+        сама ошибка находкой не выдаётся."""
+        err = (f"{{otk_check {FORM_OBJ}(12,2)}}: Ожидается выражение\n"
+               "\tА = ; (Проверка: Сервер)\n")
+        _, res, _ = self.run_check(FakePlatform(before="", after=err, rc=1))
+        msgs = {r["module"]: r["message"] for r in res if r["outcome"] == "skipped"}
+        self.assertIn("не сравнить с «было»", msgs[FORM_PATH])
+        self.assertNotIn("модуль не скомпилирован", msgs[FORM_PATH])
+        self.assertIn("модуль не скомпилирован", msgs[OBJ_PATH])
+        self.assertFalse([r for r in res if r["outcome"] == "compile-error"])
+
     def test_new_modules_without_possible(self):
         """Новые модули (без «было»): «Возможно ошибочн…» не показываются — без сравнения не отличить от ложных."""
         _, res, note = self.run_check(status="A")

@@ -450,7 +450,10 @@ def compare(by_rel, head, base, after, before, covered=None):
     # поэтому модуль с новыми ошибками — скомпилирован
     dropped = {rel for rel in by_rel if rel not in after["compiled"] and rel not in after["masked"]}
     new, possible_dropped, uncompared, proven = _new_findings(by_rel, base, after, before, skipped)
+    errors = {rel for rel, _, msg, _ in after["findings"] if not msg.startswith("Возможно")}
     for rel in dropped - {r for r, _, msg in new if not msg.startswith("Возможно")}:
+        if rel in skipped and rel in errors:
+            continue                      # ошибка остановила компиляцию до канарейки, модуль не отброшен
         why = "модуль не скомпилирован во временном расширении (Конфигуратор его отбросил)"
         # причина, по которой модуль уже пропущен (сбой проверки «было»), не теряется
         skipped[rel] = f"{skipped[rel]}; {why}" if rel in skipped else why
