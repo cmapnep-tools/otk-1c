@@ -148,6 +148,14 @@ def _add_source(finding, source):
         finding["sources"].append(source)
 
 
+def _keep_uncompared(finding, message):
+    """Пометка extcheck «сравнение с «было» недоступно» остаётся у слитой находки, какой бы источник ни пришёл
+    первым: у extcheck она в сообщении, у пробы COM её нет."""
+    from ..probes.executors.extended_check import UNCOMPARED
+    if UNCOMPARED in (message or "") and UNCOMPARED not in finding["message"]:
+        finding["message"] += UNCOMPARED
+
+
 def collect_findings(plan, static, run, notes=None):
     """Находки сводки с источниками; notes — список, куда пишется число отброшенных ложных находок."""
     src = plan["source"]
@@ -192,6 +200,7 @@ def collect_findings(plan, static, run, notes=None):
                 hit = next((x for x in compiled[place] if same_compile_error(x["message"], item["message"])), None)
             if hit is not None:
                 _add_source(hit, item["sources"][0])
+                _keep_uncompared(hit, item["message"])
                 of_result[id(r)] = hit
                 continue
             by_place[key] = of_result[id(r)] = item

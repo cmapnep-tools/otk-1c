@@ -35,7 +35,7 @@ from .base import result
 
 NAME = "extcheck"
 EXT = "otk_check"
-# пометка находки, чью новизну сравнить с редакцией «было» нельзя (канарейка «после» не подтвердила режим)
+# пометка находки, чью новизну сравнением с «было» не доказать: режим не подтверждён канарейкой «было»
 UNCOMPARED = " — ошибка в текущей редакции, сравнение с «было» недоступно"
 
 
@@ -400,12 +400,14 @@ def _uncompared_notes(by_rel, compared, after, skipped, uncompared):
     return out
 
 
-def _new_findings(by_rel, base, after, before, compared, skipped):
+def _new_findings(by_rel, base, after, before, skipped):
     """Находки «стало», которые доказуемо новые: их не было в «было» (ключ — модуль, сообщение, режим) и режим
-    сравним с «было». Возвращает ({ключ: режимы}, число отброшенных «Возможно…», {модуль: {режим: число}} —
-    находки режимов, подтверждённых только в «после», ключи с доказанной новизной). Находка в режиме изменённого
-    модуля, где канарейка «после» не подтвердилась (ошибка не дошла до контрольной), остаётся находкой, но
-    доказуемо новой не считается — сравнить её не с чем."""
+    сравним с «было». Режим сравним, когда «было» подтвердило его канарейкой: там все ошибки режима были видны.
+    Возвращает ({ключ: режимы}, число отброшенных «Возможно…», {модуль: {режим: число}} — находки режимов,
+    подтверждённых только в «после», {(ключ, режим)} — пары с доказанной новизной). Находка в режиме изменённого
+    модуля, где канарейка «после» отсутствует (ошибка остановила компиляцию до контрольной), остаётся находкой, но
+    доказуемо новой не считается — сравнить её не с чем. Статус — у каждого режима свой: подтверждённый режим не
+    скрывает отсутствие сравнения у другого."""
     old_keys = {}
     for rel, _, msg, mode in before["findings"]:
         old_keys[(rel, msg, mode)] = old_keys.get((rel, msg, mode), 0) + 1
@@ -421,7 +423,7 @@ def _new_findings(by_rel, base, after, before, compared, skipped):
             continue
         key = (rel, line, msg)
         ctx = MODE_CONTEXTS.get(mode)
-        uncomparable = rel in base and ctx is not None and ctx not in compared.get(rel, ())
+        uncomparable = rel in base and ctx is not None and ctx not in before["compiled"].get(rel, ())
         if uncomparable and ctx in after["compiled"].get(rel, ()):
             # режим подтверждён только в «после»: сравнить его диагностику с «было» нечем — не новая находка
             hidden = uncompared.setdefault(rel, {})
@@ -429,7 +431,7 @@ def _new_findings(by_rel, base, after, before, compared, skipped):
             continue
         new.setdefault(key, []).append(mode)
         if not uncomparable:
-            proven.add(key)
+            proven.add((key, mode))
     return new, possible_dropped, uncompared, proven
 
 
@@ -446,13 +448,13 @@ def compare(by_rel, head, base, after, before, covered=None):
     # без канарейки и без новых ошибок — модуль отброшен; ошибка разбора останавливает компиляцию до канарейки,
     # поэтому модуль с новыми ошибками — скомпилирован
     dropped = {rel for rel in by_rel if rel not in after["compiled"] and rel not in after["masked"]}
-    new, possible_dropped, uncompared, proven = _new_findings(by_rel, base, after, before, compared, skipped)
+    new, possible_dropped, uncompared, proven = _new_findings(by_rel, base, after, before, skipped)
     for rel in dropped - {r for r, _, msg in new if not msg.startswith("Возможно")}:
         skipped[rel] = "модуль не скомпилирован во временном расширении (Конфигуратор его отбросил)"
     new = {key: modes for key, modes in new.items() if key[0] not in skipped}
     for (rel, line, msg), modes in new.items():
         entry = by_rel.get(rel, (None, None))[1]
-        unproven = (rel, line, msg) not in proven
+        unproven = any(((rel, line, msg), mode) not in proven for mode in modes)
         if rel is None:                   # ошибка без модуля (вид объекта не из словаря) — не «чисто»
             results.append(result(NAME, "extcheck", None, "Designer", "skipped", f"ошибка без модуля: {msg}"))
             continue
