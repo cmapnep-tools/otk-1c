@@ -345,7 +345,7 @@ def run(platform, run_dir, config_root, entries, read_base, read_head, read_xml,
     base = {}
     for rel, (a, e) in by_rel.items():
         text = read_base(e) if e["status"] != "A" else None
-        if text:
+        if text is not None:              # пустой модуль в «было» существует: это не новый модуль
             base[rel] = unit(rel, a, e, text)
     # объекты основной конфигурации, на которые ссылаются модули, заимствуются: иначе расширенная проверка в
     # расширении считает их «возможно ошибочными свойствами»; один набор для обеих редакций
