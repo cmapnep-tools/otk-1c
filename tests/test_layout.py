@@ -39,6 +39,11 @@ class TestDesigner(unittest.TestCase):
         self.assertEqual(D.form_files("Catalogs", "Т", "Ф"),
                          ("Catalogs/Т/Forms/Ф.xml", "Catalogs/Т/Forms/Ф/Ext/Form.xml"))
         self.assertEqual(D.form_files("CommonForms", "Ф"), ("CommonForms/Ф.xml", "CommonForms/Ф/Ext/Form.xml"))
+        self.assertEqual(D.form_content("Catalogs/Т/Forms/Ф.xml"), "Catalogs/Т/Forms/Ф/Ext/Form.xml")
+        self.assertEqual(D.form_content("CommonForms/Ф.xml"), "CommonForms/Ф/Ext/Form.xml")
+        for path in ("Catalogs/Т.xml", "CommonModules/М.xml", "Configuration.xml",
+                     "Catalogs/Т/Forms/Ф/Ext/Form.xml"):
+            self.assertIsNone(D.form_content(path), path)          # это не описание формы
         self.assertEqual(D.owner_key("Catalogs/Т/Forms/Ф/Ext/Form.xml"), "Catalogs/Т")
         self.assertEqual(D.owner_key("Ext/SessionModule.bsl"), "Ext/SessionModule.bsl")
 

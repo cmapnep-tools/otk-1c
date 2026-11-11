@@ -115,6 +115,18 @@ class TestSources(unittest.TestCase):
         with self.assertRaisesRegex(InfraError, "git lfs pull"):
             build._check_lfs(d, None)
 
+    def test_lfs_pointer_inside_form(self):
+        """Форма грузится описанием: указатель LFS в её содержимом или модуле тоже виден проверке."""
+        for rel in ("CommonForms/Ф/Ext/Form.xml", "CommonForms/Ф/Ext/Form/Module.bsl"):
+            d = self.tmp / rel.replace("/", "-")
+            write(d, "Configuration.xml", CONFIG)
+            pointer(d, rel)
+            with self.assertRaisesRegex(InfraError, "указателей Git LFS"):
+                build._check_lfs(d, ["CommonForms/Ф.xml"])
+        d = self.tmp / "clean"
+        write(d, "CommonForms/Ф.xml", "<form/>")
+        build._check_lfs(d, ["CommonForms/Ф.xml"])                 # нет файлов формы — проверять нечего
+
     def test_load_stops_on_lfs_pointer(self):
         """Указатель LFS в выгрузке — понятный сбой до вызова платформы."""
         d = self.tmp / "dump"

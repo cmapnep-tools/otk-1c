@@ -23,11 +23,11 @@ FORM = "Catalogs/Товары/Forms/ФормаЭлемента/Module.bsl"
 
 class FakeIb(FakeDesigner):
     """Конфигуратор с частичной выгрузкой: по строкам -listFile — описание объекта, у формы — описание, Form.xml и
-    модуль ИБ; skip — строки, которых «нет в ИБ»."""
+    модуль ИБ; skip — строки, которых «нет в ИБ»; noContent — описание есть, Form.xml нет."""
 
-    def __init__(self, tmp, rc=0, skip=()):
+    def __init__(self, tmp, rc=0, skip=(), no_content=False):
         super().__init__(tmp)
-        self.rc, self.skip = rc, set(skip)
+        self.rc, self.skip, self.no_content = rc, set(skip), no_content
 
     def designer(self, *args, label="", timeout=0):
         rc, sec, out = super().designer(*args, label=label, timeout=timeout)
@@ -46,7 +46,10 @@ class FakeIb(FakeDesigner):
             coll = COLLS[parts[0]]
             if len(parts) == 4:
                 d = f"{coll}/{parts[1]}/Forms/{parts[3]}"
-                write(target, {f"{d}.xml": "<form/>", f"{d}/Ext/Form.xml": "<Form/>", f"{d}/Ext/Form/Module.bsl": "ИБ"})
+                form = {f"{d}.xml": "<form/>", f"{d}/Ext/Form/Module.bsl": "ИБ"}
+                if not self.no_content:
+                    form[f"{d}/Ext/Form.xml"] = "<Form/>"
+                write(target, form)
             else:
                 write(target, {f"{coll}/{parts[1]}.xml": "<obj/>"})
         return 0, 20.0, ""
@@ -159,6 +162,18 @@ class LoadTest(Base):
             self.assertIn("без экспорта EDT не вышло", res["edtNote"])
             load = next(c for c in p.calls if c[0] == "/LoadConfigFromFiles")
             self.assertEqual(Path(load[1]), dump)
+
+    def test_no_form_content_falls_back_to_export(self):
+        """Описание формы выгрузилось, а Form.xml нет: форм без содержимого не грузим — экспорт."""
+        dump = self.tmp / "прогон" / "edt-export" / "k"
+        write(dump, {"Configuration.xml": "<x/>"})
+        p = FakeIb(self.tmp, no_content=True)
+        with mock.patch.object(edt, "export", return_value=(dump, 42.0)):
+            res = self.load(p, [("M", FORM)])
+        self.assertEqual(res["export"], 42.0)
+        self.assertIn("нет Catalogs/Товары/Forms/ФормаЭлемента/Ext/Form.xml", res["edtNote"])
+        load = next(c for c in p.calls if c[0] == "/LoadConfigFromFiles")
+        self.assertEqual(Path(load[1]), dump)
 
     def test_metadata_changed_exports(self):
         dump = self.tmp / "прогон" / "edt-export" / "k"

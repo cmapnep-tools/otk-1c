@@ -283,15 +283,21 @@ def loadable(platform, run_dir, dump):
     return edt.export(platform.edtcli, dump, run_dir, platform.edt_timeout)
 
 
+def _form_contents(files, lay=layout.DESIGNER):
+    """Содержимое форм, которое платформа грузит вместе с описанием формы из списка загрузки."""
+    return [c for c in (lay.form_content(p) for p in files) if c]
+
+
 def _from_ib(platform, run_dir, source, files, modules):
     """Каталог частичной загрузки модулей EDT без экспорта и секунды выгрузки ИБ. InfraError — не собрать:
-    модуль формы без Form.xml не загружается — платформа стирает содержимое формы (ib-build)."""
+    если выгрузка ИБ не дала ни описание формы, ни её `Form.xml`, форма в копии останется без содержимого
+    (ib-build)."""
     names = edt.form_names(modules)
     if names is None:
         raise InfraError("форма неизвестного вида")
     target = Path(run_dir) / edt.IB_DIR / "load"
     sec = edt.from_ib(platform, source, target, names, modules, label="edt-ib-load")
-    missing = [f for f in files if not (target / f).is_file()]
+    missing = [f for f in files + _form_contents(files) if not (target / f).is_file()]
     if missing:
         raise InfraError(f"после частичной выгрузки ИБ нет {missing[0]}", code="platform-failed")
     return target, sec
@@ -299,7 +305,11 @@ def _from_ib(platform, run_dir, source, files, modules):
 
 def _check_lfs(dump, files):
     """InfraError, если в загружаемой выгрузке указатели Git LFS вместо содержимого: платформа на них падает
-    с непонятной «Ошибка формата потока». files — частичная загрузка, None — всё дерево."""
+    с непонятной «Ошибка формата потока». files — частичная загрузка, None — всё дерево. Форма грузится описанием,
+    поэтому проверяются и её содержимое с модулем — платформа читает их вместе с описанием."""
+    if files is not None:
+        contents = _form_contents(files)
+        files = files + contents + [layout.DESIGNER.form_module(c) for c in contents]
     found = workspace.lfs_pointers(dump, files)
     if found:
         raise InfraError(f"в выгрузке {dump} файлов-указателей Git LFS без содержимого: {len(found)} (например "
