@@ -396,6 +396,12 @@ class Platform(ConfigOps):
 
     def designer(self, *args, timeout=3600, label="designer"):
         """Пакетный Конфигуратор. Возвращает (rc, секунды, текст /Out)."""
+        exe = self.bin / exe_name("1cv8")
+        if not exe.is_file():
+            # серверная установка платформы: ibcmd есть, клиентских компонентов нет — Конфигуратором нечем
+            raise InfraError(f"в {self.bin} нет {exe.name}: пакетный Конфигуратор не установлен — установите "
+                             "клиентские компоненты платформы 1С:Предприятия или выберите ibTool = ibcmd",
+                             code="no-platform")
         self.unlock()
         logs = self.run_dir / "logs"
         logs.mkdir(parents=True, exist_ok=True)
@@ -404,7 +410,7 @@ class Platform(ConfigOps):
         env = self.display_env()
         t = time.time()
         try:
-            rc = subprocess.run([str(self.bin / exe_name("1cv8")), "DESIGNER", self.ib_target(), *self._auth(),
+            rc = subprocess.run([str(exe), "DESIGNER", self.ib_target(), *self._auth(),
                                  "/DisableStartupDialogs", *[str(a) for a in args], f"/Out{out}"],
                                 stdin=subprocess.DEVNULL, timeout=timeout, env=env).returncode
         except subprocess.TimeoutExpired:
