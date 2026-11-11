@@ -381,9 +381,9 @@ def verdict(plan, findings, static, run, infra_errors, designer=None, missing=()
 def missing_required(plan, closes, uncovered_, not_checked_=(), run=None):
     """Обязательные контексты (`environment.requiredContexts`) без покрытия. Порядок — как в настройке.
 
-    Покрытие — по выполненным проверкам каждого модуля: проба в этом контексте, расширенная проверка в нём
-    (run.extCheck) или полная проверка Конфигуратором в его режиме. Записи «не покрыто» и «не проверено» —
-    то, что этими проверками не закрыто; само отсутствие записей покрытия не подтверждает: при
+    Покрытие — по выполненным проверкам каждой пары «модуль × контекст»: проба в этом контексте, расширенная
+    проверка в нём (run.extCheck.coverage) или полная проверка Конфигуратором в его режиме. Записи «не покрыто» и
+    «не проверено» — то, что этими проверками не закрыто; само отсутствие записей покрытия не подтверждает: при
     `--static-only` пробы не выполнялись, и записей о непокрытых модулях нет."""
     required = list(plan.get("requiredContexts") or [])
     if not required:
@@ -392,6 +392,11 @@ def missing_required(plan, closes, uncovered_, not_checked_=(), run=None):
     contexts_of = {m["path"]: set(m.get("contexts") or []) for m in plan["modules"]}
     prefix = plan["source"].rstrip("/") + "/"
     ext = (run or {}).get("extCheck") or {}
+    # coverage — пары «модуль × контекст»; run.json прежней версии их не знает — там модуль проверен во всех
+    # контекстах из extCheck.contexts
+    coverage = ext.get("coverage")
+    ext_pairs = ({i.get("module"): set(i.get("contexts") or ()) for i in coverage}
+                 if coverage is not None else None)
     ext_modules, ext_contexts = set(ext.get("modules") or ()), set(ext.get("contexts") or ())
 
     def about_ctx(entry, ctx):
@@ -407,13 +412,19 @@ def missing_required(plan, closes, uncovered_, not_checked_=(), run=None):
     unknown_modules = [m for m in plan["modules"]
                        if m.get("kind") == "CommonModule" and (m.get("probe") or {}).get("strategy") == "none"]
 
+    def ext_checked(path, ctx):
+        """Расширенная проверка подтвердила компиляцию этой пары «модуль × контекст»."""
+        if ext_pairs is None:              # run.json прежней версии: модуль проверен во всех режимах из contexts
+            return path in ext_modules and ctx in ext_contexts
+        return ctx in ext_pairs.get(path, ())
+
     def checked(module, ctx):
         """Выполненная проверка модуля в контексте: проба или сеанс этого модуля (пропуск — не проверка),
-        расширенная проверка целиком в этом режиме, полная проверка Конфигуратором в режиме контекста. Результат
+        расширенная проверка в этом режиме, полная проверка Конфигуратором в режиме контекста. Результат
         запроса проверяет текст запроса, а не модуль, поэтому покрытием не считается."""
         if closes("designer:*", ctx):
             return True                    # полная проверка Конфигуратором проверяет все модули конфигурации
-        if module["path"] in ext_modules and ctx in ext_contexts:
+        if ext_checked(module["path"], ctx):
             return True                    # расширенная проверка в этом режиме
         return any(r.get("kind") in ("probe", "session") and r.get("module") == module["path"]
                    and r.get("context") == ctx and r.get("outcome") not in ("skipped", "uncovered")

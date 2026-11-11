@@ -108,7 +108,7 @@ def write(run_dir, out, gate, plan):
     план collect, без зависимых). Пробы не выполнялись (нет копии ИБ, --static-only, сбой) — out без
     результатов: решения и примечания всё равно в run.json."""
     out = {**model.header("run", internal=True), "timings": {}, "notes": [], "results": [],
-           "extCheck": {"modules": [], "contexts": []}, **out}
+           "extCheck": {"modules": [], "contexts": [], "coverage": []}, **out}
     taken = gate.take()
     out["notChecked"] = out.get("notChecked", []) + taken["notChecked"]
     out["infra"] = out.get("infra", []) + taken["infra"]
@@ -198,7 +198,7 @@ def _run(repo, plan, cfg, run_dir, tree_root, log=print, session=None, gate=None
         log(f"сборка: ошибки загрузки выгрузки ({len(results)})")
         return {"timings": {"build": round(time.time() - t, 1)},
                 "notes": ["пробы не выполнялись: выгрузка не загружается в копию ИБ"], "results": results,
-                "extCheck": {"modules": [], "contexts": []}}
+                "extCheck": {"modules": [], "contexts": [], "coverage": []}}
     ctx = executors.RunContext(
         repo, plan, cfg, run_dir, tree_root, config_root, platform, gate or checks.Gate(cfg),
         install=lambda renames: install_tools(session, platform, run_dir, env, config_root, renames),
@@ -235,19 +235,20 @@ def _run(repo, plan, cfg, run_dir, tree_root, log=print, session=None, gate=None
 
     for m in plan["modules"]:
         contexts = set(m.get("contexts", []))
-        # заимствованный общий модуль без флагов: extcheck не подтверждает его контексты (во временном
-        # расширении они не заданы), поэтому при обязательных контекстах запись «не покрыто» остаётся
-        unknown = (bool(plan.get("requiredContexts")) and m.get("kind") == "CommonModule"
-                   and (m.get("probe") or {}).get("strategy") == "none")
+        done = set(ctx.covered.get(m["path"]) or ())   # контексты, где канарейка доказала компиляцию
+
         for c in m.get("uncovered", []):
-            if m["path"] in ctx.covered and (c["context"] in ctx.ext_contexts
-                                             or c["context"] == "*" and contexts <= ctx.ext_contexts) \
-                    and not (unknown and c["context"] == "*"):
-                continue              # проверено extcheck во всех его режимах этого прогона
+            # extcheck снимает запись только по своей паре «модуль × контекст»; запись «*» (модуль без пробы) —
+            # если покрыты все контексты модуля (у модуля с неизвестными контекстами покрыть нечего)
+            if c["context"] in done or c["context"] == "*" and contexts and contexts <= done:
+                continue
             ctx.results.append({"executor": "plan", "kind": "uncovered", "module": m["path"], "owner": m["owner"],
                                 "context": c["context"], "needs": c["needs"], "outcome": "skipped",
                                 "message": c["reason"], "line": None})
     # extCheck — чем прогон закрыл «не покрыто»: без него report не отличит модули, проверенные расширенной
-    # проверкой (у них нет ни результатов, ни записей), от непроверенных (--static-only)
+    # проверкой (у них нет ни результатов, ни записей), от непроверенных (--static-only). coverage — пары
+    # «модуль × контекст»: канарейка в выводе Конфигуратора подтверждает компиляцию только своего режима
     return {"timings": ctx.timings, "notes": ctx.notes, "results": _normalize(ctx.results, plan["modules"]),
-            "extCheck": {"modules": sorted(ctx.covered), "contexts": sorted(ctx.ext_contexts)}}
+            "extCheck": {"modules": sorted(ctx.covered), "contexts": sorted(ctx.ext_contexts),
+                         "coverage": [{"module": path, "contexts": sorted(found)}
+                                      for path, found in sorted(ctx.covered.items())]}}
