@@ -113,10 +113,10 @@ class ExtCheckFormsTest(unittest.TestCase):
                 {"path": OBJ_PATH, "owner": "Справочник.Товары", "kind": "ObjectModule", "status": status,
                  "reason": "changed", "contexts": list(contexts)}]
 
-    def run_check(self, platform=None, status="M", contexts=(), covered=None):
+    def run_check(self, platform=None, status="M", contexts=(), covered=None, base_texts=None):
         entries = self.entries(contexts, status)
         head = {FORM_PATH: FORM_HEAD, OBJ_PATH: OBJ.replace("Тогда", "Тогда\n\t\tХ = Новый Х;")}
-        base = {FORM_PATH: FORM_BASE, OBJ_PATH: OBJ}
+        base = {FORM_PATH: FORM_BASE, OBJ_PATH: OBJ, **(base_texts or {})}
         platform = platform or FakePlatform()
         res, note = extended_check.run(platform, self.tmp / "run", self.root, entries,
                                        read_base=lambda e: base[e["path"]],
@@ -323,6 +323,19 @@ class ExtCheckFormsTest(unittest.TestCase):
                          {OBJ_PATH: msg, FORM_PATH: msg + " (скрыто: 1)"})
         s = self.summary(res, note, covered)
         self.assertEqual((s["code"], s["verdict"]), (2, "не покрыто обязательное: OrdinaryClient"))
+
+    def test_empty_module_in_base_is_compared(self):
+        """Пустой модуль в «было» — существующий модуль, а не новый: подтверждённый только в «после» режим пару не
+        закрывает (иначе обязательный OrdinaryClient получал покрытие без сравнения с «было»)."""
+        canaries = self.canaries(("Сервер", self.ORDINARY))
+        covered = {}
+        _, res, note = self.run_check(FakePlatform(after=canaries, before=self.canaries(("Сервер",))),
+                                      contexts=["Server", "OrdinaryClient"], covered=covered,
+                                      base_texts={FORM_PATH: "", OBJ_PATH: ""})
+        self.assertEqual(covered[FORM_PATH], frozenset({"Server"}))
+        self.assertEqual(covered[OBJ_PATH], frozenset({"Server"}))
+        self.assertTrue([r for r in res if r["outcome"] == "skipped"])
+        self.assertEqual(self.summary(res, note, covered)["code"], 2)
 
     def test_context_confirmed_in_both_revisions_is_covered(self):
         """Обе редакции подтвердили оба режима — сравнение доступно, обязательный контекст закрыт, код 0."""
