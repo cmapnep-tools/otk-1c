@@ -402,13 +402,20 @@ def missing_required(plan, closes, uncovered_, not_checked_=(), run=None):
         rel = (entry.get("file") or "")[len(prefix):] if (entry.get("file") or "").startswith(prefix) else None
         return ctx in contexts_of.get(rel, ())
 
+    # контексты заимствованного общего модуля без --parent неизвестны: он может быть в любом требуемом контексте,
+    # и требование по нему подтвердить нечем (запись «не покрыто» с needs designer:* это и означает)
+    unknown_modules = [m for m in plan["modules"]
+                       if m.get("kind") == "CommonModule" and (m.get("probe") or {}).get("strategy") == "none"]
+    unknown_paths = {m["path"] for m in unknown_modules}
+
     def checked(module, ctx):
         """Выполненная проверка модуля в контексте: проба или сеанс этого модуля (пропуск — не проверка),
         расширенная проверка целиком в этом режиме, полная проверка Конфигуратором в режиме контекста. Результат
-        запроса проверяет текст запроса, а не модуль, поэтому покрытием не считается."""
+        запроса проверяет текст запроса, а не модуль, поэтому покрытием не считается. Расширенная проверка не
+        подтверждает контекст модуля с неизвестными контекстами: во временном расширении его флаги не заданы."""
         if closes("designer:*", ctx):
             return True                    # полная проверка Конфигуратором проверяет все модули конфигурации
-        if module["path"] in ext_modules and ctx in ext_contexts:
+        if module["path"] in ext_modules and ctx in ext_contexts and module["path"] not in unknown_paths:
             return True                    # расширенная проверка в этом режиме
         return any(r.get("kind") in ("probe", "session") and r.get("module") == module["path"]
                    and r.get("context") == ctx and r.get("outcome") not in ("skipped", "uncovered")
@@ -417,11 +424,6 @@ def missing_required(plan, closes, uncovered_, not_checked_=(), run=None):
     def module_of(entry):
         file = entry.get("file") or ""
         return file[len(prefix):] if file.startswith(prefix) else None
-
-    # контексты заимствованного общего модуля без --parent неизвестны: он может быть в любом требуемом контексте,
-    # и требование по нему подтвердить нечем (запись «не покрыто» с needs designer:* это и означает)
-    unknown_modules = [m for m in plan["modules"]
-                       if m.get("kind") == "CommonModule" and (m.get("probe") or {}).get("strategy") == "none"]
 
     out = []
     for ctx in required:
