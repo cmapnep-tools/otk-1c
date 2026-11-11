@@ -69,7 +69,8 @@ class TestPlanLoad(unittest.TestCase):
         git(self.tmp, "config", "user.name", "t")
         self.src = self.tmp / "src" / "cf"
         for rel in ("Configuration.xml", "CommonModules/М/Ext/Module.bsl", "Catalogs/С/Forms/Ф/Ext/Form/Module.bsl",
-                    "Catalogs/С/Forms/Ф/Ext/Form.xml"):
+                    "Catalogs/С/Forms/Ф/Ext/Form.xml", "CommonForms/О/Ext/Form/Module.bsl",
+                    "CommonForms/О/Ext/Form.xml"):
             (self.src / rel).parent.mkdir(parents=True, exist_ok=True)
             (self.src / rel).write_text("x", encoding="utf-8")
         git(self.tmp, "add", "-A")
@@ -82,11 +83,21 @@ class TestPlanLoad(unittest.TestCase):
         git(self.tmp, "add", "-A")
         git(self.tmp, "commit", "-q", "-m", "c")
 
-    def test_partial_with_form_xml(self):
+    def test_partial_form_by_description(self):
+        """Модуль формы грузится описанием формы: файл внутри Ext Конфигуратор принимает за объект метаданных
+        «…Ext» и падает (8.3.23), описание грузит форму вместе с содержимым и модулем."""
         (self.src / "Catalogs/С/Forms/Ф/Ext/Form/Module.bsl").write_text("y", encoding="utf-8")
         self.commit()
-        self.assertEqual(build.plan_load(self.tmp, "src/cf", "HEAD~1", "HEAD"),
-                         ["Catalogs/С/Forms/Ф/Ext/Form.xml", "Catalogs/С/Forms/Ф/Ext/Form/Module.bsl"])
+        self.assertEqual(build.plan_load(self.tmp, "src/cf", "HEAD~1", "HEAD"), ["Catalogs/С/Forms/Ф.xml"])
+        (self.src / "CommonForms/О/Ext/Form/Module.bsl").write_text("y", encoding="utf-8")
+        self.commit()
+        self.assertEqual(build.plan_load(self.tmp, "src/cf", "HEAD~1", "HEAD"), ["CommonForms/О.xml"])
+
+    def test_partial_form_content_by_description(self):
+        """Изменённое содержимое формы — тоже описанием формы (оно несёт и содержимое, и модуль)."""
+        (self.src / "Catalogs/С/Forms/Ф/Ext/Form.xml").write_text("y", encoding="utf-8")
+        self.commit()
+        self.assertEqual(build.plan_load(self.tmp, "src/cf", "HEAD~1", "HEAD"), ["Catalogs/С/Forms/Ф.xml"])
 
     def test_full_on_delete_or_configuration(self):
         (self.src / "CommonModules/М/Ext/Module.bsl").unlink()

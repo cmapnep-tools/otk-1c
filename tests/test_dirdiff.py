@@ -178,9 +178,9 @@ class TestDirDiff(unittest.TestCase):
         write(head2, "CommonModules/М/Ext/Module.bsl", HEAD_MODULE)
         write(head2, "Documents/Д/Forms/Ф/Ext/Form/Module.bsl", "&НаКлиенте\nПроцедура К()\n\tА = 1;\nКонецПроцедуры\n")
         plan = collect.collect_dirs(self.base, head2, CONTEXTS)
+        # форма — описанием формы: файл внутри Ext Конфигуратор принимает за объект метаданных «…Ext»
         self.assertEqual(build.plan_load_dirs(plan), ["CommonModules/М/Ext/Module.bsl",
-                                                      "Documents/Д/Forms/Ф/Ext/Form.xml",
-                                                      "Documents/Д/Forms/Ф/Ext/Form/Module.bsl"])
+                                                      "Documents/Д/Forms/Ф.xml"])
         self.assertIsNone(build.plan_load_dirs(collect.collect_dirs(None, head2, CONTEXTS)))   # без «было»
 
     def test_build_dirs(self):

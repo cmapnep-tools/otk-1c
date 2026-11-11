@@ -5,7 +5,7 @@
 последней успешной загрузки, инструменты; время создания 1Cv8.1CD — пересозданная ИБ не считается собранной. Без
 каталога ИБ (рабочая база по connection) — build-state.json в каталоге прогона, как раньше; оттуда же состояние
 подхватывается при первом запуске. Дерево не изменилось — пропуск; изменились только существующие файлы —
-частичная загрузка (модуль формы — вместе с Form.xml) + UpdateDBCfg; удаления, переименования,
+частичная загрузка (форма — описанием формы, не файлом из её `Ext`) + UpdateDBCfg; удаления, переименования,
 Configuration.xml или нет состояния — полная загрузка.
 
 Исходники EDT грузятся экспортом 1cedtcli; частичная загрузка одних модулей основной конфигурации — без экспорта
@@ -107,11 +107,19 @@ def tree_hash(repo, sha, src):
     return gitdiff.git(repo, "rev-parse", f"{sha}:{gitdiff.source_prefix(src).rstrip('/')}").strip()
 
 
-def _companions(rel, lay=layout.DESIGNER):
+def form_description(rel, lay=layout.DESIGNER):
+    """Описание формы, которой принадлежит изменённый файл формы (модуль или содержимое); иначе None.
+
+    Конфигуратор путь внутри `Ext` принимает за объект метаданных: `CommonForms/Ф/Ext/Form.xml` — это для него
+    «CommonForm.Ф.Ext», загрузка падает (rc≠0, 8.3.23). Описание формы (`CommonForms/Ф.xml`,
+    `Catalogs/Т/Forms/Ф.xml`) платформа загружает вместе с содержимым формы и её модулем."""
     a = lay.parse(rel)
+    if a is None:                          # файл содержимого формы: …/Ext/Form.xml
+        module = lay.form_module(rel)
+        a = lay.parse(module) if module else None
     if a is not None and a.kind == "FormModule":
-        return [lay.form_files(a.collection, a.name, a.sub)[1]]
-    return []
+        return lay.form_files(a.collection, a.name, a.sub)[0]
+    return None
 
 
 def _load_list(changes, lay=layout.DESIGNER):
@@ -128,8 +136,11 @@ def _load_list(changes, lay=layout.DESIGNER):
             return None
         if status == "A" and not rel.endswith(".bsl"):
             return None                     # новый объект метаданных — надёжнее полная загрузка
-        files.add(rel)
-        files.update(_companions(rel, lay))
+        desc = form_description(rel, lay)
+        if desc is None:
+            files.add(rel)
+        else:                               # форма грузится описанием: модуль и содержимое — вместе с ним
+            files.add(desc)
     return sorted(files)
 
 
