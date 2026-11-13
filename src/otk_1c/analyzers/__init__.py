@@ -22,8 +22,8 @@ WHERE = {"bslls": "--bslls, environment.bslls, OTK_BSLLS, PATH или расши
          "bsl-analyzer": "--bsl-analyzer, environment.bslAnalyzer, OTK_BSL_ANALYZER или PATH"}
 
 
-# форматы выгрузки (layout.*.format), которые анализатор понимает: bsl-analyzer 0.3.2 не читает
-# метаданные EDT (.mdo) и обрывает прогон на защищённом модуле
+# форматы выгрузки (layout.*.format), которые анализатор понимает: bsl-analyzer 0.4.6 не читает
+# метаданные EDT (.mdo) — проект собирается из одних модулей — и обрывает прогон на защищённом модуле
 FORMATS = ("designer-xml", "edt")
 SUPPORTS = {"bslls": set(FORMATS), "bsl-analyzer": {"designer-xml"}}
 # уровни раздела [analyzerSeverity]: error — правило добавить к ошибкам, warning — снять с ошибок

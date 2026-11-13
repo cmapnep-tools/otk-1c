@@ -3,23 +3,23 @@
 Таблица сгенерирована командой `otk controls --analyzers --doc docs/vs-analyzers.md`; руками не править. Каждый дефект вносится в отдельный модуль коммитом вне веток, затем — статика `otk gate --static-only` по этому коммиту с обоими анализаторами (`environment.analyzer = "both"`). Анализатор находит только новые замечания — по правке, относительно базовой редакции.
 
 - Конфигурация: Демо: склад (otk-1c) 1.0.0
-- Анализаторы: BSL LS — 1.0.7; bsl-analyzer — 0.3.2
-- Коммит: `307ceedcc8`, дата прогона: 2026-10-21
+- Анализаторы: BSL LS — 1.0.7; bsl-analyzer — 0.4.6
+- Коммит: `cd3f51e7f2`, дата прогона: 2026-11-13
 
 Ячейки анализаторов — правила новых замечаний в файлах дефекта и уровень находки ОТК (`error` — вердикт «не пропускать», `warning` — предупреждение), «нет» — замечаний нет, «не проверено» — анализатор не работал. «Статика ОТК» — остальные проверки статики с находкой в файлах дефекта. «Шаг ОТК» — ожидаемый шаг дефекта в `otk controls` (справочно: здесь пробы в базе не выполняются).
 
 | Дефект | Шаг ОТК | BSL LS | bsl-analyzer | Статика ОТК |
 | --- | --- | --- | --- | --- |
 | синтаксическая ошибка в невызываемой функции серверного модуля | `static:bslls:ParseError`, `run:com`, `run:extcheck` | `ParseError` (error) | `AllFunctionPathMustHaveReturn` (warning), `ParseError` (error), `UnreachableCode` (warning) | — |
-| необъявленная переменная | `run:com`, `run:extcheck` | нет | нет | — |
+| необъявленная переменная | `static:platform-api`, `run:com`, `run:extcheck` | нет | `UnresolvedMethodCall` (warning) | `platform-api` |
 | вызов несуществующей процедуры модуля | `static:platform-api`, `run:com`, `run:extcheck` | нет | `UnresolvedBareCall` (warning) | `platform-api` |
 | Справочники.<опечатка> в неисполняемой ветке | `static:metadata-ref`, `run:extcheck` | нет | `UnresolvedField` (warning) | `metadata-ref` |
-| несуществующий предопределённый элемент | `static:metadata-ref` | нет | нет | `metadata-ref` |
+| несуществующий предопределённый элемент | `static:metadata-ref` | нет | `UnresolvedField` (warning) | `metadata-ref` |
 | Новый для типа платформы без конструктора | `static:platform-api`, `run:com`, `run:extcheck` | нет | нет | `platform-api` |
 | удалён экспортный метод с вызывающими | `static:dependent` | нет | нет | `dependent` |
 | несуществующая форма в ПолучитьФорму("…") | `static:form-name` | нет | нет | `form-name` |
 | метод, недоступный только в веб-клиенте (КомандаСистемы) | `run:extcheck` | нет | `UnavailableInEnvironment` (warning) | `platform-api` |
-| Вопрос() в модуле объекта вне #Если [^1] | `run:com` | `ParseError` (error) | `UnavailableInEnvironment` (warning), `UsingModalWindows` (warning) | `platform-api` |
+| Вопрос() в модуле объекта вне #Если [^1] | `run:com`, `run:yaxunit` | `ParseError` (error) | `UnavailableInEnvironment` (warning), `UsingModalWindows` (warning) | `platform-api` |
 | ошибка в клиентской процедуре модуля формы | `static:bslls:ParseError`, `run:yaxunit` | `ParseError` (error) | `AllFunctionPathMustHaveReturn` (warning), `ParseError` (error), `UnreachableCode` (warning) | — |
 | переименован обработчик события формы | `static:handler` | нет | нет | `handler` |
 | вызов несуществующей процедуры в модуле формы | `run:extcheck` | нет | `UnresolvedBareCall` (warning) | `platform-api` |
@@ -41,8 +41,10 @@
 
 ## Расхождения анализаторов
 
+- необъявленная переменная: только bsl-analyzer (`UnresolvedMethodCall`)
 - вызов несуществующей процедуры модуля: только bsl-analyzer (`UnresolvedBareCall`)
 - Справочники.<опечатка> в неисполняемой ветке: только bsl-analyzer (`UnresolvedField`)
+- несуществующий предопределённый элемент: только bsl-analyzer (`UnresolvedField`)
 - метод, недоступный только в веб-клиенте (КомандаСистемы): только bsl-analyzer (`UnavailableInEnvironment`)
 - вызов несуществующей процедуры в модуле формы: только bsl-analyzer (`UnresolvedBareCall`)
 - опечатка в поле запроса: только bsl-analyzer (`UnknownFieldInQuery`)
@@ -56,7 +58,7 @@
 
 ## Вывод
 
-Из 28 дефектов BSL LS поймал 7, bsl-analyzer — 19, статика ОТК без анализаторов — 17; не поймала статика вовсе — 3 (их ловят пробы в базе, extcheck и дымовой тест — `docs/vs-designer.md`). Анализаторы — источник находок внутри ОТК (проверка `analyzers`), а не альтернатива ему: ни один не видит ошибок компиляции в контексте платформы, запросов в базе, открытия форм и сценарных тестов, а замечания до правки ОТК отсекает сравнением редакций.
+Из 28 дефектов BSL LS поймал 7, bsl-analyzer — 21, статика ОТК без анализаторов — 18; не поймала статика вовсе — 2 (их ловят пробы в базе, extcheck и дымовой тест — `docs/vs-designer.md`). Анализаторы — источник находок внутри ОТК (проверка `analyzers`), а не альтернатива ему: ни один не видит ошибок компиляции в контексте платформы, запросов в базе, открытия форм и сценарных тестов, а замечания до правки ОТК отсекает сравнением редакций.
 
 [^1]: `ParseError` BSL LS — ложный: код дописан после `#КонецЕсли`, а в ветке `#Иначе` стоит оператор тела модуля; BSL LS не учитывает препроцессор, платформа для сервера эту ветку не компилирует
 [^2]: `ParseError` BSL LS — ложный, как у `Вопрос()` в модуле объекта
