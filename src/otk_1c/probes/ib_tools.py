@@ -9,6 +9,7 @@ import re
 import shutil
 import uuid
 from pathlib import Path
+from xml.dom import minidom
 
 from .. import lang
 from ..errors import InfraError
@@ -254,6 +255,28 @@ def _adopted_tabular(text):
 _COMMON_ATTRIBUTE_PROPS = ("Type", "AutoUse", "DataSeparation", "SeparatedDataUse")
 
 
+def _adopted_predefined(path, fmt):
+    """Предопределённые элементы расширения: исходные id, каждый элемент — AdoptedCheck.
+
+    Формат подтверждён загрузкой и повторной выгрузкой 8.3.27. DOM сохраняет объявления пространств
+    имён (включая префиксы внутри xsi:type), свойства и вложенность исходного Predefined.xml.
+    """
+    # XML выгрузки проекта; minidom/expat не раскрывает внешние сущности (как ET, S314 в pyproject).
+    with minidom.parseString(path.read_text(encoding="utf-8-sig")) as doc:  # noqa: S318
+        doc.documentElement.setAttribute("version", fmt)
+        for item in doc.getElementsByTagNameNS("*", "Item"):
+            children = [c for c in item.childNodes if c.nodeType == c.ELEMENT_NODE]
+            state = next((c for c in children if c.localName == "ExtensionState"), None)
+            if state is None:
+                prefix = f"{item.prefix}:" if item.prefix else ""
+                state = doc.createElementNS(item.namespaceURI, f"{prefix}ExtensionState")
+                item.insertBefore(state, next((c for c in children if c.localName == "ChildItems"), None))
+            for child in list(state.childNodes):
+                state.removeChild(child)
+            state.appendChild(doc.createTextNode("AdoptedCheck"))
+        return doc.toxml(encoding="UTF-8").decode("utf-8")
+
+
 def adopted_object(config_root, collection, name, lay=layout.DESIGNER, tabular=False, forms=(), fmt=None,
                    fields=True):
     """Описание заимствованного объекта основной конфигурации для расширения или None (нет такого объекта):
@@ -262,7 +285,8 @@ def adopted_object(config_root, collection, name, lay=layout.DESIGNER, tabular=F
     заимствованных форм объекта (<Form> в ChildObjects, после табличных частей); fmt — версия формата файлов.
     fields=False — оболочка: без реквизитов, ТЧ, значений перечисления и свойств-типов (общие реквизиты), — так
     заимствуется объект, на который ссылается тип реквизита: расширению нужен только он сам. В результате
-    "types" — {(коллекция, имя)} объектов, которые понадобятся расширению вслед за этим описанием."""
+    "types" — {(коллекция, имя)} объектов, которые понадобятся расширению вслед за этим описанием;
+    "predefined" — XML предопределённых элементов с AdoptedCheck или None (в том числе у оболочки)."""
     path = layout.find_ci(config_root, lay.object_file(collection, name))
     if path is None:
         return None
@@ -308,7 +332,9 @@ def adopted_object(config_root, collection, name, lay=layout.DESIGNER, tabular=F
            f"<InternalInfo>{types}</InternalInfo><Properties><ObjectBelonging>Adopted</ObjectBelonging>"
            f"<Name>{real_name}</Name><Comment/><ExtendedConfigurationObject>{main_uuid}</ExtendedConfigurationObject>"
            f"{own_props}</Properties>{child_objects}</{tag}></MetaDataObject>")
-    return {"collection": collection, "name": real_name, "tag": tag, "xml": xml, "types": deps}
+    predefined = layout.find_ci(config_root, f"{collection}/{real_name}/Ext/Predefined.xml") if fields else None
+    return {"collection": collection, "name": real_name, "tag": tag, "xml": xml, "types": deps,
+            "predefined": _adopted_predefined(predefined, fmt or FORMAT_MAX) if predefined else None}
 
 
 def generate_test_extension(target, props, name=EXT, prefix="otk_", modules=None, objects=None):
@@ -329,6 +355,8 @@ def generate_test_extension(target, props, name=EXT, prefix="otk_", modules=None
     children += "".join(f"<{o['tag']}>{o['name']}</{o['tag']}>" for o in objects)
     for o in objects:
         write(target / o["collection"] / f"{o['name']}.xml", o["xml"])
+        if o.get("predefined") is not None:
+            write(target / o["collection"] / o["name"] / "Ext" / "Predefined.xml", o["predefined"])
     write(target / "Configuration.xml", f"""<?xml version="1.0" encoding="UTF-8"?>
 <MetaDataObject {_ns(fmt)}><Configuration uuid="{uuid.uuid4()}"><InternalInfo>{contained}</InternalInfo><Properties>
 <ObjectBelonging>Adopted</ObjectBelonging><Name>{name}</Name><Synonym/><Comment/>
