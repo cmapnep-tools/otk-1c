@@ -26,6 +26,7 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 
 from .. import __version__, lang, model
+from ..errors import InfraError
 from ..probes.platform import CHECK_MODES
 from ..public import public_summary as public_summary
 from ..sources import bsl, contexts, layout
@@ -580,13 +581,23 @@ def from_files(run_dir, timings=None, tree=None):
     проверенной редакции (workspace.tree_root): метод и строка кода находок."""
     run_dir = Path(run_dir)
     plan = json.loads((run_dir / "otk.json").read_text(encoding="utf-8"))
+    require_plan_schema(plan)
     (static, stale_static), (run, stale_run), (designer, stale_designer) = (
         step_for(plan, run_dir / name) for name in ("static.json", "run.json", "designer.json"))
     if timings is None:
         timings = {f"run.{k}": v for k, v in (run or {}).get("timings", {}).items()}
     summary = build(plan, static, run, timings, read=head_reader(tree, plan), designer=designer)
-    summary["notes"] += [n for n in (stale_static, stale_run, stale_designer, plan_version_note(plan)) if n]
+    summary["notes"] += [n for n in (stale_static, stale_run, stale_designer) if n]
     return summary
+
+
+def require_plan_schema(plan):
+    """Не строить сводку по плану другого формата: поля и их смысл могли измениться."""
+    if not isinstance(plan, dict):
+        raise InfraError(f"otk.json должен быть объектом формата {model.PLAN_SCHEMA}: "
+                         "перезапустите collect или gate", code="plan-version")
+    if note := plan_version_note(plan):
+        raise InfraError(note, code="plan-version")
 
 
 def plan_version_note(plan):
