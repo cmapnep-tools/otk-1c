@@ -32,6 +32,20 @@ def run_dir(cfg, repo):
     return base / f"{path.name}-{key}"
 
 
+def new_run(cfg, repo):
+    """Атомарно выделить короткий каталог gate; незавершённые прогоны тоже сохраняются."""
+    root = run_dir(cfg, repo)
+    root.mkdir(parents=True, exist_ok=True)
+    return Path(tempfile.mkdtemp(prefix="r", dir=root))
+
+
+def latest_run(root):
+    """Последний завершённый gate; старый collect остаётся запасным вариантом."""
+    root = Path(root)
+    completed = list(root.glob("r*/.completed"))
+    return max(completed, key=lambda p: (p.stat().st_mtime_ns, p.parent.name)).parent if completed else root
+
+
 def _warn_inside(base, repo):
     """Предупреждение (раз за процесс), если runDir внутри рабочего дерева: пути извлечённых редакций длиннее
     на путь репозитория, а каталог прогона виден git как неотслеживаемый."""

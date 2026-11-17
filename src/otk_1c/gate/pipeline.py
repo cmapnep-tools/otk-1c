@@ -296,6 +296,7 @@ def gate_run(repo: Path, cfg: dict, run_dir: Path, opts: GateOptions, log: model
         vendor_mod.cleanup(run_dir)
     summary = report.from_files(run_dir, timings, lambda: workspace.tree_root(repo, plan, run_dir))
     output.write(summary, run_dir, Path(opts.head_dir) if opts.head_dir else repo)
+    (run_dir / ".completed").touch()
     return summary
 
 

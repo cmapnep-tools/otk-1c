@@ -13,6 +13,7 @@ import otk_1c
 from _fs import rmtree_force
 from otk_1c import cli, config
 from otk_1c.errors import InfraError
+from otk_1c.sources import workspace
 from test_collect import FLAGS, write
 
 EXT_CONFIG = ('<MetaDataObject><Configuration><Properties><ObjectBelonging>Adopted</ObjectBelonging>'
@@ -196,7 +197,7 @@ class TestExtensionDetect(unittest.TestCase):
             code = cli.main(["gate", "--repo", str(self.work), "--dir", str(self.ext), "--run-dir",
                              str(self.tmp / "прогоны"), "--set", "checks.analyzers=off", "--set",
                              "checks.platform-api=off", *extra])
-        run_dir = next((self.tmp / "прогоны").iterdir())
+        run_dir = workspace.latest_run(next((self.tmp / "прогоны").iterdir()))
         return code, out.getvalue(), json.loads((run_dir / "summary.json").read_text(encoding="utf-8"))
 
     def test_gate_extension_without_parent(self):

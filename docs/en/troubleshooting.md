@@ -11,7 +11,7 @@
   temporary directory, i.e. only within one account on the machine. It is held until the end of its process, and
   the OS releases it if the process crashes.
 - **“extracting revision … characters”** — on Windows without long paths (`LongPathsEnabled`) a file path is at
-  most 260 characters, and OTK extracts a commit revision into `<runDir>/<name>-<hash>/trees/<sha prefix>/` — the
+  most 260 characters, and OTK extracts a commit revision into `<runDir>/<name>-<hash>/r<id>/trees/<sha prefix>/` — the
   dump paths are added to it (up to 200 characters in ERP). Keep the run directory short and outside the
   repository: `OTK_RUN_DIR=D:/otk` or `environment.runDir`; OTK warns about a `runDir` inside the working tree.
 - **“1C platform not found”** — set `environment.platform` or `OTK_PLATFORM` (the `bin` directory).

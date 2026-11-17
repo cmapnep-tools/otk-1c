@@ -340,7 +340,7 @@ class Platform(ConfigOps):
         if self.ib_tool == "ibcmd" and not self.has_ibcmd:
             raise InfraError(f"environment.ibTool = ibcmd, а ibcmd в {self.bin} нет: установите компоненты сервера "
                              "1С:Предприятия или выберите ibTool = designer", code="no-ibcmd")
-        self.lock_timeout = float(env.get("lockTimeout") or iblock.DEFAULT_TIMEOUT)
+        self.lock_timeout = float(env.get("lockTimeout", iblock.DEFAULT_TIMEOUT))
 
     def lock(self):
         """Эта база — только этому прогону ОТК до конца процесса (iblock); другой прогон держит — ждать."""

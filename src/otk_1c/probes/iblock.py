@@ -66,10 +66,10 @@ def acquire(path, timeout=DEFAULT_TIMEOUT, log=_stderr):
         return
     path.parent.mkdir(parents=True, exist_ok=True)
     f = open(path, "a+b")                 # noqa: SIM115 — файл открыт, пока держится блокировка
-    deadline = time.time() + timeout
+    deadline = time.monotonic() + max(0, timeout)
     waited = False
     while not _try_lock(f):
-        if time.time() >= deadline:
+        if time.monotonic() >= deadline:
             f.close()
             who = holder(path)
             raise InfraError(f"копия ИБ занята другим прогоном ОТК{f' ({who})' if who else ''} дольше {timeout} с "
@@ -78,7 +78,7 @@ def acquire(path, timeout=DEFAULT_TIMEOUT, log=_stderr):
             who = holder(path)
             log(f"копию ИБ проверяет другой прогон ОТК{f' ({who})' if who else ''}: жду до {timeout} с")
             waited = True
-        time.sleep(1)
+        time.sleep(min(1, max(0, deadline - time.monotonic())))
     info = {"pid": os.getpid(), "since": time.strftime("%Y-%m-%d %H:%M:%S"), "command": " ".join(sys.argv[1:3])}
     f.seek(1)
     f.truncate()

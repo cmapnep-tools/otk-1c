@@ -73,6 +73,11 @@ def _publish(name, run_dir, names, log, dest=None):
     files = [Path(run_dir) / n for n in names]
     try:
         if dest:
+            if name == "otk-gate":
+                root, source = Path(dest).resolve(), Path(run_dir).resolve()
+                if root == source or root in source.parents or source in root.parents:
+                    raise ValueError(f"каталог --artifacts {dest} пересекается с каталогом прогона {run_dir}")
+                dest = Path(dest) / Path(run_dir).name
             log(f"артефакты: {collect_artifacts(files, dest, run_dir)} файлов в {dest}")
         else:
             forgejo_artifacts.upload(name, files, log=log)
@@ -120,6 +125,7 @@ def main(a):
     run_dir = workspace.run_dir(cfg, repo)
     dest = getattr(a, "artifacts", None)
     if a.action == "gate":
+        run_dir = workspace.new_run(cfg, repo)
         base = a.base
         if not base and (target := pr_target()):
             base = ensure_base(repo, target, log)

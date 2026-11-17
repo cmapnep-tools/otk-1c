@@ -128,7 +128,7 @@ def run(repo, lines, log=print, gate=None):
         todo, code = [], _infra(hs, log)
     for ref, base, head in todo:
         log(f"otk pre-push: {ref} {base[:10]}..{head[:10]}")
-        run_dir = workspace.run_dir(cfg, repo)
+        run_dir = workspace.new_run(cfg, repo)
         try:
             opts = pipeline.GateOptions(base, head, static_only=hs["mode"] == "static",
                                         fast=hs["fast"])

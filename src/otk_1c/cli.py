@@ -388,7 +388,10 @@ def _report_data(a):
         # каталог прогона или, как у gate, корень прогонов: тогда в нём — каталог прогона проекта
         given = Path(a.run_dir)
         nested = given / run_dir.name
-        run_dir = nested if not (given / "otk.json").exists() and (nested / "otk.json").exists() else given
+        run_dir = workspace.latest_run(given if (given / "otk.json").is_file() else
+                                       (nested if nested.is_dir() else given))
+    else:
+        run_dir = workspace.latest_run(run_dir)
     if not (run_dir / "otk.json").exists():
         return None, run_dir, repo
     plan = json.loads((run_dir / "otk.json").read_text(encoding="utf-8"))
@@ -461,7 +464,7 @@ def _gate_run(a, repo, cfg):
     """Прогон gate по ключам: (сводка, каталог прогона); журнал — в stdout."""
     if not a.vendor:
         config.detect_extension(cfg, Path(a.dir) if a.dir else repo / (a.source or cfg["project"]["source"]))
-    run_dir = workspace.run_dir(cfg, repo)
+    run_dir = workspace.new_run(cfg, repo)
     opts = pipeline.GateOptions(a.base, a.head, a.worktree, a.source, head_dir=a.dir, base_dir=a.base_dir,
                                 vendor=a.vendor, static_only=a.static_only, fast=a.fast,
                                 all_scenarios=a.all_scenarios, designer=a.designer)

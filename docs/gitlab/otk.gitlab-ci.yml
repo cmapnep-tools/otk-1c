@@ -28,7 +28,7 @@ otk-gate:
     when: always
     paths: [otk-artifacts/]
     reports:
-      junit: otk-artifacts/junit.xml
+      junit: otk-artifacts/r*/junit.xml
     expire_in: 2 weeks
 
 otk-designer-check:

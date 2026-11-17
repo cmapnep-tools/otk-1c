@@ -1,9 +1,11 @@
 """Задание CI: каталог проекта без --repo, база из переменных CI, артефакты каталогом."""
+import concurrent.futures
 import contextlib
 import io
 import os
 import subprocess
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -24,6 +26,34 @@ class CiTest(unittest.TestCase):
 
     def tearDown(self):
         rmtree_force(self.tmp)
+
+    def test_parallel_gate_publications_keep_complete_run_sets(self):
+        directories = [self.tmp / "runs" / name for name in ("ra", "rb")]
+        for directory in directories:
+            directory.mkdir(parents=True)
+            for name in ci.GATE_ARTIFACTS:
+                (directory / name).write_text(directory.name, encoding="utf-8")
+        barrier = threading.Barrier(2)
+        copy = ci.shutil.copyfile
+
+        def overlapping_copy(source, target):
+            barrier.wait(timeout=10)
+            return copy(source, target)
+
+        errors = []
+        destination = self.tmp / "artifacts"
+        with mock.patch.object(ci.shutil, "copyfile", side_effect=overlapping_copy):
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                futures = [executor.submit(ci._publish, "otk-gate", directory, ci.GATE_ARTIFACTS,
+                                           errors.append, destination) for directory in directories]
+                for future in futures:
+                    future.result(timeout=30)
+        self.assertFalse(any("не удалась" in line for line in errors), errors)
+        for directory in directories:
+            published = destination / directory.name
+            self.assertEqual({path.name for path in published.iterdir()}, set(ci.GATE_ARTIFACTS))
+            self.assertTrue(all(path.read_text(encoding="utf-8") == directory.name
+                                for path in published.iterdir()))
 
     def test_checkout_dir(self):
         ws = self.tmp
