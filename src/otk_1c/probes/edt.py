@@ -26,7 +26,7 @@ DEFAULT_TIMEOUT = 1800
 BOM = b"\xef\xbb\xbf"
 # каталог выгрузки -> вид объекта в строке -listFile выгрузки (Catalog.Валюты)
 KINDS = {coll: kind for kind, coll in index.COLLECTIONS.items()} | {
-    "CommonAttributes": "CommonAttribute", "Languages": "Language"}
+    "CommonAttributes": "CommonAttribute", "Languages": "Language", "DefinedTypes": "DefinedType"}
 
 
 class NoEdtcli(InfraError):

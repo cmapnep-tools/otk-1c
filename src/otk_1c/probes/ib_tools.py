@@ -12,7 +12,7 @@ from pathlib import Path
 
 from .. import lang
 from ..errors import InfraError
-from ..sources import layout
+from ..sources import index, layout
 from .platform import platform_version
 
 EXT = "otk"
@@ -197,6 +197,32 @@ def _generated_types(internal_info):
                    for t, c in re.findall(r'<xr:GeneratedType name="([^"]+)" category="([^"]+)"', internal_info))
 
 
+# Вид метаданных (тег Configuration.xml) + суффикс типа -> коллекция выгрузки. Тип в <v8:Type>/<v8:TypeSet>
+# ссылается на объект («cfg:» — текущая конфигурация, то есть само расширение), и без заимствования этого объекта
+# расширение не загружается: «Неизвестное имя типа - CatalogRef.Items» (проверено на 8.3.23).
+TYPE_COLLECTIONS = {tag + tail: coll for tag, coll in index.COLLECTIONS.items()
+                    for tail in ("Ref", "Object", "Manager", "Selection", "List", "RecordSet", "RecordManager",
+                                 "RecordKey", "ValueManager", "Builder")}
+TYPE_COLLECTIONS |= {
+    "DefinedType": "DefinedTypes",                 # <v8:TypeSet>cfg:DefinedType.Имя</v8:TypeSet>
+    # тип значений характеристик плана видов характеристик и точка маршрута бизнес-процесса
+    "Characteristic": "ChartsOfCharacteristicTypes", "BusinessProcessRoutePointRef": "BusinessProcesses",
+}
+
+
+def type_references(values):
+    """{(коллекция, имя)} объектов основной конфигурации по значениям типов (layout.type_values): типы реквизитов,
+    измерений, ресурсов, ТЧ и общих реквизитов без этих объектов в расширении не разрешаются. Незнакомый префикс
+    (xs:, v8: — типы платформы, DynamicList, AnyIBRef) — не объект: пропускается."""
+    out = set()
+    for value in values or ():
+        prefix, dot, name = (value or "").strip().partition(".")
+        coll = TYPE_COLLECTIONS.get(prefix.removeprefix("cfg:"))
+        if dot and coll and name:
+            out.add((coll, name))
+    return out
+
+
 def _adopted_fields(body, kinds="Attribute|Dimension|Resource|AccountingFlag|ExtDimensionAccountingFlag"):
     """Заимствованные реквизиты (поля) из текста ChildObjects — с типами."""
     return "".join(
@@ -228,11 +254,15 @@ def _adopted_tabular(text):
 _COMMON_ATTRIBUTE_PROPS = ("Type", "AutoUse", "DataSeparation", "SeparatedDataUse")
 
 
-def adopted_object(config_root, collection, name, lay=layout.DESIGNER, tabular=False, forms=(), fmt=None):
+def adopted_object(config_root, collection, name, lay=layout.DESIGNER, tabular=False, forms=(), fmt=None,
+                   fields=True):
     """Описание заимствованного объекта основной конфигурации для расширения или None (нет такого объекта):
     свои uuid и сгенерированные типы, ExtendedConfigurationObject — uuid объекта; у перечисления — значения.
     tabular — с табличными частями (модуль объекта во временном расширении); forms — имена
-    заимствованных форм объекта (<Form> в ChildObjects, после табличных частей); fmt — версия формата файлов."""
+    заимствованных форм объекта (<Form> в ChildObjects, после табличных частей); fmt — версия формата файлов.
+    fields=False — оболочка: без реквизитов, ТЧ, значений перечисления и свойств-типов (общие реквизиты), — так
+    заимствуется объект, на который ссылается тип реквизита: расширению нужен только он сам. В результате
+    "types" — {(коллекция, имя)} объектов, которые понадобятся расширению вслед за этим описанием."""
     path = layout.find_ci(config_root, lay.object_file(collection, name))
     if path is None:
         return None
@@ -251,26 +281,34 @@ def adopted_object(config_root, collection, name, lay=layout.DESIGNER, tabular=F
     # реквизиты и поля регистров верхнего уровня (без табличных частей) — с типами: без них расширенная проверка
     # не знает реквизитов объекта («возможно ошибочное свойство» и на верном имени, и на опечатке)
     top = re.sub(r"<TabularSection .*?</TabularSection>", "", text, flags=re.S)
-    children = _adopted_fields(top) + (_adopted_tabular(text) if tabular else "")
-    if tag == "Enum":
+    children = (_adopted_fields(top) + (_adopted_tabular(text) if tabular else "")) if fields else ""
+    if tag == "Enum" and fields:
         children = "".join(f'<EnumValue uuid="{uuid.uuid4()}"><InternalInfo/><Properties>'
                            f"<ObjectBelonging>Adopted</ObjectBelonging><Name>{v}</Name><Comment/>"
                            f"<ExtendedConfigurationObject>{u}</ExtendedConfigurationObject></Properties></EnumValue>"
                            for u, v in re.findall(r'<EnumValue uuid="([^"]+)">\s*(?:<InternalInfo/>\s*)?<Properties>'
                                                   r'\s*<Name>([^<]+)</Name>', text))
     # ChildObjects — только у видов, где он есть: константа с ним не загружается («ожидаемое Constant»)
-    children += "".join(f"<Form>{f}</Form>" for f in forms)
+    if fields:
+        children += "".join(f"<Form>{f}</Form>" for f in forms)
     child_objects = f"<ChildObjects>{children}</ChildObjects>" if "<ChildObjects" in text else ""
     # общий реквизит-разделитель без своих Type/AutoUse/DataSeparation объекты в расширении не видят: «Переменная
     # не определена (ОбластьДанных…)» в модуле объекта (проверено на отраслевой конфигурации); Content не нужен
     own_props = "".join(m.group(0) for t in _COMMON_ATTRIBUTE_PROPS
-                        for m in [re.search(rf"<{t}>.*?</{t}>", text, re.S)] if m) if tag == "CommonAttribute" else ""
+                        for m in [re.search(rf"<{t}>.*?</{t}>", text, re.S)] if m) \
+        if tag == "CommonAttribute" and fields else ""
+    # типы, на которые ссылается описание: реквизиты и ТЧ — в том объёме, в каком они скопированы. Свойства самого
+    # объекта (тип определяемого типа, тип значений характеристик) платформа берёт из основной конфигурации и в
+    # расширении разрешает уже среди заимствованных объектов — они нужны и оболочке (проверено на 8.3.23:
+    # оболочка определяемого типа без CatalogRef.Items не загружается)
+    deps = type_references(lay.type_values(text, tabular=tabular)) if fields \
+        else type_references(lay.type_values(text, own=True))
     xml = (f'<?xml version="1.0" encoding="UTF-8"?>\n<MetaDataObject {_ns(fmt or FORMAT_MAX)}><{tag} '
            f'uuid="{uuid.uuid4()}">'
            f"<InternalInfo>{types}</InternalInfo><Properties><ObjectBelonging>Adopted</ObjectBelonging>"
            f"<Name>{real_name}</Name><Comment/><ExtendedConfigurationObject>{main_uuid}</ExtendedConfigurationObject>"
            f"{own_props}</Properties>{child_objects}</{tag}></MetaDataObject>")
-    return {"collection": collection, "name": real_name, "tag": tag, "xml": xml}
+    return {"collection": collection, "name": real_name, "tag": tag, "xml": xml, "types": deps}
 
 
 def generate_test_extension(target, props, name=EXT, prefix="otk_", modules=None, objects=None):

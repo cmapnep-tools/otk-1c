@@ -177,7 +177,13 @@ def _form_files(target, config_root, a, text, fmt):
 
 def objects_for(config_root, units, texts, fmt=None):
     """Заимствуемые объекты: владельцы форм и модулей объектов (с ТЧ и формами), объекты по ссылкам через
-    менеджеры, общие реквизиты, имена которых встречаются в модулях форм и объектов; fmt — версия формата файлов."""
+    менеджеры, общие реквизиты, имена которых встречаются в модулях форм и объектов; fmt — версия формата файлов.
+
+    Вслед за ними — объекты, на которые ссылаются типы их реквизитов, измерений, ресурсов и ТЧ (<v8:Type>,
+    <v8:TypeSet>): без заимствования такого объекта расширение не загружается («Неизвестное имя типа»). Эти
+    объекты — оболочки (без реквизитов): нужен только сам объект, поэтому цепочка на нём и заканчивается.
+    Оболочка, у которой есть свои свойства-типы (определяемый тип, план видов характеристик), тянет их объекты —
+    платформа берёт состав из основной конфигурации; повтор и цикл снимаются ключом (коллекция, имя)."""
     owners = {}
     for a in units:
         if a.kind != "Module" and a.collection != "CommonForms":
@@ -201,19 +207,45 @@ def objects_for(config_root, units, texts, fmt=None):
                 o = ib_tools.adopted_object(config_root, "CommonAttributes", name, fmt=fmt)
                 if o:
                     objects[("CommonAttributes", name.lower())] = o
+    pending = list(objects.values())            # замыкание по типам: оболочки добавляют только свои свойства-типы
+    while pending:
+        for coll, name in pending.pop().get("types", ()):
+            key = (coll, name.lower())
+            if key in objects:
+                continue
+            o = ib_tools.adopted_object(config_root, coll, name, fmt=fmt, fields=False)
+            if o:
+                objects[key] = o
+                pending.append(o)
     return list(objects.values())
 
 
 def ib_names(source, lay, units, texts):
     """Строки -listFile частичной выгрузки ИБ вместо экспорта EDT: то, что objects_for и _check прочтут из
     выгрузки для модулей EDT units, — корень и язык, общие модули, общие формы, владельцы модулей форм и объектов
-    с формами, объекты по ссылкам через менеджеры (есть в исходниках), общие реквизиты, упомянутые в текстах."""
+    с формами, объекты по ссылкам через менеджеры (есть в исходниках), общие реквизиты, упомянутые в текстах,
+    и объекты, на которые ссылаются типы их реквизитов (см. objects_for)."""
     names = {"Configuration"}
     lang = re.search(r"<defaultLanguage>Language\.([^<]+)</defaultLanguage>",
                      layout.read_text(Path(source) / lay.config_file) or "")
     if lang:
         names.add(list_name("Languages", lang.group(1)))
-    scan = False
+    known = {}
+
+    def add(coll, name):
+        """Строка -listFile объекта по имени из текста (регистр может отличаться); нет в исходниках — None."""
+        if coll not in known:
+            known[coll] = {n.lower(): n for n in lay.object_names(source, coll)}
+        real = known[coll].get(name.lower())
+        if real:
+            names.add(list_name(coll, real))
+        return real
+
+    def text_of(coll, real):
+        path = layout.find_ci(source, lay.object_file(coll, real)) if real else None
+        return layout.read_text(path) if path else None
+
+    scan, full = False, []
     for m in units:
         a = lay.parse(m["path"])
         if a is None:
@@ -221,17 +253,30 @@ def ib_names(source, lay, units, texts):
         names.add(list_name(a.collection, a.name))
         if a.kind == "FormModule" and a.sub:
             names.add(list_name(a.collection, a.name, a.sub))
+        if a.collection:
+            full.append((a.collection, a.name, a.kind != "Module" and a.collection != "CommonForms"))
         scan = scan or a.kind != "Module" or a.collection == "CommonForms"
-    known = {}
     for coll, name in ib_tools.referenced_objects(texts):
-        if coll not in known:
-            known[coll] = {n.lower(): n for n in lay.object_names(source, coll)}
-        real = known[coll].get(name.lower())
-        if real:
-            names.add(list_name(coll, real))
+        if add(coll, name):
+            full.append((coll, name, False))
     if scan:
         words = set(re.findall(r"[\wА-Яа-яЁё]+", "\n".join(texts)))
-        names |= {list_name("CommonAttributes", n) for n in lay.object_names(source, "CommonAttributes") if n in words}
+        for n in lay.object_names(source, "CommonAttributes"):
+            if n in words:
+                names.add(list_name("CommonAttributes", n))
+                full.append(("CommonAttributes", n, False))
+    deps = set()
+    for coll, name, tabular in full:           # полный объект — типы его реквизитов; у объекта без ТЧ их типов нет
+        deps |= ib_tools.type_references(lay.type_values(text_of(coll, add(coll, name)), tabular=tabular))
+    seen = {(coll, name.lower()) for coll, name, _ in full}
+    while deps:                                # оболочка — только свой тип (определяемый тип, значения характеристик)
+        coll, name = deps.pop()
+        if (coll, name.lower()) in seen:
+            continue
+        seen.add((coll, name.lower()))
+        real = add(coll, name)
+        if real:
+            deps |= ib_tools.type_references(lay.type_values(text_of(coll, real), own=True))
     return sorted(n for n in names if n)
 
 
