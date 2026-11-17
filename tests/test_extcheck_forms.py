@@ -254,7 +254,7 @@ class ExtCheckFormsTest(unittest.TestCase):
         self.assertIn("модуль не скомпилирован", msgs[OBJ_PATH])
         self.assertNotIn(FORM_PATH, covered)          # пара не подтверждена — модуль не покрыт
         s = self.summary(res, note, covered)
-        self.assertEqual((s["code"], s["verdict"]), (2, "не покрыто обязательное: OrdinaryClient"))
+        self.assertEqual((s["code"], s["verdict"]), (2, "ничего не проверено"))
 
     def test_new_modules_without_possible(self):
         """Новые модули (без «было»): «Возможно ошибочн…» не показываются — без сравнения не отличить от ложных."""

@@ -388,11 +388,21 @@ def uncovered(plan, run):
 
 def checked_count(static, run, designer=None):
     probes = sum(1 for r in (run or {}).get("results", []) if r["outcome"] not in ("skipped",))
-    return probes + (1 if static is not None else 0) + (1 if (designer or {}).get("ran") else 0)
+    st = static or {}
+    analyzer_checks = sum(
+        info.get("modules", 0) for name, info in st.get("analyzerInfo", {}).items()
+        if name in ("bslls", "bsl-analyzer") and isinstance(info, dict)
+        and not any(info.get(key) for key in ("skipped", "off", "error")))
+    ext = (run or {}).get("extCheck") or {}
+    coverage = ext.get("coverage")
+    ext_checks = (sum(bool(i.get("module") and i.get("contexts")) for i in coverage)
+                  if coverage is not None else len(ext.get("modules") or ()) * bool(ext.get("contexts")))
+    return probes + len(st.get("checked", [])) + analyzer_checks + ext_checks + int(bool((designer or {}).get("ran")))
 
 
 def verdict(plan, findings, static, run, infra_errors, designer=None, missing=()):
-    has_input = bool(plan["modules"] or plan["queries"] or plan.get("smoke"))
+    has_input = any(plan.get(key) for key in ("modules", "queries", "scenarios", "smoke",
+                                             "removedModules", "metadata"))
     if infra_errors:
         return 2, "сбой инфраструктуры"
     if any(f["severity"] == "error" for f in findings):

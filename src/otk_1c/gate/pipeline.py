@@ -109,10 +109,12 @@ def static_step(repo: Path, cfg: dict, run_dir: Path, plan_path: Path, parent_ar
         return layout.read_text(p) if p else None
 
     metadata = gate.enabled("metadata")
-    findings = static.run(repo, plan, ix, read_head, api, read_parent, lay, metadata=metadata, names=names)
+    checked: set[str] = set()
+    findings = static.run(repo, plan, ix, read_head, api, read_parent, lay, metadata=metadata, names=names,
+                          checked=checked)
     if api and api.hidden_note():
         api_info["notes"] = list(api_info.get("notes", [])) + [api.hidden_note()]
-    deps, dep_findings = static.dependents(tree_root / src, plan, ix) if metadata else ({}, [])
+    deps, dep_findings = static.dependents(tree_root / src, plan, ix, checked=checked) if metadata else ({}, [])
     findings.extend(dep_findings)
     if cfg["project"].get("extension") and not parent:
         for f in findings:
@@ -139,7 +141,7 @@ def static_step(repo: Path, cfg: dict, run_dir: Path, plan_path: Path, parent_ar
     result = {**model.header("static", internal=True),
               "index": round(t1 - t0, 1), "checks": round(t2 - t1, 1), "analyzers": round(t3 - t2, 1),
               "analyzerInfo": an_info, "apiInfo": api_info, "findings": findings,
-              "dependents": dependents,
+              "dependents": dependents, "checked": sorted(checked),
               **gate.take(), "plan": model.plan_id(plan)}
     out = plan_path.with_name("static.json")
     out.write_text(json.dumps(result, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
@@ -281,7 +283,7 @@ def gate_run(repo: Path, cfg: dict, run_dir: Path, opts: GateOptions, log: model
     timings: dict[str, float] = {}
     plan, plan_path = _plan_step(repo, cfg, run_dir, opts, gate, vendor_prep, timings, log)
     built, skip_designer = False, None       # шаг run загрузил редакцию в копию ИБ; почему designer не выполнять
-    if plan["modules"] or plan["queries"] or plan["scenarios"] or plan["smoke"]:
+    if any(plan.get(key) for key in ("modules", "queries", "scenarios", "smoke", "metadata", "removedModules")):
         built, skip_designer = _probe_step(repo, cfg, run_dir, opts, plan, plan_path, gate, timings, log)
     if opts.designer:
         t = time.time()
