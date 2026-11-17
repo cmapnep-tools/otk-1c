@@ -132,6 +132,20 @@ class ControlsFormatTest(unittest.TestCase):
         packs, sess, self.skipped = controls.build_defects(repo, "src")
         return repo, summary(repo, packs, sess)
 
+    def test_undeclared_output_argument(self):
+        for is_edt in (False, True):
+            with self.subTest(edt=is_edt), tempfile.TemporaryDirectory() as tmp:
+                texts = _texts(True)
+                files = add_modules(edt(texts) if is_edt else designer(texts), texts, is_edt)
+                repo = make_repo(tmp, files)
+                packs, _, _ = controls.build_defects(repo, "src")
+                defect = next(d for defects, _ in packs for d in defects if d.id == "undeclared-output-arg")
+                self.assertEqual(defect.expect, ["run:com", "run:extcheck"])
+                patch = "".join(defect.changes.values())
+                self.assertIn('Данные = Новый Структура("Флаг", Истина);', patch)
+                self.assertIn('Данные.Свойство("Флаг", ОТКВыходнойНеОбъявлен);', patch)
+                self.assertNotIn("Перем ОТКВыходнойНеОбъявлен", patch)
+
     def test_designer(self):
         repo, res = self.run_fmt(add_modules(designer(_texts(True)), _texts(True), False))
         self.assertEqual(res["syntax-server"][0], ["CommonModules/Вызов/Ext/Module.bsl"])
