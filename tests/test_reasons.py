@@ -208,6 +208,29 @@ class CliJsonTest(unittest.TestCase):
         self.assertEqual((code, res["status"], res["error"]["reasonCode"]), (2, "infra", "no-plan"))
         self.assertIn("ошибка:", err)
 
+    def test_report_rejects_unsupported_plan_before_steps(self):
+        """Чужой план не превращается в internal и не читает старые/повреждённые шаги."""
+        for name, plan in (("foreign-plan", {"schema": "otk.plan.v999"}),
+                           ("legacy-plan", {"version": 1}), ("invalid-plan", [])):
+            with self.subTest(plan=plan):
+                run_dir = self.tmp / name
+                run_dir.mkdir(exist_ok=True)
+                (run_dir / "otk.json").write_text(json.dumps(plan), encoding="utf-8")
+                (run_dir / "static.json").write_text("broken json", encoding="utf-8")
+                code, res, err = self.run_cli("report", "--repo", str(self.work), "--run-dir", str(run_dir), "--json")
+                self.assertEqual((code, res["status"], res["error"]["reasonCode"]),
+                                 (2, "infra", "plan-version"), err)
+                self.assertEqual(schema_check.errors(res, schema_check.load("report-result")), [])
+                self.assertIn("перезапустите collect или gate", res["error"]["message"])
+                self.assertNotIn("Traceback", err)
+                self.assertFalse((run_dir / "summary.json").exists())
+                out, text_err = io.StringIO(), io.StringIO()
+                with contextlib.redirect_stdout(out), contextlib.redirect_stderr(text_err):
+                    text_code = cli.main(["report", "--repo", str(self.work), "--run-dir", str(run_dir)])
+                self.assertEqual(text_code, 2)
+                self.assertIn("otk.json", text_err.getvalue())
+                self.assertEqual(out.getvalue(), "")
+
     def test_report_json_exception_redacts_stderr(self):
         with mock.patch.object(cli, "_report_json", side_effect=ValueError('bad {"password":"secret"}')):
             code, result, err = self.run_cli("report", "--repo", str(self.work), "--json")
