@@ -2,6 +2,7 @@
 import contextlib
 import errno
 import io
+import json
 import os
 import tempfile
 import unittest
@@ -12,9 +13,9 @@ import _faults
 from _fs import rmtree_force
 from otk_1c import config
 from otk_1c.errors import InfraError
-from otk_1c.gate import collect, pipeline
+from otk_1c.gate import collect, pipeline, report
 from otk_1c.probes import build, platform
-from otk_1c.sources import gitdiff, workspace
+from otk_1c.sources import gitdiff, revision, workspace
 from test_collect import BASE_MODULE, CONFIG, FLAGS, HEAD_MODULE, run, write
 from test_dirdiff import FakePlatform
 
@@ -68,6 +69,101 @@ class TestSources(unittest.TestCase):
                                       pipeline.checks.Gate(cfg), None, {}, logs.append)
         self.assertEqual([m["path"] for m in plan["modules"]], ["CommonModules/М/Ext/Module.bsl"])
         self.assertTrue(any("в корне репозитория" in m for m in logs))
+
+    def _assert_snapshot(self, repo, plan, run_dir, expected):
+        """Статика, корень сборки/проб и строки отчёта читают один снимок."""
+        rel = "CommonModules/М/Ext/Module.bsl"
+        cfg = config._merge(config.load(repo), {"checks": {"analyzers": "off", "platform-api": "off"}})
+        self.assertEqual(revision.read_head(repo, plan)(rel).splitlines(), expected.splitlines())
+        with mock.patch.object(pipeline.static, "run", wraps=pipeline.static.run) as check:
+            pipeline.static_step(repo, cfg, run_dir, run_dir / "otk.json")
+        self.assertEqual(check.call_args.args[3](rel).splitlines(), expected.splitlines())
+        tree = workspace.tree_root(repo, plan, run_dir)
+        self.assertNotEqual(tree, repo)
+        self.assertEqual((tree / rel).read_text(encoding="utf-8-sig").splitlines(), expected.splitlines())
+        reader = report.head_reader(lambda: workspace.tree_root(repo, plan, run_dir), plan)
+        self.assertEqual(reader(rel).splitlines(), expected.splitlines())
+        self.assertEqual(workspace.plan_root(repo, run_dir / "otk.json", cfg), tree)
+
+    def test_explicit_head_ignores_dirty_tree(self):
+        repo = self._repo()
+        run(repo, "commit", "-q", "-am", "head")
+        write(repo, "CommonModules/М/Ext/Module.bsl", BASE_MODULE)
+        run_dir = self.tmp / "explicit"
+        run_dir.mkdir()
+        plan = collect.collect(repo, "HEAD~1", "HEAD", ".", ["Server"])
+        (run_dir / "otk.json").write_text(json.dumps(plan), encoding="utf-8")
+        self.assertEqual(plan["modules"][0]["changedMethods"][0]["name"], "Изменяемая")
+        self._assert_snapshot(repo, plan, run_dir, HEAD_MODULE)
+
+    def test_snapshot_failure_does_not_fall_back_to_worktree(self):
+        repo = self._repo()
+        plan = {"headSha": gitdiff.rev(repo, "HEAD"), "source": "."}
+        with mock.patch.object(workspace, "materialize", side_effect=InfraError("snapshot unavailable")):
+            with self.assertRaisesRegex(InfraError, "snapshot unavailable"):
+                workspace.tree_root(repo, plan, self.tmp / "failed")
+
+    def test_head_moves_after_plan(self):
+        repo = self._repo()
+        run(repo, "commit", "-q", "-am", "head")
+        run_dir = self.tmp / "moving"
+        run_dir.mkdir()
+        plan = collect.collect(repo, "HEAD~1", "HEAD", ".", ["Server"])
+        (run_dir / "otk.json").write_text(json.dumps(plan), encoding="utf-8")
+        write(repo, "CommonModules/М/Ext/Module.bsl", BASE_MODULE)
+        run(repo, "commit", "-q", "-am", "later")
+        self._assert_snapshot(repo, plan, run_dir, HEAD_MODULE)
+
+    def test_worktree_snapshot_survives_later_edits(self):
+        repo = self._repo()
+        cfg = config._merge(config.load(repo), {"checks": {"bslls": "off", "platform-api": "off"}})
+        run_dir = self.tmp / "worktree"
+        run_dir.mkdir()
+        plan, _ = pipeline._plan_step(repo, cfg, run_dir, pipeline.GateOptions("HEAD", worktree=True),
+                                      pipeline.checks.Gate(cfg), None, {}, lambda _message: None)
+        self.assertTrue(plan["modules"])
+        write(repo, "CommonModules/М/Ext/Module.bsl", BASE_MODULE)
+        self._assert_snapshot(repo, plan, run_dir, HEAD_MODULE)
+
+    def test_resolver_source_follows_plan_revision(self):
+        repo = self._repo()
+        run(repo, "commit", "-q", "-am", "head")
+        plan = collect.collect(repo, "HEAD~1", "HEAD", ".", ["Server"])
+        rel = "CommonModules/М/Ext/Module.bsl"
+        plan["queries"] = [{"id": "q", "module": rel, "line": 2, "text": "ВЫБРАТЬ <?>", "complete": False}]
+        write(repo, rel, BASE_MODULE)
+        cfg = config._merge(config.load(repo), {"queries": {"resolvers": [{"command": ["fake"]}]}})
+
+        def resolve(_resolver, payload):
+            self.assertEqual((Path(payload["source"]) / rel).read_text(encoding="utf-8-sig").splitlines(),
+                             HEAD_MODULE.splitlines())
+            self.assertEqual(payload["modules"][rel].splitlines(), HEAD_MODULE.splitlines())
+            return {}
+
+        with mock.patch.object(pipeline.resolvers, "_call", side_effect=resolve) as call:
+            pipeline.resolve_queries(plan, repo, cfg, self.tmp / "resolver", log=lambda _: None)
+        call.assert_called_once()
+
+    def test_scenarios_follow_plan_revision(self):
+        repo = self._repo()
+        rel = "tests/cfe/Tests/CommonModules/Tests/Ext/Module.bsl"
+        registration = ('Процедура ИсполняемыеСценарии() Экспорт\n'
+                        'ЮТТесты.ДобавитьТест("Committed");\nКонецПроцедуры\n')
+        write(repo, "tests/cfe/Tests/Configuration.xml", "<Name>CommittedExtension</Name>")
+        write(repo, rel, registration)
+        run(repo, "add", "-A")
+        run(repo, "commit", "-q", "-m", "scenarios")
+        write(repo, rel, registration.replace("Committed", "Dirty"))
+        write(repo, "tests/cfe/Tests/Configuration.xml", "<Name>DirtyExtension</Name>")
+        cfg = config.load(repo)
+        for worktree, name, extension in ((False, "Committed", "CommittedExtension"),
+                                           (True, "Dirty", "DirtyExtension")):
+            run_dir = self.tmp / str(worktree)
+            run_dir.mkdir()
+            opts = pipeline.GateOptions("HEAD~1", head="HEAD", worktree=worktree, all_scenarios=True)
+            plan, _ = pipeline._plan_step(repo, cfg, run_dir, opts, pipeline.checks.Gate(cfg), None, {}, lambda _: None)
+            self.assertEqual([s["name"] for s in plan["scenarios"]], [name])
+            self.assertEqual([e["name"] for e in plan["scenarioExtensions"]], [extension])
 
     def test_gate_retry_starts_fresh(self):
         """Повтор после прерывания заново строит план и не переиспользует файлы шагов прошлого запуска."""

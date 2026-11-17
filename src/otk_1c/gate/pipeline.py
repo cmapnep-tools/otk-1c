@@ -76,10 +76,9 @@ def static_step(repo: Path, cfg: dict, run_dir: Path, plan_path: Path, parent_ar
     parent = str(parent_path) if parent_path else None
     t0 = time.time()
     head_sha = plan.get("headSha")
-    if plan.get("headDir") or (head_sha and head_sha != gitdiff.rev(repo, "HEAD")):
+    if plan.get("headDir") or head_sha:
         # выгрузка без git (gate --dir) или редакция плана, а не рабочее дерево
-        tree_root = Path(plan["headDir"]) if plan.get("headDir") else workspace.materialize(repo, head_sha, src,
-                                                                                            run_dir / "trees")
+        tree_root = workspace.tree_root(repo, plan, run_dir)
         # без git — кеш по отпечатку каталога; редакция git (trees/<sha>) не меняется — достаточно маркеров
         ix = index_mod.cached_dir(tree_root / src, run_dir / "cache", full=bool(plan.get("headDir")))
         if parent:
@@ -246,7 +245,7 @@ def resolve_queries(plan: dict, repo: Path, cfg: dict, run_dir: Path, gate: chec
     if static_only:
         return ["внешние восстановители запросов не вызывались: --static-only"]
     return resolvers.resolve(plan, repo, revision.read_head(repo, plan), Path(run_dir) / "cache" / "resolvers",
-                             cfg, log)
+                             cfg, log, source_root=lambda: workspace.tree_root(repo, plan, run_dir) / plan["source"])
 
 
 @dataclasses.dataclass(frozen=True)
@@ -339,7 +338,14 @@ def _plan_step(repo: Path, cfg: dict, run_dir: Path, opts: GateOptions, gate: ch
     notes += resolve_queries(plan, repo, cfg, run_dir, gate, opts.static_only, log)
     plan_path = run_dir / "otk.json"
     sc_cfg = cfg.get("scenarios", {})
-    exts = scen_mod.discover(repo, sc_cfg.get("path", scen_mod.DEFAULT_PATH))
+    scenario_path = sc_cfg.get("path", scen_mod.DEFAULT_PATH)
+    scenario_root = repo
+    if plan.get("headSha"):
+        # Расширения могут лежать вне project.source; наличие проверяем в той же редакции.
+        scenario_root = run_dir / "trees" / plan["headSha"][:workspace.TREE_SHA]
+        if gitdiff.git(repo, "ls-tree", "--name-only", plan["headSha"], "--", scenario_path).strip():
+            scenario_root = workspace.materialize(repo, plan["headSha"], scenario_path, run_dir / "trees")
+    exts = scen_mod.discover(scenario_root, scenario_path)
     plan["scenarioExtensions"] = [{"name": e["name"], "dir": e["dir"]} for e in exts]
     plan["scenarios"] = scen_mod.select(plan, exts, opts.all_scenarios)
     plan["allScenarios"] = opts.all_scenarios

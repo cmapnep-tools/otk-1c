@@ -263,15 +263,15 @@ def tree_root(repo, plan, run_dir):
     if plan.get("headDir"):
         return Path(plan["headDir"])
     head_sha = plan.get("headSha")
-    if head_sha and head_sha != gitdiff.rev(repo, "HEAD"):
+    if head_sha:
         return materialize(repo, head_sha, plan["source"], run_dir / "trees")
     return repo
 
 
 def plan_root(repo, plan_path, cfg):
-    """Каталог выгрузки плана (для распознавания расширения): headDir или <проект>/<source>."""
+    """Каталог выгрузки плана для распознавания расширения: headDir или снимок Git-редакции."""
     try:
         plan = json.loads(Path(plan_path).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return Path(repo) / cfg["project"]["source"]
-    return Path(plan["headDir"]) if plan.get("headDir") else Path(repo) / plan.get("source", cfg["project"]["source"])
+    return tree_root(Path(repo), plan, Path(plan_path).parent) / plan.get("source", cfg["project"]["source"])
