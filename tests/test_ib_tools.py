@@ -8,6 +8,8 @@ from unittest import mock
 from _fs import rmtree_force
 from otk_1c.errors import InfraError
 from otk_1c.probes import ib_tools
+from otk_1c.probes.executors import extended_check
+from otk_1c.sources import layout
 
 CONFIG = ('<MetaDataObject><Configuration><Properties><Name>YAXUNIT</Name>'
           '<DefaultLanguage>Language.Русский</DefaultLanguage></Properties>'
@@ -54,6 +56,39 @@ EXCHANGE_PLAN = """<MetaDataObject xmlns="http://v8.1c.ru/8.3/MDClasses"><Exchan
 <xr:GeneratedType name="ExchangePlanRef.Полный" category="Ref"><xr:TypeId>t1</xr:TypeId><xr:ValueId>v1</xr:ValueId>
 </xr:GeneratedType></InternalInfo><Properties><Name>Полный</Name></Properties><ChildObjects/></ExchangePlan>
 </MetaDataObject>"""
+# ссылки по типам: составной тип реквизита, определяемый тип и его состав с циклом (Основание <-> Второй)
+ORDERS = """<MetaDataObject xmlns="http://v8.1c.ru/8.3/MDClasses"><Catalog uuid="cat-orders"><InternalInfo/>
+<Properties><Name>Заказы</Name></Properties><ChildObjects>
+<Attribute uuid="o-1"><Properties><Name>Товар</Name><Type><v8:Type>cfg:CatalogRef.Товары</v8:Type></Type>
+</Properties></Attribute>
+<Attribute uuid="o-2"><Properties><Name>Основание</Name>
+<Type><v8:TypeSet>cfg:DefinedType.Основание</v8:TypeSet></Type></Properties></Attribute>
+</ChildObjects></Catalog></MetaDataObject>"""
+CONTRAGENTS = """<MetaDataObject xmlns="http://v8.1c.ru/8.3/MDClasses"><Catalog uuid="cat-c"><InternalInfo/>
+<Properties><Name>Контрагенты</Name></Properties><ChildObjects>
+<Attribute uuid="c-1"><Properties><Name>Код</Name><Type><v8:Type>xs:string</v8:Type></Type></Properties></Attribute>
+</ChildObjects></Catalog></MetaDataObject>"""
+DEFINED_TYPE = """<MetaDataObject xmlns="http://v8.1c.ru/8.3/MDClasses"><DefinedType uuid="main-dt"><InternalInfo>
+<xr:GeneratedType name="DefinedType.Основание" category="DefinedType"><xr:TypeId>t1</xr:TypeId>
+<xr:ValueId>v1</xr:ValueId>
+</xr:GeneratedType></InternalInfo><Properties><Name>Основание</Name><Type>
+<v8:Type>cfg:CatalogRef.Контрагенты</v8:Type><v8:TypeSet>cfg:DefinedType.Второй</v8:TypeSet></Type>
+</Properties></DefinedType></MetaDataObject>"""
+DEFINED_TYPE_2 = """<MetaDataObject xmlns="http://v8.1c.ru/8.3/MDClasses"><DefinedType uuid="main-dt2"><InternalInfo>
+<xr:GeneratedType name="DefinedType.Второй" category="DefinedType"><xr:TypeId>t2</xr:TypeId><xr:ValueId>v2</xr:ValueId>
+</xr:GeneratedType></InternalInfo><Properties><Name>Второй</Name><Type>
+<v8:TypeSet>cfg:DefinedType.Основание</v8:TypeSet></Type></Properties></DefinedType></MetaDataObject>"""
+# реквизит верхнего уровня и реквизит ТЧ: объект, заимствованный без ТЧ, вторую зависимость не тянет
+ORDERS_SECTION = """<MetaDataObject xmlns="http://v8.1c.ru/8.3/MDClasses"><Catalog uuid="cat-orders"><InternalInfo/>
+<Properties><Name>Заказы</Name></Properties><ChildObjects>
+<Attribute uuid="o-1"><Properties><Name>Товар</Name><Type><v8:Type>cfg:CatalogRef.Товары</v8:Type></Type>
+</Properties></Attribute>
+<TabularSection uuid="o-ts"><InternalInfo/><Properties><Name>Состав</Name></Properties><ChildObjects>
+<Attribute uuid="o-ts-1"><Properties><Name>Склад</Name>
+<Type><v8:Type>cfg:CatalogRef.Склады</v8:Type></Type></Properties></Attribute>
+</ChildObjects></TabularSection></ChildObjects></Catalog></MetaDataObject>"""
+SCLAD = """<MetaDataObject xmlns="http://v8.1c.ru/8.3/MDClasses"><Catalog uuid="cat-sclad"><InternalInfo/>
+<Properties><Name>Склады</Name></Properties><ChildObjects/></Catalog></MetaDataObject>"""
 
 
 class TestAdoptLanguage(unittest.TestCase):
@@ -274,6 +309,83 @@ class FormatTest(unittest.TestCase):
         self.assertIn("8.3.23.2157", str(e.exception))
         ib_tools.require_format(dump, self.tmp / "1cv8/8.3.27.2342/bin")       # та же версия — грузится
         ib_tools.require_format(dump, None)                                    # платформа неизвестна — не судим
+
+
+class TestTypeDependencies(unittest.TestCase):
+    """Объекты, на которые ссылаются типы: расширение без них не загружается («Неизвестное имя типа»)."""
+
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp(prefix="otk-types-"))
+        ib_tools.write(self.root / "Catalogs" / "Товары.xml", CATALOG)
+        ib_tools.write(self.root / "Catalogs" / "Контрагенты.xml", CONTRAGENTS)
+        ib_tools.write(self.root / "Catalogs" / "Заказы.xml", ORDERS)
+        ib_tools.write(self.root / "DefinedTypes" / "Основание.xml", DEFINED_TYPE)
+        ib_tools.write(self.root / "DefinedTypes" / "Второй.xml", DEFINED_TYPE_2)
+
+    def tearDown(self):
+        rmtree_force(self.root)
+
+    def test_type_references(self):
+        self.assertEqual(
+            ib_tools.type_references(["cfg:CatalogRef.Товары", "CatalogRef.Контрагенты",
+                                      "cfg:DefinedType.Основание", "cfg:Characteristic.ВидыХарактеристик",
+                                      "xs:string", "v8:ValueTable", "Configuration", "dcsset:SettingsComposer.Х"]),
+            {("Catalogs", "Товары"), ("Catalogs", "Контрагенты"), ("DefinedTypes", "Основание"),
+             ("ChartsOfCharacteristicTypes", "ВидыХарактеристик")})
+
+    def test_object_types_and_shell(self):
+        full = ib_tools.adopted_object(self.root, "Catalogs", "Заказы")
+        self.assertEqual(full["types"], {("Catalogs", "Товары"), ("DefinedTypes", "Основание")})
+        self.assertIn("<Name>Товар</Name>", full["xml"])
+        shell = ib_tools.adopted_object(self.root, "Catalogs", "Заказы", fields=False)
+        self.assertIn("<ExtendedConfigurationObject>cat-orders<", shell["xml"])
+        self.assertNotIn("<Name>Товар</Name>", shell["xml"])              # оболочка: только сам объект
+        self.assertIn("<ChildObjects></ChildObjects>", shell["xml"])
+        self.assertEqual(shell["types"], set())                          # реквизиты не скопированы — их типы не нужны
+        dt = ib_tools.adopted_object(self.root, "DefinedTypes", "Основание", fields=False)
+        self.assertNotIn("<Type>", dt["xml"])
+        self.assertEqual(dt["types"], {("Catalogs", "Контрагенты"), ("DefinedTypes", "Второй")})
+
+    def test_closure_chain_and_cycle(self):
+        objects = extended_check.objects_for(self.root, [], ["Справочники.Заказы.ПустаяСсылка();"])
+        by = {(o["collection"], o["name"]): o for o in objects}
+        self.assertEqual(set(by), {("Catalogs", "Заказы"), ("Catalogs", "Товары"), ("DefinedTypes", "Основание"),
+                                   ("Catalogs", "Контрагенты"), ("DefinedTypes", "Второй")})
+        self.assertIn("<Name>Товар</Name>", by[("Catalogs", "Заказы")]["xml"])           # ссылка в коде — с реквизитами
+        self.assertNotIn("<Name>Артикул</Name>", by[("Catalogs", "Товары")]["xml"])      # зависимость — оболочка
+
+
+class TestTabularTypes(unittest.TestCase):
+    """Типы реквизитов ТЧ: владелец модуля заимствуется с ТЧ — зависимость нужна, ссылка через менеджер — нет.
+    Сборка расширения и частичная выгрузка ИБ дают один и тот же набор."""
+
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp(prefix="otk-tab-"))
+        ib_tools.write(self.root / "Configuration.xml", CONFIG)
+        ib_tools.write(self.root / "Languages" / "Русский.xml", LANGUAGE)
+        ib_tools.write(self.root / "Catalogs" / "Товары.xml", CATALOG)
+        ib_tools.write(self.root / "Catalogs" / "Склады.xml", SCLAD)
+        ib_tools.write(self.root / "Catalogs" / "Заказы.xml", ORDERS_SECTION)
+
+    def tearDown(self):
+        rmtree_force(self.root)
+
+    def test_manager_reference_without_tabular(self):
+        texts = ["Справочники.Заказы.ПустаяСсылка();"]
+        objects = extended_check.objects_for(self.root, [], texts)
+        names = {(o["collection"], o["name"]) for o in objects}
+        self.assertIn(("Catalogs", "Товары"), names)                 # реквизит верхнего уровня
+        self.assertNotIn(("Catalogs", "Склады"), names)              # только реквизит ТЧ — не копируется
+        dump = extended_check.ib_names(self.root, layout.DESIGNER, [], texts)
+        self.assertIn("Catalog.Товары", dump)
+        self.assertNotIn("Catalog.Склады", dump)                     # выгрузка — тот же набор, что и расширение
+
+    def test_owner_module_with_tabular(self):
+        path = "Catalogs/Заказы/Ext/ObjectModule.bsl"
+        objects = extended_check.objects_for(self.root, [layout.DESIGNER.parse(path)], [])
+        self.assertIn(("Catalogs", "Склады"), {(o["collection"], o["name"]) for o in objects})
+        dump = extended_check.ib_names(self.root, layout.DESIGNER, [{"path": path}], [])
+        self.assertIn("Catalog.Склады", dump)
 
 
 if __name__ == "__main__":

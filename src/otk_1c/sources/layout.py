@@ -147,6 +147,18 @@ class Designer:
         """Имена объектов коллекции по описаниям на диске, в порядке путей."""
         return [p.stem for p in sorted((Path(root) / collection).glob("*.xml"))]
 
+    def type_values(self, text, own=False, tabular=True):
+        """Значения типов объекта («cfg:CatalogRef.Товары», «xs:string»): из <v8:Type> и <v8:TypeSet>.
+        own — только свойства самого объекта (до ChildObjects): типы реквизитов, измерений, ресурсов и ТЧ
+        не берутся: оболочка заимствованного объекта их не несёт. tabular=False — без табличных частей: объект,
+        заимствованный без ТЧ, их типы тоже не копирует."""
+        text = text or ""
+        if own:
+            text = text.split("<ChildObjects", 1)[0]
+        elif not tabular:
+            text = re.sub(r"<TabularSection .*?</TabularSection>", "", text, flags=re.S)
+        return re.findall(r"<v8:(?:Type|TypeSet)>([^<]+)</v8:(?:Type|TypeSet)>", text)
+
     def form_files(self, collection, name, form=None):
         """(описание формы, содержимое формы — элементы, реквизиты, обработчики). form=None — общая форма."""
         root = f"{collection}/{name}" + (f"/Forms/{form}" if form else "")
@@ -316,6 +328,20 @@ class Edt:
         if not base.is_dir():
             return []
         return [d.name for d in sorted(base.iterdir()) if (d / f"{d.name}.mdo").is_file()]
+
+    def type_values(self, text, own=False, tabular=True):
+        """Значения типов объекта («CatalogRef.Товары»): в .mdo это <types> в <type>. own — только тип самого
+        объекта (прямой <type> корня), без реквизитов, измерений, ресурсов и ТЧ (они в своих элементах).
+        tabular=False — без табличных частей (<tabularSections>): объект, заимствованный без ТЧ, их типы
+        не копирует."""
+        text = text or ""
+        if own:
+            _, items = xml_children(text)
+            return [el.text.strip() for tag, e in items if tag == "type"
+                    for el in e.iter() if el.tag.rpartition("}")[2] == "types" and el.text]
+        if not tabular:
+            text = re.sub(r"<tabularSections>.*?</tabularSections>", "", text, flags=re.S)
+        return re.findall(r"<types>([^<]+)</types>", text)
 
     def form_files(self, collection, name, form=None):
         """(описание формы, содержимое формы). У формы объекта своего описания нет — описание владельца."""

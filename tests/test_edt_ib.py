@@ -17,7 +17,8 @@ from test_edt_load import FakeDesigner
 
 E = layout.EDT
 BOM = b"\xef\xbb\xbf"
-COLLS = {**index.COLLECTIONS, "CommonAttribute": "CommonAttributes", "Language": "Languages"}
+COLLS = {**index.COLLECTIONS, "CommonAttribute": "CommonAttributes", "Language": "Languages",
+         "DefinedType": "DefinedTypes"}
 FORM = "Catalogs/Товары/Forms/ФормаЭлемента/Module.bsl"
 
 
@@ -197,6 +198,52 @@ class ExtcheckTest(Base):
         self.assertEqual(ib_names(self.src, E, units, texts),
                          ["Catalog.Товары", "Catalog.Товары.Form.ФормаЭлемента", "CommonAttribute.ОбластьДанных",
                           "CommonModule.М", "Configuration", "Enum.Режимы", "Language.Русский"])
+
+    def test_ib_names_type_dependencies(self):
+        """Объект, на который ссылается тип реквизита, тоже идёт в частичную выгрузку: без него временное
+        расширение не загрузится. Определяемый тип тянет свой состав, цикл не зацикливает."""
+        write(self.src, {
+            "Catalogs/Товары/Товары.mdo":
+                '<mdclass:Catalog xmlns:mdclass="http://g5.1c.ru/v8/dt/metadata/mdclass"><name>Товары</name>'
+                "<attributes><name>Основание</name><type><types>DefinedType.Основание</types></type></attributes>"
+                "</mdclass:Catalog>",
+            "Catalogs/Склады/Склады.mdo":
+                '<mdclass:Catalog xmlns:mdclass="http://g5.1c.ru/v8/dt/metadata/mdclass"><name>Склады</name>'
+                "</mdclass:Catalog>",
+            "DefinedTypes/Основание/Основание.mdo":
+                '<mdclass:DefinedType xmlns:mdclass="http://g5.1c.ru/v8/dt/metadata/mdclass"><name>Основание</name>'
+                "<type><types>CatalogRef.Склады</types><types>DefinedType.Второй</types></type></mdclass:DefinedType>",
+            "DefinedTypes/Второй/Второй.mdo":
+                '<mdclass:DefinedType xmlns:mdclass="http://g5.1c.ru/v8/dt/metadata/mdclass"><name>Второй</name>'
+                "<type><types>DefinedType.Основание</types></type></mdclass:DefinedType>",
+        })
+        self.assertEqual(ib_names(self.src, E, [self.unit(FORM, "FormModule")], []),
+                         ["Catalog.Склады", "Catalog.Товары", "Catalog.Товары.Form.ФормаЭлемента",
+                          "Configuration", "DefinedType.Второй", "DefinedType.Основание", "Language.Русский"])
+
+    def test_ib_names_tabular_types_only_for_owner(self):
+        """Типы реквизитов ТЧ: у объекта, заимствованного без ТЧ (ссылка через менеджер), они не нужны, а владелец
+        изменённого модуля заимствуется с ТЧ — реквизиты его ТЧ в выгрузке нужны."""
+        write(self.src, {
+            "Catalogs/Заказы/Заказы.mdo":
+                '<mdclass:Catalog xmlns:mdclass="http://g5.1c.ru/v8/dt/metadata/mdclass"><name>Заказы</name>'
+                "<attributes><name>Товар</name><type><types>CatalogRef.Товары</types></type></attributes>"
+                "<tabularSections><name>Состав</name>"
+                "<attributes><name>Склад</name><type><types>CatalogRef.Склады</types></type></attributes>"
+                "</tabularSections></mdclass:Catalog>",
+            "Catalogs/Товары/Товары.mdo":
+                '<mdclass:Catalog xmlns:mdclass="http://g5.1c.ru/v8/dt/metadata/mdclass"><name>Товары</name>'
+                "</mdclass:Catalog>",
+            "Catalogs/Склады/Склады.mdo":
+                '<mdclass:Catalog xmlns:mdclass="http://g5.1c.ru/v8/dt/metadata/mdclass"><name>Склады</name>'
+                "</mdclass:Catalog>",
+        })
+        texts = ["Справочники.Заказы.ПустаяСсылка();"]
+        manager = ib_names(self.src, E, [], texts)
+        self.assertIn("Catalog.Товары", manager)
+        self.assertNotIn("Catalog.Склады", manager)
+        owner = ib_names(self.src, E, [self.unit("Catalogs/Заказы/ObjectModule.bsl", "ObjectModule")], [])
+        self.assertIn("Catalog.Склады", owner)
 
     def test_common_module_only_no_attributes_scan(self):
         write(self.src, {"CommonAttributes/ОбластьДанных/ОбластьДанных.mdo": "<x/>"})
