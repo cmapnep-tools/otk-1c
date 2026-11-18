@@ -316,7 +316,7 @@ def _check_lfs(dump, files, *, git_snapshot=False):
         if git_snapshot:
             raise InfraError(f"в снимке Git-редакции {dump} файлов-указателей Git LFS: {len(found)} (например "
                              f"{found[0]}) — снимок содержит байты Git blob. Для загрузки проверьте выгрузку "
-                             "с полученными файлами LFS через --worktree или --dir")
+                             "с полученными файлами LFS через --dir")
         raise InfraError(f"в выгрузке {dump} файлов-указателей Git LFS без содержимого: {len(found)} (например "
                          f"{found[0]}) — объекты LFS не получены: git lfs pull (для другой ветки — "
                          "git lfs fetch <remote> <ветка>)")

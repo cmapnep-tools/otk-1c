@@ -280,7 +280,7 @@ class TestSources(unittest.TestCase):
         ib.mkdir()
         (ib / "1Cv8.1CD").write_bytes(b"x")
         fake = mock.Mock(ib=ib, connection=None)
-        with self.assertRaisesRegex(InfraError, r"в снимке Git-редакции .+--worktree или --dir"):
+        with self.assertRaisesRegex(InfraError, r"в снимке Git-редакции .+через --dir"):
             build.build(repo, sha, ".", snapshot, fake, self.tmp / "run", full=True)
         self.assertEqual(fake.mock_calls, [mock.call.lock()])
 
@@ -563,11 +563,20 @@ class TestSources(unittest.TestCase):
         with mock.patch.object(workspace.Path, "symlink_to", autospec=True) as create:
             target = workspace.materialize(r, sha, "src/first", trees)
             self.assertFalse((target / "src/second").exists())
-            create.assert_called_once_with(target / "src/first/link", "../second/alias", target_is_directory=True)
+            create.assert_called_once()
+            first_path, first_link = create.call_args.args
+            self.assertTrue(first_path.parent.samefile(target / "src/first"))
+            self.assertEqual(first_path.name, "link")
+            self.assertEqual(first_link, "../second/alias")
+            self.assertTrue(create.call_args.kwargs["target_is_directory"])
 
             workspace.materialize(r, sha, "src/second", trees)
             self.assertTrue((target / "src/second").is_dir())
-            create.assert_called_with(target / "src/second/alias", ".", target_is_directory=True)
+            second_path, second_link = create.call_args.args
+            self.assertTrue(second_path.parent.samefile(target / "src/second"))
+            self.assertEqual(second_path.name, "alias")
+            self.assertEqual(second_link, ".")
+            self.assertTrue(create.call_args.kwargs["target_is_directory"])
 
     def test_extract_git_symlink_cycle_before_creating_links(self):
         r = self._repo()
