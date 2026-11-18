@@ -30,7 +30,7 @@ COLLECTIONS = {
 }
 _FIELD_TAGS = {"Attribute", "Dimension", "Resource", "AddressingAttribute", "AccountingFlag",
                "ExtDimensionAccountingFlag"}
-INDEX_VERSION = 4
+INDEX_VERSION = 5
 
 
 def _local(tag):

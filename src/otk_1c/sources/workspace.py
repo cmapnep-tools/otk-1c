@@ -6,15 +6,10 @@ import os
 import re
 import subprocess
 import sys
-import tarfile
 import tempfile
 from pathlib import Path, PurePosixPath
 
 from . import gitdiff, layout
-
-# фильтр извлечения — с Python 3.11.4; раньше архив своего git извлекается без него
-SAFE_EXTRACT = {"filter": "data"} if hasattr(tarfile, "data_filter") else {}
-
 
 MAX_PATH = 260                  # предел длины пути Windows без LongPathsEnabled
 TREE_SHA = 12                   # каталог редакции — trees/<начало sha>: длинные пути выгрузки ERP и так у предела
@@ -48,7 +43,7 @@ def _warn_inside(base, repo):
 
 
 def materialize(repo, sha, src, trees_dir):
-    """Источник src в редакции sha (git archive) в общем дереве редакции trees/<начало sha>: источник плана и
+    """Исходные Git blobs источника src в редакции sha в общем дереве редакции trees/<начало sha>: источник плана и
     расширения сценариев извлекаются в одно дерево, каждый — один раз. Готовность — маркер на пару редакция +
     src рядом с деревом (done_marker) или маркер объемлющего источника: остаток неудачного извлечения не
     принимается, а извлекается заново поверх — содержимое редакции неизменно, перезапись даёт полное дерево,
@@ -77,41 +72,15 @@ def materialize(repo, sha, src, trees_dir):
     extra = [p for p in ((f"{proj}/{n}" if proj != "." else n) for n in (".project", "DT-INF"))
              if Path(src).name == "src"
              and gitdiff.git(repo, "rev-parse", "--verify", "-q", f"{sha}:{p}", check=False).strip()]
-    extract_error = tar_error = None
     try:
-        err = tempfile.TemporaryFile()        # stderr — в файл: канал мог бы заполниться, пока читаем stdout
-    except OSError as e:                      # без gettempdir(): каталога могло не найтись вовсе, он сам бросит
-        raise gitdiff.GitError(f"временный файл для git archive: {e}") from e
-    with err:
-        proc = subprocess.Popen(["git", "-C", str(repo), "archive", "--format=tar", sha, "--", src, *extra],
-                                stdout=subprocess.PIPE, stderr=err, stdin=subprocess.DEVNULL)
+        _extract_blobs(repo, sha, rel.as_posix(), extra, target)
+    except (OSError, gitdiff.GitError) as e:
         try:
-            with tarfile.open(fileobj=proc.stdout, mode="r|") as tar:
-                tar.extractall(target, **SAFE_EXTRACT)  # noqa: S202 — фильтр data, где он есть
-        except tarfile.TarError as e:         # git оборвал архив (причина в stderr) или фильтр отклонил запись
-            tar_error = e
-        except OSError as e:                  # не записался файл: чаще всего путь длиннее MAX_PATH на Windows
-            extract_error = e
-        # tarfile останавливается на маркере конца архива, а git ещё пишет выравнивание: без дочитывания
-        # git блокируется на записи в канал (на Windows буфер мал), а мы — на wait()
-        while proc.stdout.read(1 << 16):
-            pass
-        proc.stdout.close()
-        rc = proc.wait()
-        err.seek(0)
-        stderr = err.read().decode("utf-8", "replace").strip()
-    if rc or extract_error or tar_error:            # маркера нет — остаток следующий прогон извлечёт заново
-        try:
-            _drop_markers(target, rel)              # пересекающиеся маркеры могли появиться во время извлечения
+            _drop_markers(target, rel)
         except gitdiff.GitError:
             pass                                    # не скрывать причину сбоя извлечения
-    if extract_error:
-        raise gitdiff.GitError(f"извлечение редакции {sha[:TREE_SHA]} в {target}: {extract_error}"
-                               + _long_path_hint(extract_error, target))
-    if rc:
-        raise gitdiff.GitError(f"git archive {sha} -- {src}: {stderr[-500:]}" + _lfs_hint(stderr, sha))
-    if tar_error:
-        raise gitdiff.GitError(f"извлечение редакции {sha[:TREE_SHA]} в {target}: {tar_error}")
+        hint = _long_path_hint(e, target) if isinstance(e, OSError) else ""
+        raise gitdiff.GitError(f"извлечение редакции {sha[:TREE_SHA]} в {target}: {e}" + hint) from e
     # атомарно: оборванная запись не оставит маркер с префиксом src; временный файл свой у каждого вызова —
     # параллельные прогоны не подменяют и не удаляют его друг у друга
     try:
@@ -132,9 +101,171 @@ def materialize(repo, sha, src, trees_dir):
     return target
 
 
+def _tree_entries(cmd, sha, paths):
+    listing = subprocess.run(
+        [*cmd, "--literal-pathspecs", "ls-tree", "-r", "-t", "-z", sha, "--", *paths],
+        capture_output=True, stdin=subprocess.DEVNULL,
+    )
+    if listing.returncode:
+        stderr = listing.stderr.decode("utf-8", "replace").strip()
+        raise gitdiff.GitError(f"git ls-tree {sha} -- {paths}: {stderr[-500:]}")
+    entries = []
+    for record in listing.stdout.split(b"\0")[:-1]:
+        metadata, name = record.split(b"\t", 1)
+        mode, kind, oid = metadata.split(b" ")
+        entries.append((os.fsdecode(name), mode, kind, oid))
+    return entries
+
+
+def _extract_blobs(repo, sha, src, extra, target):
+    """Список путей и запросы по OID отделены от потока байтов файлов."""
+    cmd = ["git", "-C", str(repo)]
+    entries = _tree_entries(cmd, sha, [src, *extra] if src != "." else [])
+    if src != "." and not any(name == src for name, *_ in entries):
+        raise gitdiff.GitError(f"источник {src} отсутствует в Git-редакции {sha}")
+
+    links = {}
+    with tempfile.TemporaryFile() as requests, tempfile.TemporaryFile() as errors:
+        requests.writelines(oid + b"\n" for _, _, kind, oid in entries if kind == b"blob")
+        requests.seek(0)
+        with subprocess.Popen([*cmd, "cat-file", "--batch"], stdin=requests,
+                              stdout=subprocess.PIPE, stderr=errors) as proc:
+            try:
+                for name, mode, kind, oid in entries:
+                    if link := _write_entry(proc.stdout, target, name, mode, kind, oid):
+                        dest, text = link
+                        links[dest] = text
+            except BaseException:
+                proc.kill()
+                raise
+            if proc.wait():
+                errors.seek(0)
+                stderr = errors.read().decode("utf-8", "replace").strip()
+                raise gitdiff.GitError(f"git cat-file {sha} -- {src}: {stderr[-500:]}")
+    if links:
+        commit_entries = entries if src == "." else _tree_entries(cmd, sha, [])
+        _write_symlinks(target, links, cmd, commit_entries)
+
+
+def _write_entry(stream, root, name, mode, kind, oid):
+    path = Path(name)
+    if path.anchor or path.as_posix() != name or ".." in path.parts or (
+        os.name == "nt" and any(_reserved_windows_name(part) for part in path.parts)
+    ):
+        raise gitdiff.GitError(f"недопустимый путь Git: {name}")
+    dest = root / path
+    try:
+        inside = dest.parent.resolve().is_relative_to(root.resolve())
+    except RuntimeError as e:                   # цикл ссылок в Python до 3.13
+        raise gitdiff.GitError(f"цикл ссылок в пути редакции: {name}") from e
+    if not inside:
+        raise gitdiff.GitError(f"путь за пределами дерева редакции: {name}")
+    if kind in (b"tree", b"commit"):              # gitlink даёт пустой каталог, как при экспорте Git
+        if dest.is_symlink():
+            raise gitdiff.GitError(f"ссылка вместо каталога редакции: {name}")
+        dest.mkdir(parents=True, exist_ok=True)
+        return
+
+    header = stream.readline().split()
+    if len(header) != 3 or header[:2] != [oid, b"blob"]:
+        raise gitdiff.GitError(f"не удалось прочитать Git blob {oid.decode('ascii')} для {name}")
+    size = int(header[2])
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    link = None
+    if mode == b"120000":
+        link = (dest, os.fsdecode(stream.read(size)))
+    else:
+        if dest.is_symlink():
+            raise gitdiff.GitError(f"ссылка вместо файла редакции: {name}")
+        with dest.open("wb") as f:
+            while size:
+                data = stream.read(min(size, 1 << 16))
+                if not data:
+                    raise gitdiff.GitError(f"неполный Git blob для {name}")
+                f.write(data)
+                size -= len(data)
+            if os.name != "nt":
+                os.fchmod(f.fileno(), 0o755 if mode == b"100755" else 0o644)
+    if stream.read(1) != b"\n":
+        raise gitdiff.GitError(f"неполный Git blob для {name}")
+    return link
+
+
+def _reserved_windows_name(name):
+    if hasattr(os.path, "isreserved"):
+        return os.path.isreserved(name)
+    return bool(re.search(r'[\x00-\x1f<>:"|?*]|[. ]$', name)) or Path(name).is_reserved()
+
+
+def _write_symlinks(root: Path, links: dict[Path, str], cmd, entries) -> None:
+    """Определяем тип по коммиту, включая ещё не извлечённые соседние источники."""
+    resolved_root = root.resolve()
+    pending = {resolved_root / dest.relative_to(root): link for dest, link in links.items()}
+    objects = {name: (mode, kind, oid) for name, mode, kind, oid in entries}
+    resolved: dict[Path, Path] = {}
+    active: set[Path] = set()
+
+    def resolve(dest: Path, link: str) -> Path:
+        if dest in active:
+            raise gitdiff.GitError(f"цикл ссылок в пути редакции: {dest}")
+        if Path(link).anchor:
+            raise gitdiff.GitError(f"ссылка за пределы дерева редакции: {dest}")
+        active.add(dest)
+        target = dest.parent
+        for part in Path(link).parts:
+            target = target.parent if part == ".." else target / part
+            if not target.is_relative_to(resolved_root):
+                raise gitdiff.GitError(f"ссылка за пределы дерева редакции: {dest}")
+            _resolve_link_target(target, resolved_root, dest)
+            obj = objects.get(target.relative_to(resolved_root).as_posix())
+            if obj and obj[0] == b"120000":
+                target = follow(target, obj[2])
+        active.remove(dest)
+        resolved[dest] = target
+        return target
+
+    def follow(dest: Path, oid: bytes) -> Path:
+        if dest in resolved:
+            return resolved[dest]
+        if dest in pending:
+            return write(dest)
+        result = subprocess.run([*cmd, "cat-file", "blob", oid.decode("ascii")],
+                                capture_output=True, stdin=subprocess.DEVNULL)
+        if result.returncode:
+            raise gitdiff.GitError(f"не удалось прочитать Git blob ссылки: {dest}")
+        return resolve(dest, os.fsdecode(result.stdout))
+
+    def write(dest: Path) -> Path:
+        link = pending[dest]
+        target = resolve(dest, link)
+        obj = objects.get(target.relative_to(resolved_root).as_posix())
+        is_directory = target == resolved_root or (obj is not None and obj[1] in (b"tree", b"commit"))
+        if not (dest.is_symlink() and os.readlink(dest) == link):
+            dest.symlink_to(link, target_is_directory=is_directory)
+        del pending[dest]
+        return target
+
+    try:
+        for dest in list(pending):
+            if dest in pending:
+                write(dest)
+    except RecursionError as e:
+        raise gitdiff.GitError("слишком длинная цепочка ссылок в редакции") from e
+
+
+def _resolve_link_target(target: Path, root: Path, dest: Path) -> None:
+    try:
+        resolved = target.resolve()
+    except RuntimeError:                         # циклы ссылок в Python до 3.13
+        raise gitdiff.GitError(f"цикл ссылок в пути редакции: {dest}") from None
+    if not resolved.is_relative_to(root):
+        raise gitdiff.GitError(f"ссылка за пределы дерева редакции: {dest}")
+
+
 def done_marker(target, src):
     """Маркер готовности источника src в дереве редакции target: <начало sha>-<хеш src>.done рядом с деревом."""
-    key = hashlib.sha1(Path(src).as_posix().encode("utf-8"), usedforsecurity=False).hexdigest()  # полный: без коллизий
+    identity = f"git-blobs:{Path(src).as_posix()}".encode("utf-8")
+    key = hashlib.sha1(identity, usedforsecurity=False).hexdigest()
     return target.with_name(f"{target.name}-{key}.done")
 
 
@@ -208,14 +339,6 @@ def _long_path_hint(e, target):
         return ""
     return (f" — путь {len(path)} символов: задайте короткий каталог прогонов вне репозитория (OTK_RUN_DIR или "
             "environment.runDir, например D:/otk) или включите длинные пути Windows (LongPathsEnabled)")
-
-
-def _lfs_hint(stderr, sha):
-    """Подсказка, если git archive упал на фильтре Git LFS: объектов LFS редакции нет в клоне."""
-    if "lfs" not in stderr.lower():
-        return ""
-    return (f" — объекты Git LFS редакции {sha[:10]} не получены: git lfs fetch <remote> <ветка> "
-            "(для текущей ветки — git lfs pull)")
 
 
 LFS_POINTER = b"version https://git-lfs.github.com/spec/v1"
