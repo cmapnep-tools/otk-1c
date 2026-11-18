@@ -20,7 +20,7 @@
 
 ## Context sources
 
-- Issue #50 / обезличенное замечание `01-predefined.md` — сценарий Standard/Standrad.
+- Обезличенное замечание `01-predefined.md` — сценарий Standard/Standrad.
 - `ib_tools.adopted_object`, `generate_test_extension` — текущая генерация не пишет Predefined.xml.
 - Spike на новой ИБ 8.3.27.2342: отсутствие файла даёт предупреждения на оба имени; перенос файла оставляет
   предупреждение на опечатку; повторная выгрузка платформой выставляет `AdoptedCheck`, `Adopted` не загружается.
