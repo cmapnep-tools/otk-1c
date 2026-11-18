@@ -140,9 +140,9 @@ def _extract_blobs(repo, sha, src, extra, target):
                               stdout=subprocess.PIPE, stderr=errors) as proc:
             try:
                 for name, mode, kind, oid in entries:
-                    if link := _write_entry(proc.stdout, target, name, mode, kind, oid):
-                        dest, text = link
-                        links[dest] = text
+                    link = _write_entry(proc.stdout, target, name, mode, kind, oid)
+                    if link is not None:
+                        links[name] = link
             except BaseException:
                 proc.kill()
                 raise
@@ -175,17 +175,16 @@ def _reject_windows_path_collisions(entries, root):
                 candidates[exact] = None
             if not has_existing:
                 continue
-            parent = root.joinpath(*exact[:-1])
-            if parent not in existing:
+            parent_parts = exact[:-1]
+            if parent_parts not in existing:
+                parent = root.joinpath(*parent_parts)
+                names = {}
                 if parent.is_dir():
                     with os.scandir(parent) as items:
-                        names = {}
                         for item in items:
                             names.setdefault(item.name.casefold(), []).append(item.name)
-                        existing[parent] = names
-                else:
-                    existing[parent] = {}
-            for actual in existing[parent].get(exact[-1].casefold(), []):
+                existing[parent_parts] = names
+            for actual in existing[parent_parts].get(exact[-1].casefold(), []):
                 if actual != exact[-1] and _same_part(actual, exact[-1]):
                     raise gitdiff.GitError(
                         f"пути Git совпадают на Windows: {'/'.join(exact)} и "
@@ -219,7 +218,7 @@ def _write_entry(stream, root, name, mode, kind, oid):
     dest.parent.mkdir(parents=True, exist_ok=True)
     link = None
     if mode == b"120000":
-        link = (dest, os.fsdecode(stream.read(size)))
+        link = os.fsdecode(stream.read(size))
     else:
         if dest.is_symlink():
             raise gitdiff.GitError(f"ссылка вместо файла редакции: {name}")
@@ -255,25 +254,27 @@ def _git_object_for_path(root, objects, folded_objects, path):
     return path, None
 
 
-def _write_symlinks(root: Path, links: dict[Path, str], cmd, entries) -> None:
+def _write_symlinks(root: Path, links: dict[str, str], cmd, entries) -> None:
     """Определяем тип по коммиту, включая ещё не извлечённые соседние источники."""
     resolved_root = root.resolve()
-    pending = {resolved_root / dest.relative_to(root): link for dest, link in links.items()}
+    # Path на Windows может считать разные имена Git равными.
+    pending = links.copy()
     objects = {name: (mode, kind, oid) for name, mode, kind, oid in entries}
     folded_objects: dict[tuple[str, ...], list[tuple[tuple[str, ...], tuple[bytes, bytes, bytes]]]] = {}
     if os.name == "nt":
         for name, obj in objects.items():
             parts = PurePosixPath(name).parts
             folded_objects.setdefault(tuple(part.casefold() for part in parts), []).append((parts, obj))
-    resolved: dict[Path, Path] = {}
-    active: set[Path] = set()
+    resolved: dict[str, Path] = {}
+    active: set[str] = set()
 
-    def resolve(dest: Path, link: str) -> Path:
-        if dest in active:
+    def resolve(name: str, link: str) -> Path:
+        dest = resolved_root / name
+        if name in active:
             raise gitdiff.GitError(f"цикл ссылок в пути редакции: {dest}")
         if Path(link).anchor:
             raise gitdiff.GitError(f"ссылка за пределы дерева редакции: {dest}")
-        active.add(dest)
+        active.add(name)
         target = dest.parent
         for part in Path(link).parts:
             target = target.parent if part == ".." else target / part
@@ -282,36 +283,37 @@ def _write_symlinks(root: Path, links: dict[Path, str], cmd, entries) -> None:
             _resolve_link_target(target, resolved_root, dest)
             target, obj = _git_object_for_path(resolved_root, objects, folded_objects, target)
             if obj and obj[0] == b"120000":
-                target = follow(target, obj[2])
-        active.remove(dest)
-        resolved[dest] = target
+                target = follow(target.relative_to(resolved_root).as_posix(), obj[2])
+        active.remove(name)
+        resolved[name] = target
         return target
 
-    def follow(dest: Path, oid: bytes) -> Path:
-        if dest in resolved:
-            return resolved[dest]
-        if dest in pending:
-            return write(dest)
+    def follow(name: str, oid: bytes) -> Path:
+        if name in resolved:
+            return resolved[name]
+        if name in pending:
+            return write(name)
         result = subprocess.run([*cmd, "cat-file", "blob", oid.decode("ascii")],
                                 capture_output=True, stdin=subprocess.DEVNULL)
         if result.returncode:
-            raise gitdiff.GitError(f"не удалось прочитать Git blob ссылки: {dest}")
-        return resolve(dest, os.fsdecode(result.stdout))
+            raise gitdiff.GitError(f"не удалось прочитать Git blob ссылки: {resolved_root / name}")
+        return resolve(name, os.fsdecode(result.stdout))
 
-    def write(dest: Path) -> Path:
-        link = pending[dest]
-        target = resolve(dest, link)
+    def write(name: str) -> Path:
+        dest = resolved_root / name
+        link = pending[name]
+        target = resolve(name, link)
         target, obj = _git_object_for_path(resolved_root, objects, folded_objects, target)
         is_directory = target == resolved_root or (obj is not None and obj[1] in (b"tree", b"commit"))
         if not (dest.is_symlink() and os.readlink(dest) == link):
             dest.symlink_to(link, target_is_directory=is_directory)
-        del pending[dest]
+        del pending[name]
         return target
 
     try:
-        for dest in list(pending):
-            if dest in pending:
-                write(dest)
+        for name in list(pending):
+            if name in pending:
+                write(name)
     except RecursionError as e:
         raise gitdiff.GitError("слишком длинная цепочка ссылок в редакции") from e
 

@@ -162,6 +162,15 @@ class TestSources(unittest.TestCase):
         with self.assertRaisesRegex(gitdiff.GitError, "пути Git совпадают на Windows"):
             workspace._reject_windows_path_collisions([("a", b"040000", b"tree", b"0" * 40)], target)
 
+    @unittest.skipUnless(os.name == "nt", "Windows path equality can merge distinct Git names")
+    def test_snapshot_checks_existing_names_in_distinct_windows_directories(self):
+        target = self.tmp / "trees"
+        (target / "K").mkdir(parents=True)
+        write(target, "K/EXISTING.bsl", "content")
+        entries = [(name, b"100644", b"blob", b"0" * 40) for name in ("K/new.bsl", "K/existing.bsl")]
+        with self.assertRaisesRegex(gitdiff.GitError, "K/existing.bsl и K/EXISTING.bsl"):
+            workspace._reject_windows_path_collisions(entries, target)
+
     @unittest.skipUnless(os.name == "nt", "Windows resolves Git paths without regard to case")
     def test_windows_path_comparison_preserves_distinct_unicode_names(self):
         self.assertFalse(workspace._same_part("ß", "ss"))
@@ -630,6 +639,29 @@ class TestSources(unittest.TestCase):
         with mock.patch.object(workspace.Path, "symlink_to", autospec=True, side_effect=create):
             workspace.materialize(r, gitdiff.rev(r, "HEAD"), ".", self.tmp / "trees")
         self.assertEqual(created, [("B-link", "data", True), ("A-link", "b-link", True)])
+
+    @unittest.skipUnless(os.name == "nt", "Windows path equality can merge distinct Git names")
+    def test_extract_symlinks_with_distinct_windows_names(self):
+        r = self._repo()
+        write(r, "TargetA/content.txt", "content")
+        write(r, "TargetB/content.txt", "content")
+        run(r, "add", "TargetA", "TargetB")
+        for name, value in [("K", "TargetA"), ("K", "TargetB")]:
+            link = self.tmp / "link-content"
+            link.write_bytes(value.encode())
+            oid = gitdiff.git(r, "hash-object", "-w", str(link)).strip()
+            run(r, "update-index", "--add", "--cacheinfo", f"120000,{oid},{name}")
+        run(r, "commit", "-q", "-m", "distinct Windows link names")
+        created = []
+
+        def create(dest, link, *, target_is_directory):
+            created.append((dest.name, link, target_is_directory))
+            dest.mkdir()
+
+        with mock.patch.object(workspace.Path, "symlink_to", autospec=True, side_effect=create):
+            target = workspace.materialize(r, gitdiff.rev(r, "HEAD"), ".", self.tmp / "trees")
+        self.assertCountEqual(created, [("K", "TargetA", True), ("K", "TargetB", True)])
+        self.assertTrue(workspace.done_marker(target, ".").is_file())
 
     def test_extract_directory_symlink_before_sibling_source(self):
         r = self._repo()
