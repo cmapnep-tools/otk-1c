@@ -179,7 +179,8 @@ class TestStepFiles(unittest.TestCase):
         code, modules, _ = self.cli_run(run_dir)
         self.assertEqual(code, 0)
         self.assertIn(DEPENDENT, modules)
-        run = read(next((run_dir.parent / "другой").glob("*/run.json")))
+        run = read(run_dir / "run.json")
+        self.assertFalse((run_dir.parent / "другой").exists())
         self.assertEqual(schema_check.errors(run, schema_check.load("run")), [])
         self.assertEqual(run["plan"], read(run_dir / "static.json")["plan"])
         self.assertIn("копия ИБ считается загруженной выгрузкой «было» (--base-dir): загружены только отличия",
@@ -192,14 +193,17 @@ class TestStepFiles(unittest.TestCase):
         plan = read(plan_path)
         plan["notes"] = []                                   # другой план
         plan_path.write_text(json.dumps(plan, ensure_ascii=False), encoding="utf-8")
-        code, modules, err = self.cli_run(run_dir)
-        self.assertNotIn(DEPENDENT, modules)
-        self.assertIn("static.json не учтён", err)
         summary = report.from_files(run_dir)
         self.assertEqual(summary["modules"], len(plan["modules"]))
-        self.assertEqual([n for n in summary["notes"] if "не учтён" in n],
-                         ["static.json не учтён: записан для другого плана (перезапустите шаг)",
-                          "run.json не учтён: записан для другого плана (перезапустите шаг)"])
+        stale_static = "static.json не учтён: записан для другого плана (перезапустите шаг)"
+        stale_run = "run.json не учтён: записан для другого плана (перезапустите шаг)"
+        self.assertEqual([n for n in summary["notes"] if "не учтён" in n], [stale_static, stale_run])
+
+        code, modules, err = self.cli_run(run_dir)
+        self.assertEqual(code, 0)
+        self.assertNotIn(DEPENDENT, modules)
+        self.assertIn("static.json не учтён", err)
+        self.assertEqual([n for n in report.from_files(run_dir)["notes"] if "не учтён" in n], [stale_static])
 
     def test_old_format_static(self):
         """static.json 0.5.x (dependents — словарь, без отпечатка) не роняет читателей: шаг считается невыполненным."""

@@ -10,6 +10,7 @@ import hashlib
 import json
 import os
 import re
+import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -281,23 +282,72 @@ def cache_key(repo, source_dir):
         dirty = gitdiff.git(repo, "status", "--porcelain", "--", source_dir).strip()
         if dirty:
             return None
-        return gitdiff.git(repo, "rev-parse", f"HEAD:{source_dir}").strip()
+        source = Path(source_dir).as_posix()
+        return gitdiff.git(repo, "rev-parse", f"HEAD:{'' if source == '.' else source}").strip()
     except gitdiff.GitError:
         return None
+
+
+def _cached(cache, source_root, lay=None):
+    if cache is None:
+        return build(source_root, lay)
+    try:
+        return json.loads(cache.read_text(encoding="utf-8"))
+    except (FileNotFoundError, UnicodeDecodeError, json.JSONDecodeError):
+        pass
+
+    result = build(source_root, lay)
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    stream = tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=cache.parent, delete=False)
+    pending = Path(stream.name)
+    try:
+        with stream:
+            json.dump(result, stream, ensure_ascii=False)
+        try:
+            pending.replace(cache)
+        except PermissionError:
+            # Windows может запретить замену файла, который уже читает другой процесс.
+            if not cache.is_file():
+                raise
+    finally:
+        pending.unlink(missing_ok=True)
+    return result
+
+
+def _tree_cache(cache_dir, key, prefix="index"):
+    return Path(cache_dir) / f"{prefix}-{key}-v{INDEX_VERSION}.json" if cache_dir and key else None
+
+
+def _extracted_fingerprint(root):
+    """Хеш относительных путей и содержимого извлечённых файлов."""
+    result = hashlib.sha256()
+    directories = [root]
+    while directories:
+        for path in sorted(directories.pop().iterdir()):
+            if path.is_symlink():
+                return None  # Содержимое за ссылкой может измениться вне извлечённого дерева.
+            name = os.fsencode(path.relative_to(root).as_posix()) + b"\0"
+            if path.is_dir():
+                result.update(b"d" + name)
+                directories.append(path)
+            elif path.is_file():
+                with path.open("rb") as stream:
+                    digest = hashlib.file_digest(stream, "sha256").digest()
+                result.update(b"f" + name + digest)
+    return result.hexdigest()
+
+
+def cached_revision(source_root, cache_dir):
+    """Индекс фактически извлечённых исходников: локальные атрибуты Git могут менять архив одной редакции."""
+    root = Path(source_root)
+    key = _extracted_fingerprint(root) if cache_dir else None
+    return _cached(_tree_cache(cache_dir, key, "index-extracted"), root)
 
 
 def load(repo, source_dir, cache_dir=None, parent=None):
     """Индекс выгрузки репозитория (рабочее дерево), с кешем. parent — каталог основной конфигурации."""
     repo = Path(repo)
-    key = cache_key(repo, source_dir)
-    cache = Path(cache_dir) / f"index-{key}-v{INDEX_VERSION}.json" if cache_dir and key else None
-    if cache and cache.exists():
-        index = json.loads(cache.read_text(encoding="utf-8"))
-    else:
-        index = build(repo / source_dir)
-        if cache:
-            cache.parent.mkdir(parents=True, exist_ok=True)
-            cache.write_text(json.dumps(index, ensure_ascii=False), encoding="utf-8")
+    index = _cached(_tree_cache(cache_dir, cache_key(repo, source_dir)), repo / source_dir)
     if parent:
         parent_index = build(Path(parent)) if not cache_dir else cached_dir(Path(parent), Path(cache_dir))
         index = merge(index, parent_index)
@@ -336,8 +386,8 @@ def dir_fingerprint(path, full, lay=layout.DESIGNER):
 
 def cached_dir(path, cache_dir, full=False):
     """Индекс каталога вне git с кешем: основная конфигурация (full=False) или проверяемая выгрузка без
-    git (full=True), см. dir_fingerprint. Ключ — стабильный хеш пути (hash() строк меняется в каждом
-    процессе Python) и отпечаток; прежние записи того же каталога удаляются — индексы ERP не копятся."""
+    git (full=True), см. dir_fingerprint. Ключ — стабильный хеш пути и отпечаток.
+    Записи других отпечатков сохраняются для параллельных прогонов."""
     path = Path(path)
     lay = layout.detect(path)
     if lay is None:
@@ -346,11 +396,4 @@ def cached_dir(path, cache_dir, full=False):
     key = hashlib.sha1(str(path.resolve()).lower().encode("utf-8"), usedforsecurity=False).hexdigest()[:12]
     prefix = f"index-dir-{key}-"
     cache = cache_dir / f"{prefix}{dir_fingerprint(path, full, lay)}-v{INDEX_VERSION}.json"
-    if cache.exists():
-        return json.loads(cache.read_text(encoding="utf-8"))
-    index = build(path, lay)
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    for old in cache_dir.glob(f"{prefix}*.json"):
-        old.unlink(missing_ok=True)
-    cache.write_text(json.dumps(index, ensure_ascii=False), encoding="utf-8")
-    return index
+    return _cached(cache, path, lay)

@@ -1,4 +1,6 @@
 """Изоляция процессных gate и выбор завершённого отчёта."""
+import contextlib
+import io
 import json
 import os
 import subprocess
@@ -10,10 +12,10 @@ from unittest import mock
 
 import test_iblock
 from _fs import rmtree_force
-from otk_1c import config
+from otk_1c import cli, config
 from otk_1c.gate import pipeline
 from otk_1c.probes import iblock
-from otk_1c.sources import workspace
+from otk_1c.sources import index, workspace
 from test_collect import BASE_MODULE, CONFIG, FLAGS, HEAD_MODULE, run, write
 
 
@@ -57,13 +59,13 @@ class IsolatedRunsTest(unittest.TestCase):
                     proc.kill()
                     proc.communicate(timeout=10)
         dirs = [Path(result["runDir"]) for result in results]
-        self.assertNotEqual(*dirs)
+        self.assertFalse(dirs[0].samefile(dirs[1]))
         plans = [json.loads((d / "otk.json").read_text(encoding="utf-8")) for d in dirs]
         self.assertEqual(len(plans[0]["modules"]), 0)
         self.assertEqual(len(plans[1]["modules"]), 1)
         self.assertNotEqual(plans[0]["headSha"], plans[1]["headSha"])
         for result, directory in zip(results, dirs, strict=True):
-            self.assertEqual(Path(result["summaryPath"]), directory / "summary.json")
+            self.assertTrue(Path(result["summaryPath"]).samefile(directory / "summary.json"))
             self.assertTrue((directory / ".completed").exists())
             summary = json.loads((directory / "summary.json").read_text(encoding="utf-8"))
             self.assertEqual(summary["code"], result["code"])
@@ -74,12 +76,12 @@ class IsolatedRunsTest(unittest.TestCase):
                "OTK_RUN_DIR": str(self.tmp / "runs")}
         args = [sys.executable, "-m", "otk_1c", "report", "--repo", str(self.repo), "--json"]
         explicit = subprocess.run([*args, "--run-dir", str(dirs[0])], capture_output=True, env=env, timeout=30)
-        self.assertEqual(json.loads(explicit.stdout)["runDir"], str(dirs[0]))
+        self.assertTrue(Path(json.loads(explicit.stdout)["runDir"]).samefile(dirs[0]))
         self.assertEqual(other_before, {p.name: p.read_bytes() for p in dirs[1].iterdir() if p.is_file()})
         unfinished = workspace.new_run(self.cfg, self.repo)
         (unfinished / "otk.json").write_bytes((dirs[0] / "otk.json").read_bytes())
         default = subprocess.run(args, capture_output=True, env=env, timeout=30)
-        self.assertEqual(json.loads(default.stdout)["runDir"], str(workspace.latest_run(dirs[0].parent)))
+        self.assertTrue(Path(json.loads(default.stdout)["runDir"]).samefile(workspace.latest_run(dirs[0].parent)))
 
     def test_report_explicit_root_selects_latest_sequential_gate(self):
         directories = []
@@ -93,21 +95,95 @@ class IsolatedRunsTest(unittest.TestCase):
         for root in (self.tmp / "runs", directories[-1].parent):
             result = subprocess.run([sys.executable, "-m", "otk_1c", "report", "--repo", str(self.repo),
                                      "--json", "--run-dir", str(root)], capture_output=True, env=env, timeout=30)
-            self.assertEqual(json.loads(result.stdout)["runDir"], str(directories[-1]))
+            self.assertTrue(Path(json.loads(result.stdout)["runDir"]).samefile(directories[-1]))
 
     def test_unfinished_run_does_not_replace_completed(self):
         root = workspace.run_dir(self.cfg, self.repo)
-        self.assertEqual(workspace.latest_run(root), root)
+        root.mkdir(parents=True)
+        self.assertTrue(workspace.latest_run(root).samefile(root))
         old = workspace.new_run(self.cfg, self.repo)
         (old / "otk.json").write_text("old", encoding="utf-8")
         (old / ".completed").touch()
         unfinished = workspace.new_run(self.cfg, self.repo)
         (unfinished / "otk.json").write_text("interrupted", encoding="utf-8")
-        self.assertEqual(workspace.latest_run(root), old)
+        self.assertTrue(workspace.latest_run(root).samefile(old))
         retry = workspace.new_run(self.cfg, self.repo)
-        self.assertNotIn(retry, (old, unfinished))
+        self.assertFalse(any(retry.samefile(previous) for previous in (old, unfinished)))
         self.assertEqual((old / "otk.json").read_text(encoding="utf-8"), "old")
         self.assertEqual((unfinished / "otk.json").read_text(encoding="utf-8"), "interrupted")
+
+    def test_static_and_run_select_plan_directory(self):
+        root = workspace.run_dir(self.cfg, self.repo)
+        common = ["--repo", str(self.repo)]
+        options = ["--set", "checks.analyzers=off", "--set", "checks.platform-api=off"]
+        env = mock.patch.dict(os.environ, {"OTK_RUN_DIR": str(self.tmp / "runs")})
+        env.start()
+        self.addCleanup(env.stop)
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(cli.main(["collect", *common, "--base", "HEAD~1", "--head", "HEAD~1"]), 0)
+            self.assertEqual(cli.main(["static", *common, *options]), 0)
+        self.assertTrue((root / "static.json").is_file())
+        (root / "static.json").unlink()
+        plan = (root / "otk.json").read_bytes()
+        completed = workspace.new_run(self.cfg, self.repo)
+        (completed / "otk.json").write_bytes(plan)
+        (completed / ".completed").touch()
+        unfinished = workspace.new_run(self.cfg, self.repo)
+        (unfinished / "otk.json").write_text("unfinished", encoding="utf-8")
+        explicit = self.tmp / "outside"
+        explicit.mkdir()
+        (explicit / "custom.json").write_bytes(plan)
+        for directory, args in ((completed, []), (explicit, ["--plan", str(explicit / "custom.json")])):
+            with self.subTest(directory=directory), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(cli.main(["static", *common, *options, *args]), 0)
+                self.assertTrue((directory / "static.json").is_file())
+                with mock.patch.object(cli.runner, "run", return_value={
+                    "results": [], "timings": {}, "notes": [],
+                }) as runner:
+                    self.assertEqual(cli.main(["run", *common, *options, *args]), 0)
+                self.assertTrue(runner.call_args.args[3].samefile(directory))
+                self.assertTrue(runner.call_args.args[4].parent.parent.samefile(directory))
+                self.assertIsNotNone(runner.call_args.kwargs["static"])
+        self.assertFalse((root / "static.json").exists())
+        self.assertFalse((unfinished / "static.json").exists())
+
+    def test_static_and_run_prefer_fresh_collect_to_old_gate(self):
+        common = ["--repo", str(self.repo)]
+        options = ["--set", "checks.analyzers=off", "--set", "checks.platform-api=off"]
+        completed = workspace.new_run(self.cfg, self.repo)
+        cfg = config._merge(config.load(self.repo), self.cfg)
+        cfg = config._merge(cfg, {"checks": {"analyzers": "off", "platform-api": "off"}})
+        pipeline.gate_run(self.repo, cfg, completed, pipeline.GateOptions(base="HEAD~1", static_only=True),
+                          log=lambda _: None)
+        os.utime(completed / ".completed", (1_600_000_000, 1_600_000_000))
+        before = {p.name: p.read_bytes() for p in completed.iterdir() if p.is_file()}
+        root = completed.parent
+        with mock.patch.dict(os.environ, {"OTK_RUN_DIR": str(self.tmp / "runs")}), (
+            contextlib.redirect_stdout(io.StringIO())
+        ):
+            self.assertEqual(cli.main(["collect", *common, "--base", "HEAD"]), 0)
+            self.assertEqual(cli.main(["static", *common, *options]), 0)
+            with mock.patch.object(cli.runner, "run", return_value={"results": [], "timings": {}, "notes": []}) as run:
+                self.assertEqual(cli.main(["run", *common, *options]), 0)
+        self.assertTrue((root / "static.json").is_file())
+        self.assertTrue(run.call_args.args[3].samefile(root))
+        self.assertEqual(run.call_args.args[1]["modules"], [])
+        self.assertIsNotNone(run.call_args.kwargs["static"])
+        self.assertEqual({p.name: p.read_bytes() for p in completed.iterdir() if p.is_file()}, before)
+
+    def test_historical_gate_reuses_project_index(self):
+        cfg = config._merge(config.load(self.repo), self.cfg)
+        cfg = config._merge(cfg, {"checks": {"analyzers": "off", "platform-api": "off"}})
+        first, second = (workspace.new_run(cfg, self.repo) for _ in range(2))
+        opts = pipeline.GateOptions(head="HEAD~1", static_only=True)
+        pipeline.gate_run(self.repo, cfg, first, opts, log=lambda _: None)
+        with mock.patch.object(index, "build", side_effect=AssertionError("кеш не сработал")) as build:
+            result = pipeline.gate_run(self.repo, cfg, second, opts, log=lambda _: None)
+            self.assertIn(result["code"], (0, 1), result)
+            build.assert_not_called()
+        cache = workspace.run_dir(cfg, self.repo) / "cache" / "metadata"
+        self.assertEqual(len(list(cache.glob("index-*.json"))), 1)
+        self.assertFalse(any((directory / "cache").exists() for directory in (first, second)))
 
 
 class BusyGateTest(unittest.TestCase):

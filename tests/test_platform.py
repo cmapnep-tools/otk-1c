@@ -33,6 +33,17 @@ class PlatformTest(unittest.TestCase):
         self.assertEqual(pf.find_platform([self.tmp / "1cv8"]), newest)
         self.assertIsNone(pf.find_platform([self.tmp / "нет"]))
 
+    def test_lock_timeout_validation(self):
+        env = {"platform": str(self._install("8.3.27.2342")), "ib": str(self.tmp / "ib")}
+        for value in ("", "not-a-number", None, "nan", "inf", True):
+            with self.subTest(value=value), self.assertRaisesRegex(pf.InfraError, r"environment\.lockTimeout") as ctx:
+                pf.Platform({**env, "lockTimeout": value}, self.tmp)
+            self.assertEqual(ctx.exception.code, "config-invalid")
+        self.assertEqual(pf.Platform(env, self.tmp).lock_timeout, iblock.DEFAULT_TIMEOUT)
+        for value in (0, 0.25, "1.5"):
+            with self.subTest(value=value):
+                self.assertEqual(pf.Platform({**env, "lockTimeout": value}, self.tmp).lock_timeout, float(value))
+
     def test_install_roots_windows(self):
         """Оба режима установки: «для компьютера» и «для пользователя»; самая новая — среди всех корней."""
         env = {"ProgramFiles": str(self.tmp / "pf"), "ProgramFiles(x86)": str(self.tmp / "pf86"),

@@ -177,9 +177,9 @@ def cmd_collect(a):
     return 0
 
 
-def _plan_path(a, run_dir):
-    """План шага static или run: --plan или otk.json каталога прогона; нет — сбой одной строкой (no_plan)."""
-    plan_path = Path(a.plan) if a.plan else run_dir / "otk.json"
+def _plan_path(a, cfg, repo):
+    """План шага static или run: --plan, последний завершённый gate или отдельный collect."""
+    plan_path = Path(a.plan) if a.plan else workspace.latest_plan(workspace.run_dir(cfg, repo))
     if not plan_path.is_file():
         raise InfraError(f"нет плана {plan_path}: сначала otk collect или gate", code="no-plan")
     return plan_path
@@ -188,12 +188,11 @@ def _plan_path(a, run_dir):
 def cmd_static(a):
     repo = _project(a)
     cfg = _cfg(a, repo)
-    run_dir = workspace.run_dir(cfg, repo)
-    plan_path = _plan_path(a, run_dir)
+    plan_path = _plan_path(a, cfg, repo)
     config.detect_extension(cfg, workspace.plan_root(repo, plan_path, cfg))
     if cfg["project"].get("extension") and not cfg["project"].get("parent"):
         print(config.NO_PARENT, file=sys.stderr)
-    result = pipeline.static_step(repo, cfg, run_dir, plan_path)
+    result = pipeline.static_step(repo, cfg, plan_path.parent, plan_path)
     findings, an_info, deps = result["findings"], result["analyzerInfo"], result["dependents"]
     src = json.loads(plan_path.read_text(encoding="utf-8"))["source"]
     out = plan_path.with_name("static.json")
@@ -336,8 +335,8 @@ def _build_data(a):
 def cmd_run(a):
     repo = _project(a)
     cfg = _cfg(a, repo)
-    run_dir = workspace.run_dir(cfg, repo)
-    plan_path = _plan_path(a, run_dir)
+    plan_path = _plan_path(a, cfg, repo)
+    run_dir = plan_path.parent
     config.detect_extension(cfg, workspace.plan_root(repo, plan_path, cfg))
     plan = json.loads(plan_path.read_text(encoding="utf-8"))
     if stale := report.plan_version_note(plan):
@@ -753,7 +752,7 @@ def _add_static(sub):
     s = sub.add_parser("static", help="статические проверки плана без базы")
     s.set_defaults(func=cmd_static)
     s.add_argument("--repo", default=".")
-    s.add_argument("--plan", help="файл плана (по умолчанию otk.json в каталоге прогона)")
+    s.add_argument("--plan", help="файл плана (по умолчанию самый свежий план collect или завершённого gate)")
     _env_args(s)
 
 
@@ -774,7 +773,7 @@ def _add_run(sub):
     r = sub.add_parser("run", help="пробы в копии ИБ по плану")
     r.set_defaults(func=cmd_run)
     r.add_argument("--repo", default=".")
-    r.add_argument("--plan")
+    r.add_argument("--plan", help="файл плана (по умолчанию самый свежий план collect или завершённого gate)")
     _env_args(r)
 
 

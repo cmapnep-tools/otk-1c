@@ -3,6 +3,7 @@
 Блокировки .cfl снимаются, только если файл удаётся удалить; занятый .cfl — база занята кем-то
 другим: работа прекращается с InfraError (процессы не убиваются).
 """
+import math
 import os
 import re
 import shutil
@@ -340,7 +341,13 @@ class Platform(ConfigOps):
         if self.ib_tool == "ibcmd" and not self.has_ibcmd:
             raise InfraError(f"environment.ibTool = ibcmd, а ibcmd в {self.bin} нет: установите компоненты сервера "
                              "1С:Предприятия или выберите ibTool = designer", code="no-ibcmd")
-        self.lock_timeout = float(env.get("lockTimeout", iblock.DEFAULT_TIMEOUT))
+        lock_timeout = env.get("lockTimeout", iblock.DEFAULT_TIMEOUT)
+        try:
+            self.lock_timeout = float(lock_timeout)
+        except (TypeError, ValueError, OverflowError) as e:
+            raise InfraError("environment.lockTimeout: задайте число секунд", code="config-invalid") from e
+        if isinstance(lock_timeout, bool) or not math.isfinite(self.lock_timeout):
+            raise InfraError("environment.lockTimeout: задайте число секунд", code="config-invalid")
 
     def lock(self):
         """Эта база — только этому прогону ОТК до конца процесса (iblock); другой прогон держит — ждать."""

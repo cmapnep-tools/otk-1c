@@ -1,11 +1,10 @@
 """Задание CI: каталог проекта без --repo, база из переменных CI, артефакты каталогом."""
-import concurrent.futures
 import contextlib
 import io
 import os
 import subprocess
+import sys
 import tempfile
-import threading
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -33,27 +32,77 @@ class CiTest(unittest.TestCase):
             directory.mkdir(parents=True)
             for name in ci.GATE_ARTIFACTS:
                 (directory / name).write_text(directory.name, encoding="utf-8")
-        barrier = threading.Barrier(2)
-        copy = ci.shutil.copyfile
-
-        def overlapping_copy(source, target):
-            barrier.wait(timeout=10)
-            return copy(source, target)
-
-        errors = []
         destination = self.tmp / "artifacts"
-        with mock.patch.object(ci.shutil, "copyfile", side_effect=overlapping_copy):
-            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-                futures = [executor.submit(ci._publish, "otk-gate", directory, ci.GATE_ARTIFACTS,
-                                           errors.append, destination) for directory in directories]
-                for future in futures:
-                    future.result(timeout=30)
-        self.assertFalse(any("не удалась" in line for line in errors), errors)
+        previous = destination / "previous"
+        previous.mkdir(parents=True)
+        (previous / "summary.json").write_text("previous", encoding="utf-8")
+        legacy = ci.PRIVATE_ARTIFACTS | set(ci.GATE_ARTIFACTS)
+        untouched = ("custom.log", *ci.DESIGNER_ARTIFACTS)
+        for name in legacy:
+            (destination / name).write_text("legacy", encoding="utf-8")
+        for name in untouched:
+            (destination / name).write_text("unrelated", encoding="utf-8")
+
+        publish = """
+import sys
+import time
+from pathlib import Path
+from otk_1c.integrations import ci
+
+directory, destination = map(Path, sys.argv[1:])
+copy = ci.shutil.copyfile
+def checked_copy(source, target):
+    assert not any((destination / name).exists() for name in ci.PRIVATE_ARTIFACTS | set(ci.GATE_ARTIFACTS))
+    return copy(source, target)
+
+ci.shutil.copyfile = checked_copy
+(directory / "ready").touch()
+deadline = time.monotonic() + 10
+while len(list(directory.parent.glob("*/ready"))) < 2:
+    if time.monotonic() > deadline:
+        sys.exit("parallel publisher did not start")
+    time.sleep(0.01)
+ci._publish("otk-gate", directory, ci.GATE_ARTIFACTS, print, destination)
+"""
+        env = {**os.environ, "PYTHONPATH": str(Path(ci.__file__).parents[2]), "PYTHONIOENCODING": "utf-8"}
+        processes = [subprocess.Popen([sys.executable, "-c", publish, str(directory), str(destination)],
+                                      env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                      text=True, encoding="utf-8") for directory in directories]
+        try:
+            for process in processes:
+                log, _ = process.communicate(timeout=20)
+                self.assertEqual(process.returncode, 0, log)
+                self.assertNotIn("не удалась", log)
+        finally:
+            for process in processes:
+                if process.poll() is None:
+                    process.kill()
+                process.communicate()
+        self.assertFalse(any((destination / name).exists() for name in legacy))
+        for name in untouched:
+            self.assertEqual((destination / name).read_text(encoding="utf-8"), "unrelated")
+        self.assertEqual((previous / "summary.json").read_text(encoding="utf-8"), "previous")
         for directory in directories:
             published = destination / directory.name
             self.assertEqual({path.name for path in published.iterdir()}, set(ci.GATE_ARTIFACTS))
             self.assertTrue(all(path.read_text(encoding="utf-8") == directory.name
                                 for path in published.iterdir()))
+
+    def test_gate_publication_cannot_modify_another_run(self):
+        root = self.tmp / "runs"
+        source, prior = root / "rcurrent", root / "rprevious"
+        source.mkdir(parents=True)
+        (source / "summary.json").write_text("current", encoding="utf-8")
+        prior.mkdir()
+        for name in ("otk.json", "static.json", "run.json", ".completed", "summary.json"):
+            (prior / name).write_text("previous", encoding="utf-8")
+        before = {path.name: path.read_bytes() for path in prior.iterdir()}
+        for destination in (prior, prior / "child"):
+            with self.subTest(destination=destination):
+                messages = []
+                ci._publish("otk-gate", source, ci.GATE_ARTIFACTS, messages.append, destination)
+                self.assertIn("пересекается с каталогом прогона", messages[0])
+                self.assertEqual({path.name: path.read_bytes() for path in prior.iterdir()}, before)
 
     def test_checkout_dir(self):
         ws = self.tmp

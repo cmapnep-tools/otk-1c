@@ -46,6 +46,21 @@ def latest_run(root):
     return max(completed, key=lambda p: (p.stat().st_mtime_ns, p.parent.name)).parent if completed else root
 
 
+def latest_plan(root):
+    """План последнего завершённого gate или более свежего отдельного collect."""
+    root = Path(root)
+    collected = root / "otk.json"
+    completed = latest_run(root)
+    if completed == root:
+        return collected
+    try:
+        if collected.stat().st_mtime_ns > (completed / ".completed").stat().st_mtime_ns:
+            return collected
+    except FileNotFoundError:
+        pass
+    return completed / "otk.json"
+
+
 def _warn_inside(base, repo):
     """Предупреждение (раз за процесс), если runDir внутри рабочего дерева: пути извлечённых редакций длиннее
     на путь репозитория, а каталог прогона виден git как неотслеживаемый."""

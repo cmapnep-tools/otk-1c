@@ -65,7 +65,7 @@ UNRESOLVED_WITHOUT_PARENT = ("metadata-ref", "common-method", "form-name")
 
 
 def static_step(repo: Path, cfg: dict, run_dir: Path, plan_path: Path, parent_arg: str | None = None,
-                gate: checks.Gate | None = None) -> dict[str, Any]:
+                gate: checks.Gate | None = None, *, index_cache_dir: Path | None = None) -> dict[str, Any]:
     """Статика по плану: static.json (schema/static.schema.json) рядом с планом; план не меняется — зависимые
     модули в `dependents`, решения реестра проверок шага — в `notChecked`/`infra`. Возвращает результат.
     gate (checks.Gate) — решения по проверкам bslls и platform-api; без него — по [checks] настроек."""
@@ -76,17 +76,20 @@ def static_step(repo: Path, cfg: dict, run_dir: Path, plan_path: Path, parent_ar
     parent = str(parent_path) if parent_path else None
     t0 = time.time()
     head_sha = plan.get("headSha")
+    index_cache_dir = index_cache_dir or run_dir / "cache"
     if plan.get("headDir") or (head_sha and head_sha != gitdiff.rev(repo, "HEAD")):
         # выгрузка без git (gate --dir) или редакция плана, а не рабочее дерево
         tree_root = Path(plan["headDir"]) if plan.get("headDir") else workspace.materialize(repo, head_sha, src,
                                                                                             run_dir / "trees")
-        # без git — кеш по отпечатку каталога; редакция git (trees/<sha>) не меняется — достаточно маркеров
-        ix = index_mod.cached_dir(tree_root / src, run_dir / "cache", full=bool(plan.get("headDir")))
+        if plan.get("headDir"):
+            ix = index_mod.cached_dir(tree_root / src, index_cache_dir, full=True)
+        else:
+            ix = index_mod.cached_revision(tree_root / src, index_cache_dir)
         if parent:
-            ix = index_mod.merge(ix, index_mod.cached_dir(Path(parent), run_dir / "cache"))
+            ix = index_mod.merge(ix, index_mod.cached_dir(Path(parent), index_cache_dir))
     else:
         tree_root = repo
-        ix = index_mod.load(repo, src, run_dir / "cache", parent)
+        ix = index_mod.load(repo, src, index_cache_dir, parent)
     t1 = time.time()
 
     def read_head(rel: str) -> str | None:
@@ -363,7 +366,8 @@ def _probe_step(repo: Path, cfg: dict, run_dir: Path, opts: GateOptions, plan: d
     Возвращает (редакция загружена в копию ИБ, почему проверку Конфигуратором не выполнять или None)."""
     env = cfg["environment"]
     t = time.time()
-    static_res = static_step(repo, cfg, run_dir, plan_path, opts.parent, gate)
+    static_res = static_step(repo, cfg, run_dir, plan_path, opts.parent, gate,
+                             index_cache_dir=workspace.run_dir(cfg, repo) / "cache" / "metadata")
     timings["static"] = round(time.time() - t, 1)
     static_fail = any(f["severity"] == "error" for f in static_res["findings"])
     log(f"статика: ошибок {sum(1 for f in static_res['findings'] if f['severity'] == 'error')} "
