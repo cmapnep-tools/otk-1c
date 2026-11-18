@@ -264,7 +264,7 @@ def _adopted_predefined(path, fmt):
     # XML выгрузки проекта; minidom/expat не раскрывает внешние сущности (как ET, S314 в pyproject).
     try:
         text = path.read_text(encoding="utf-8-sig")
-    except OSError as e:
+    except (OSError, UnicodeDecodeError) as e:
         raise InfraError(f"не читается {path}: {e}") from e
     with minidom.parseString(text) as doc:  # noqa: S318
         doc.documentElement.setAttribute("version", fmt)

@@ -167,6 +167,15 @@ class TestAdoptedObjects(unittest.TestCase):
         self.assertIn(str(source), str(error.exception))
         self.assertIn('доступ запрещён', str(error.exception))
 
+    def test_invalid_utf8_predefined_data_is_infrastructure_error(self):
+        source = self.root / 'Catalogs/Товары/Ext/Predefined.xml'
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_bytes(b'<PredefinedData>\xff</PredefinedData>')
+        with self.assertRaises(InfraError) as error:
+            ib_tools._adopted_predefined(source, '2.16')
+        self.assertIn(str(source), str(error.exception))
+        self.assertIn('utf-8', str(error.exception))
+
     def test_no_predefined_data(self):
         self.assertIsNone(ib_tools.adopted_object(self.root, 'Catalogs', 'Товары')['predefined'])
 
