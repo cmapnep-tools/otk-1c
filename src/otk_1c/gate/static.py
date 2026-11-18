@@ -466,7 +466,13 @@ def dependents(repo_source, plan, index, checked=None):
                                                 f"после изменения — от {exp[1]} до {exp[2]}"})
     if checked is not None:
         checked.update(m["path"] for m in plan["modules"]
-                       if m["kind"] == "CommonModule" and any(x["export"] for x in m["removedMethods"]))
+                       if m["kind"] == "CommonModule"
+                       and not m.get("renamedFrom")
+                       and m.get("probe", {}).get("strategy") != "none"
+                       and not m.get("flags", {}).get("Global", True)
+                       and not m.get("baseFlags", {}).get("Global", True)
+                       and any(x["export"] for x in m["removedMethods"]))
         checked.update(m["path"] for m in plan["removedModules"]
-                       if m["kind"] == "CommonModule" and m["exports"])
+                       if m["kind"] == "CommonModule" and not m.get("flags", {}).get("Global", True)
+                       and m["exports"])
     return {k: v for k, v in found.items() if k not in changed}, findings
