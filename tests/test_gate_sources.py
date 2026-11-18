@@ -104,7 +104,7 @@ class TestSources(unittest.TestCase):
         rel = "CommonModules/М/Ext/Module.bsl"
         write(repo, rel, "Процедура Грязная()\nКонецПроцедуры\n")
         cfg = config._merge(config.load(repo), {
-            "checks": {"bslls": "off", "platform-api": "off"},
+            "checks": {"analyzers": "off", "platform-api": "off"},
             "environment": {"runDir": str(self.tmp / "runs"), "ib": str(self.tmp / "fake-ib")}})
         observed = []
         original_report = pipeline.report.from_files
@@ -121,7 +121,9 @@ class TestSources(unittest.TestCase):
 
         def designer(_repo, _cfg, run_dir, plan, _built, **_kwargs):
             assert_snapshot(workspace.tree_root(_repo, plan, run_dir))
-            return {"findings": [], "infra": []}
+            finding = {"file": f"{plan['source']}/{rel}", "line": 7, "col": 1,
+                       "object": "ОбщийМодуль.М.Модуль", "message": "Тестовая ошибка компиляции"}
+            return pipeline._designer_write(run_dir, {"findings": [finding], "infra": []}, plan)
 
         def report(run_dir, timings, tree):
             root = tree()
@@ -147,11 +149,10 @@ class TestSources(unittest.TestCase):
                 self.assertTrue((run_dir / "otk.json").is_file())
                 # Контекст находки встроен в сводку до удаления временного дерева.
                 self.assertNotIn("Грязная", json.dumps(summary, ensure_ascii=False))
-                findings = [f for f in summary["findings"] if f.get("method") == "Изменяемая"]
-                self.assertTrue(findings)
-                for finding in findings:
-                    expected = " ".join(HEAD_MODULE.splitlines()[finding["line"] - 1].split())
-                    self.assertEqual(finding["text"], expected)
+                findings = [f for f in summary["findings"] if f["step"] == "designer"]
+                self.assertEqual(len(findings), 1)
+                self.assertEqual(findings[0]["method"], "Изменяемая")
+                self.assertEqual(findings[0]["text"], "Возврат П;")
         self.assertEqual(len(observed), 6)
         self.assertEqual(observed[0], observed[1])
         self.assertEqual(observed[1], observed[2])
