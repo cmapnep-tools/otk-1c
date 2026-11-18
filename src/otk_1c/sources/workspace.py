@@ -1,4 +1,5 @@
 """Рабочее место прогона: каталог прогона, выгрузка редакции git, каталог выгрузки плана."""
+import ctypes
 import errno
 import hashlib
 import json
@@ -14,6 +15,11 @@ from . import gitdiff, layout
 MAX_PATH = 260                  # предел длины пути Windows без LongPathsEnabled
 TREE_SHA = 12                   # каталог редакции — trees/<начало sha>: длинные пути выгрузки ERP и так у предела
 _warned_inside = set()
+
+if os.name == "nt":
+    _compare_string_ordinal = ctypes.windll.kernel32.CompareStringOrdinal
+    _compare_string_ordinal.argtypes = [ctypes.c_wchar_p, ctypes.c_int, ctypes.c_wchar_p, ctypes.c_int, ctypes.c_int]
+    _compare_string_ordinal.restype = ctypes.c_int
 
 
 def run_dir(cfg, repo):
@@ -123,6 +129,8 @@ def _extract_blobs(repo, sha, src, extra, target):
     entries = _tree_entries(cmd, sha, [src, *extra] if src != "." else [])
     if src != "." and not any(name == src for name, *_ in entries):
         raise gitdiff.GitError(f"источник {src} отсутствует в Git-редакции {sha}")
+    if os.name == "nt":
+        _reject_windows_path_collisions(entries, target)
 
     links = {}
     with tempfile.TemporaryFile() as requests, tempfile.TemporaryFile() as errors:
@@ -145,6 +153,44 @@ def _extract_blobs(repo, sha, src, extra, target):
     if links:
         commit_entries = entries if src == "." else _tree_entries(cmd, sha, [])
         _write_symlinks(target, links, cmd, commit_entries)
+
+
+def _reject_windows_path_collisions(entries, root):
+    """Отказаться от Git-дерева, которое Windows не может представить без потери файлов."""
+    seen = {}
+    existing = {}
+    has_existing = any(root.iterdir())
+    for name, *_ in entries:
+        parts = PurePosixPath(name).parts
+        for end in range(1, len(parts) + 1):
+            exact = parts[:end]
+            folded = tuple(part.casefold() for part in exact)
+            candidates = seen.setdefault(folded, {})
+            if exact not in candidates:
+                for previous in candidates:
+                    if all(_same_part(a, b) for a, b in zip(previous, exact, strict=True)):
+                        raise gitdiff.GitError(
+                            f"пути Git совпадают на Windows: {'/'.join(previous)} и {'/'.join(exact)}"
+                        )
+                candidates[exact] = None
+            if not has_existing:
+                continue
+            parent = root.joinpath(*exact[:-1])
+            if parent not in existing:
+                if parent.is_dir():
+                    with os.scandir(parent) as items:
+                        names = {}
+                        for item in items:
+                            names.setdefault(item.name.casefold(), []).append(item.name)
+                        existing[parent] = names
+                else:
+                    existing[parent] = {}
+            for actual in existing[parent].get(exact[-1].casefold(), []):
+                if actual != exact[-1] and _same_part(actual, exact[-1]):
+                    raise gitdiff.GitError(
+                        f"пути Git совпадают на Windows: {'/'.join(exact)} и "
+                        f"{'/'.join((*exact[:-1], actual))}"
+                    )
 
 
 def _write_entry(stream, root, name, mode, kind, oid):
@@ -264,7 +310,7 @@ def _resolve_link_target(target: Path, root: Path, dest: Path) -> None:
 
 def done_marker(target, src):
     """Маркер готовности источника src в дереве редакции target: <начало sha>-<хеш src>.done рядом с деревом."""
-    identity = f"git-blobs:{Path(src).as_posix()}".encode("utf-8")
+    identity = f"git-blobs-v2:{Path(src).as_posix()}".encode("utf-8")
     key = hashlib.sha1(identity, usedforsecurity=False).hexdigest()
     return target.with_name(f"{target.name}-{key}.done")
 
@@ -285,7 +331,7 @@ def _covered(target, rel):
         if not src or m.name != done_marker(target, src).name:
             continue
         other = _parts(src)
-        if mine[:len(other)] == other:
+        if _same_prefix(mine, other):
             return True
     return False
 
@@ -306,7 +352,7 @@ def _drop_markers(target, rel):
         except (OSError, ValueError):               # ValueError — оборванная запись посреди символа UTF-8
             other = ()
         n = min(len(other), len(mine))
-        if other[:n] == mine[:n]:
+        if _same_prefix(other[:n], mine[:n]):
             try:
                 m.unlink(missing_ok=True)
             except OSError as e:
@@ -322,7 +368,19 @@ def _marker_text(m):
 def _parts(src):
     """Сегменты пути источника для сравнения: «.» — пусто, на Windows — без учёта регистра."""
     src = src or "."
-    return PurePosixPath(src.casefold() if os.name == "nt" else src).parts
+    return PurePosixPath(src).parts
+
+
+def _same_prefix(parts, prefix):
+    return len(parts) >= len(prefix) and all(_same_part(a, b) for a, b in zip(parts, prefix, strict=False))
+
+
+def _same_part(a, b):
+    if a == b:
+        return True
+    if os.name != "nt" or a.casefold() != b.casefold():
+        return False
+    return _compare_string_ordinal(a, -1, b, -1, True) == 2
 
 
 def _env_error(what, path, e):

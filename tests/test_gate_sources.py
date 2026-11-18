@@ -5,6 +5,7 @@ import hashlib
 import io
 import json
 import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path, PurePosixPath
@@ -123,6 +124,55 @@ class TestSources(unittest.TestCase):
                 (run_dir / "otk.json").write_text(json.dumps(plan), encoding="utf-8")
                 self._assert_snapshot(repo, plan, run_dir, expected)
                 self.assertEqual((stale / rel).read_bytes(), (repo / rel).read_bytes())
+
+    @unittest.skipUnless(os.name == "nt", "Windows resolves Git paths without regard to case")
+    def test_snapshot_rejects_case_colliding_git_paths(self):
+        repo = self._repo()
+
+        def git_input(*args, data):
+            return subprocess.run(["git", "-C", str(repo), *args], input=data, capture_output=True,
+                                  check=True).stdout.strip()
+
+        blobs = {
+            "A.bsl": git_input("hash-object", "-w", "--stdin", data=b"first"),
+            "Configuration.xml": git_input("hash-object", "-w", "--stdin", data=CONFIG.encode("utf-8")),
+            "a.bsl": git_input("hash-object", "-w", "--stdin", data=b"second"),
+        }
+        entries = b"".join(b"100644 blob " + oid + b"\t" + name.encode("ascii") + b"\0"
+                           for name, oid in blobs.items())
+        tree = git_input("mktree", "-z", data=entries).decode("ascii")
+        sha = git_input("commit-tree", tree, "-p", "HEAD", data=b"case collision\n").decode("ascii")
+        for stale in (False, True):
+            with self.subTest(stale=stale):
+                trees = self.tmp / ("stale" if stale else "fresh")
+                target = trees / sha[:workspace.TREE_SHA]
+                if stale:
+                    write(target, "Configuration.xml", CONFIG)
+                    write(target, "A.bsl", "second")
+                    old_key = hashlib.sha1(b"git-blobs:.", usedforsecurity=False).hexdigest()
+                    target.with_name(f"{target.name}-{old_key}.done").write_text(".", encoding="utf-8")
+                with self.assertRaisesRegex(gitdiff.GitError, "пути Git совпадают на Windows"):
+                    workspace.materialize(repo, sha, ".", trees)
+                self.assertFalse(workspace.done_marker(target, ".").exists())
+
+    @unittest.skipUnless(os.name == "nt", "Windows resolves Git paths without regard to case")
+    def test_snapshot_rejects_collision_with_previously_extracted_source(self):
+        target = self.tmp / "trees"
+        (target / "A").mkdir(parents=True)
+        with self.assertRaisesRegex(gitdiff.GitError, "пути Git совпадают на Windows"):
+            workspace._reject_windows_path_collisions([("a", b"040000", b"tree", b"0" * 40)], target)
+
+    @unittest.skipUnless(os.name == "nt", "Windows resolves Git paths without regard to case")
+    def test_windows_path_comparison_preserves_distinct_unicode_names(self):
+        self.assertFalse(workspace._same_part("ß", "ss"))
+        self.assertTrue(workspace._same_part("A", "a"))
+        self.assertFalse(workspace._same_part("\U00010400", "\U00010428"))
+        target = self.tmp / "trees"
+        target.mkdir()
+        workspace._reject_windows_path_collisions([
+            ("ß.bsl", b"100644", b"blob", b"0" * 40),
+            ("ss.bsl", b"100644", b"blob", b"0" * 40),
+        ], target)
 
     def test_snapshot_failure_does_not_fall_back_to_worktree(self):
         repo = self._repo()
@@ -364,7 +414,7 @@ class TestSources(unittest.TestCase):
         workspace.materialize(r, sha, "CommonModules", trees)
         self.assertFalse(workspace.done_marker(target, "ext/ТестыА").exists())
         if os.name == "nt":                         # пересечение источников на Windows — без учёта регистра
-            self.assertEqual(workspace._parts("Src/Objects"), workspace._parts("src/objects"))
+            self.assertTrue(workspace._same_prefix(workspace._parts("Src/Objects"), workspace._parts("src/objects")))
 
     def test_marker_must_match_name_and_content(self):
         """Испорченный маркер готовности (пустой, с чужим содержимым, с именем не от содержимого) — как
