@@ -183,15 +183,31 @@ class TestSources(unittest.TestCase):
         run(repo, "commit", "-q", "-m", "scenarios")
         write(repo, rel, registration.replace("Committed", "Dirty"))
         write(repo, "tests/cfe/Tests/Configuration.xml", "<Name>DirtyExtension</Name>")
-        cfg = config.load(repo)
-        for worktree, name, extension in ((False, "Committed", "CommittedExtension"),
-                                           (True, "Dirty", "DirtyExtension")):
-            run_dir = self.tmp / str(worktree)
-            run_dir.mkdir()
-            opts = pipeline.GateOptions("HEAD~1", head="HEAD", worktree=worktree, all_scenarios=True)
-            plan, _ = pipeline._plan_step(repo, cfg, run_dir, opts, pipeline.checks.Gate(cfg), None, {}, lambda _: None)
-            self.assertEqual([s["name"] for s in plan["scenarios"]], [name])
-            self.assertEqual([e["name"] for e in plan["scenarioExtensions"]], [extension])
+        paths = ("tests/cfe", str(repo / "tests" / "cfe"), str(Path("tests/cfe/../cfe")))
+        for n, path in enumerate(paths):
+            cfg = config._merge(config.load(repo), {"scenarios": {"path": path}})
+            for worktree, name, extension in ((False, "Committed", "CommittedExtension"),
+                                               (True, "Dirty", "DirtyExtension")):
+                with self.subTest(path=path, worktree=worktree):
+                    run_dir = self.tmp / f"scenarios-{n}-{worktree}"
+                    run_dir.mkdir()
+                    opts = pipeline.GateOptions("HEAD~1", head="HEAD", worktree=worktree, all_scenarios=True)
+                    plan, _ = pipeline._plan_step(repo, cfg, run_dir, opts, pipeline.checks.Gate(cfg), None, {},
+                                                  lambda _: None)
+                    self.assertEqual([s["name"] for s in plan["scenarios"]], [name])
+                    self.assertEqual(plan["scenarioExtensions"], [{"name": extension, "dir": "tests/cfe/Tests"}])
+
+    def test_git_scenarios_path_outside_repo_is_rejected(self):
+        repo = self._repo()
+        cfg = config._merge(config.load(repo), {"scenarios": {"path": "../outside"}})
+        run_dir = self.tmp / "outside-scenarios"
+        run_dir.mkdir()
+        opts = pipeline.GateOptions("HEAD", head="HEAD", all_scenarios=True)
+        with mock.patch.object(pipeline.scen_mod, "discover") as discover:
+            with self.assertRaisesRegex(InfraError, r"\[scenarios\] path.*внутри репозитория") as error:
+                pipeline._plan_step(repo, cfg, run_dir, opts, pipeline.checks.Gate(cfg), None, {}, lambda _: None)
+            self.assertEqual(error.exception.code, "config-invalid")
+            discover.assert_not_called()
 
     def test_gate_retry_starts_fresh(self):
         """Повтор после прерывания заново строит план и не переиспользует файлы шагов прошлого запуска."""

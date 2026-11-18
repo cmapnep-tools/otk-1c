@@ -2,6 +2,7 @@
 import dataclasses
 import fnmatch
 import json
+import os
 import re
 import time
 from pathlib import Path
@@ -341,6 +342,13 @@ def _plan_step(repo: Path, cfg: dict, run_dir: Path, opts: GateOptions, gate: ch
     scenario_path = sc_cfg.get("path", scen_mod.DEFAULT_PATH)
     scenario_root = repo
     if plan.get("headSha"):
+        # Нормализуем путь лексически: ссылки рабочего дерева не определяют пути Git-редакции.
+        scenario_dir = Path(os.path.abspath(repo / scenario_path))
+        repo_dir = Path(os.path.abspath(repo))
+        if not scenario_dir.is_relative_to(repo_dir):
+            raise InfraError(f"[scenarios] path должен указывать на каталог внутри репозитория: {scenario_path}",
+                             code="config-invalid")
+        scenario_path = scenario_dir.relative_to(repo_dir).as_posix()
         # Расширения могут лежать вне project.source; наличие проверяем в той же редакции.
         scenario_root = run_dir / "trees" / plan["headSha"][:workspace.TREE_SHA]
         if gitdiff.git(repo, "ls-tree", "--name-only", plan["headSha"], "--", scenario_path).strip():
