@@ -150,7 +150,24 @@ class TestStatic(unittest.TestCase):
         plan["metadata"] = []
         checked = set()
         static.run(self.repo, plan, self.ix, self.read, checked=checked)
+        static.dependents(self.repo / "src/cf", plan, self.ix, checked=checked)
         self.assertNotIn(entry["path"], checked)
+
+    def test_deleted_exported_method_counts_after_dependent_scan(self):
+        """Поиск зависимых вызовов покрывает удалённый экспорт даже без строк HEAD."""
+        plan = copy.deepcopy(self.plan)
+        entry = next(m for m in plan["modules"] if m["kind"] == "CommonModule")
+        entry["changedMethods"] = []
+        entry["removedMethods"] = [{"name": "Старая", "kind": "function", "export": True}]
+        plan["modules"] = [entry]
+        plan["removedModules"] = []
+        plan["metadata"] = []
+        checked = set()
+        static.run(self.repo, plan, self.ix, self.read, checked=checked)
+        self.assertNotIn(entry["path"], checked)
+        _, findings = static.dependents(self.repo / "src/cf", plan, self.ix, checked=checked)
+        self.assertIn(entry["path"], checked)
+        self.assertTrue(any("Общий.Старая" in f["message"] for f in findings))
 
     def test_platform_names(self):
         """Стандартные формы — из словаря имён платформы: без ФормаСписка в нём — находка form-name."""

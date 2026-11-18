@@ -465,6 +465,8 @@ def dependents(repo_source, plan, index, checked=None):
                                      "message": f"Вызов {mod_name}.{exp[0]} с {args} параметрами, "
                                                 f"после изменения — от {exp[1]} до {exp[2]}"})
     if checked is not None:
+        checked.update(m["path"] for m in plan["modules"]
+                       if m["kind"] == "CommonModule" and any(x["export"] for x in m["removedMethods"]))
         checked.update(m["path"] for m in plan["removedModules"]
                        if m["kind"] == "CommonModule" and m["exports"])
     return {k: v for k, v in found.items() if k not in changed}, findings
