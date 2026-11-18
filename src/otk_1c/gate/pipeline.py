@@ -3,6 +3,7 @@ import dataclasses
 import fnmatch
 import json
 import re
+import tempfile
 import time
 from pathlib import Path
 from typing import Any
@@ -145,7 +146,14 @@ def static_step(repo: Path, cfg: dict, run_dir: Path, plan_path: Path, parent_ar
               "dependents": dependents,
               **gate.take(), "plan": model.plan_id(plan)}
     out = plan_path.with_name("static.json")
-    out.write_text(json.dumps(result, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    stream = tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=out.parent, delete=False)
+    pending = Path(stream.name)
+    try:
+        with stream:
+            stream.write(json.dumps(result, ensure_ascii=False, indent=1) + "\n")
+        pending.replace(out)
+    finally:
+        pending.unlink(missing_ok=True)
     return result
 
 

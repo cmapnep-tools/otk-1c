@@ -91,7 +91,9 @@ def _publish(name, run_dir, names, log, dest=None):
                 dest = root / Path(run_dir).name
                 target = dest.resolve()
                 # Проверяем корень очистки и каталог копирования (он может быть ссылкой).
-                runs = {source} | {p.resolve() for p in source.parent.glob("r*") if p.is_dir()}
+                runs = {source} | {p.resolve() for p in source.parent.glob("r*")
+                                   if p.is_dir() and any((p / marker).is_file()
+                                                         for marker in (".otk-run", "otk.json", ".completed"))}
                 for previous in runs:
                     if any(path == previous or path in previous.parents or previous in path.parents
                            for path in (root, target)):

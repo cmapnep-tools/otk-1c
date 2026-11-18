@@ -79,6 +79,55 @@ class TestIndexCache(unittest.TestCase):
         self.assertEqual(self.exports(True), {"б"})
         self.assertEqual(len(list(self.cache.glob("index-dir-*.json"))), 2)
 
+    def test_directory_symlink_target_edit_bypasses_existing_cache(self):
+        self.assertEqual(self.exports(True), {"а"})
+        module_dir = self.dump / "CommonModules/М"
+        target = self.tmp / "module-target"
+        module_dir.rename(target)
+        try:
+            module_dir.symlink_to(target, target_is_directory=True)
+        except OSError as error:
+            target.rename(module_dir)
+            self.skipTest(f"directory symlinks unavailable: {error}")
+        try:
+            for full in (True, False):
+                with self.subTest(full=full):
+                    write(target, "Ext/Module.bsl", "Процедура А() Экспорт\nКонецПроцедуры\n")
+                    self.assertEqual(self.exports(full), {"а"})
+                    write(target, "Ext/Module.bsl", "Процедура Б() Экспорт\nКонецПроцедуры\n")
+                    self.assertEqual(self.exports(full), {"б"})
+                    self.assertEqual(len(list(self.cache.glob("index-dir-*.json"))), 1)
+        finally:
+            module_dir.unlink()
+            target.rename(module_dir)
+
+    def test_directory_link_manifest_bypasses_cache_without_symlink_privileges(self):
+        """Simulate scandir's directory-link flags where symlink creation is denied."""
+        self.assertEqual(self.exports(True), {"а"})
+        module_dir = self.dump / "CommonModules/М"
+        scandir = os.scandir
+
+        def scan(directory):
+            with scandir(directory) as entries:
+                result = []
+                for entry in entries:
+                    if Path(entry.path) == module_dir:
+                        link = mock.Mock(wraps=entry)
+                        link.name, link.path = entry.name, entry.path
+                        link.is_dir.side_effect = lambda *, follow_symlinks=True: follow_symlinks
+                        result.append(link)
+                    else:
+                        result.append(entry)
+            context = mock.MagicMock()
+            context.__enter__.return_value = iter(result)
+            return context
+
+        with mock.patch.object(index.os, "scandir", side_effect=scan):
+            self.assertEqual(self.exports(True), {"а"})
+            write(module_dir, "Ext/Module.bsl", "Процедура Б() Экспорт\nКонецПроцедуры\n")
+            self.assertEqual(self.exports(True), {"б"})
+        self.assertEqual(len(list(self.cache.glob("index-dir-*.json"))), 1)
+
     def test_worktree_edit_and_restore_during_build_is_not_cached(self):
         git = ["git", "-C", str(self.dump)]
         subprocess.run([*git, "init", "-q"], check=True)
@@ -165,6 +214,13 @@ class TestIndexCache(unittest.TestCase):
         self.assertEqual(set(result["commonModules"]["м"]["exports"]), {"а"})
         with mock.patch.object(index, "build", side_effect=AssertionError("expected EDT cache hit")):
             self.assertEqual(index.cached_dir(edt, self.cache, full=True), result)
+
+    @unittest.skipUnless(os.name == "nt", "requires case-insensitive Windows filesystem")
+    def test_differently_cased_configuration_file_builds_without_wrong_cache(self):
+        (self.dump / "Configuration.xml").rename(self.dump / "configuration.xml")
+        result = index.cached_dir(self.dump, self.cache, full=True)
+        self.assertEqual(set(result["commonModules"]["м"]["exports"]), {"а"})
+        self.assertEqual(list(self.cache.glob("*.json")), [])
 
     def test_content_key_detects_equal_size_and_timestamp_edit(self):
         for full in (True, False):

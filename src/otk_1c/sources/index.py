@@ -389,20 +389,28 @@ def dir_fingerprint(path, full, lay=layout.DESIGNER):
 def _directory_manifest(root):
     """Content hashes only: one streaming pass, no source-tree copy in memory or on disk."""
     hashes = {}
+    cacheable = True
 
     def walk(directory):
+        nonlocal cacheable
         with os.scandir(directory) as entries:
             for entry in sorted(entries, key=lambda item: item.name):
                 if entry.name.startswith("."):
                     continue
                 if entry.is_dir(follow_symlinks=False):
                     walk(Path(entry.path))
+                elif entry.is_dir():
+                    # The builder can read through directory links, but this
+                    # manifest does not traverse them (they may form cycles).
+                    cacheable = False
                 elif entry.is_file():
                     with open(entry.path, "rb") as stream:
                         digest = hashlib.file_digest(stream, "sha256").digest()
                     hashes[Path(entry.path).relative_to(root).as_posix()] = digest
 
     walk(root)
+    if not cacheable:
+        return None, hashes
     fingerprint = hashlib.sha256()
     for name, digest in sorted(hashes.items()):
         fingerprint.update(os.fsencode(name) + b"\0" + digest)
@@ -421,7 +429,18 @@ def cached_dir(path, cache_dir, full=False):
     """
     path = Path(path)
     fingerprint, hashes = _directory_manifest(path)
+    if fingerprint is None:
+        return build(path)
     lay = layout.detect_read(lambda rel: "" if rel in hashes else None)
+    current_layout = layout.detect(path)
+    if lay != current_layout:
+        # The manifest records exact names, while the filesystem may resolve a
+        # differently cased configuration file (notably on Windows). A changed
+        # tree during hashing has the same mismatch. Build without publishing
+        # an index under a manifest that does not describe the files read.
+        if current_layout is None:
+            raise FileNotFoundError(path / layout.DESIGNER.config_file)
+        return build(path, current_layout)
     if lay is None:
         raise FileNotFoundError(path / layout.DESIGNER.config_file)
     cache_dir = Path(cache_dir)

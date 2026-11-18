@@ -12,6 +12,7 @@ from unittest import mock
 from _fs import rmtree_force
 from otk_1c import cli
 from otk_1c.integrations import ci
+from otk_1c.sources import workspace
 
 
 def git(repo, *args):
@@ -103,6 +104,30 @@ ci._publish("otk-gate", directory, ci.GATE_ARTIFACTS, print, destination)
                 ci._publish("otk-gate", source, ci.GATE_ARTIFACTS, messages.append, destination)
                 self.assertIn("пересекается с каталогом прогона", messages[0])
                 self.assertEqual({path.name: path.read_bytes() for path in prior.iterdir()}, before)
+
+    def test_gate_publication_accepts_reports_sibling_of_run(self):
+        """Каталог reports рядом с r-прогонами не считается другим прогоном."""
+        root = self.tmp / "runs"
+        source = root / "rcurrent"
+        source.mkdir(parents=True)
+        (source / "summary.json").write_text("current", encoding="utf-8")
+        reports = root / "reports"
+        for _run in range(2):
+            messages = []
+            ci._publish("otk-gate", source, ci.GATE_ARTIFACTS, messages.append, reports)
+            self.assertFalse(any("не удалась" in message for message in messages), messages)
+            self.assertEqual((reports / source.name / "summary.json").read_text(encoding="utf-8"), "current")
+
+    def test_gate_publication_protects_empty_neighbor_run(self):
+        """Даже ещё не начавшийся соседний прогон нельзя использовать для артефактов."""
+        neighbor = workspace.new_run({"environment": {"runDir": str(self.tmp / "runs")}}, self.tmp)
+        source = neighbor.parent / "rcurrent"
+        source.mkdir(exist_ok=True)
+        (source / "summary.json").write_text("current", encoding="utf-8")
+        messages = []
+        ci._publish("otk-gate", source, ci.GATE_ARTIFACTS, messages.append, neighbor)
+        self.assertIn("пересекается с каталогом прогона", messages[0])
+        self.assertEqual({p.name for p in neighbor.iterdir()}, {".otk-run"})
 
     def test_checkout_dir(self):
         ws = self.tmp

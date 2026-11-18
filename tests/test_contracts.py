@@ -120,6 +120,25 @@ class TestStepFiles(unittest.TestCase):
                          {k: v for k, v in before.items() if k not in TIMINGS})
         self.assertEqual(report.from_files(self.run_dir, self.summary["timings"], self.head), self.summary)
 
+    def test_static_publication_replaces_complete_file(self):
+        """Во время записи нового шага старый static.json остаётся доступным читателю."""
+        target = self.run_dir / "static.json"
+        before = target.read_bytes()
+        replace = Path.replace
+        published = []
+
+        def check_before_replace(pending, destination):
+            if Path(destination) == target:
+                self.assertEqual(target.read_bytes(), before)
+                self.assertEqual(read(pending)["schema"], "otk.static.v1")
+                published.append(True)
+            return replace(pending, destination)
+
+        with mock.patch.object(Path, "replace", check_before_replace):
+            pipeline.static_step(self.project, self.cfg, self.run_dir, self.run_dir / "otk.json")
+        self.assertEqual(published, [True])
+        self.assertEqual(read(target)["schema"], "otk.static.v1")
+
     def test_metadata_off(self):
         """[checks] metadata = "off": правила статики и поиск зависимых не выполняются, сводка это называет."""
         run_dir = self.copy_run()

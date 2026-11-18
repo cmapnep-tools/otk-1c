@@ -37,7 +37,9 @@ def new_run(cfg, repo):
     """Атомарно выделить короткий каталог gate; незавершённые прогоны тоже сохраняются."""
     root = run_dir(cfg, repo)
     root.mkdir(parents=True, exist_ok=True)
-    return Path(tempfile.mkdtemp(prefix="r", dir=root))
+    run = Path(tempfile.mkdtemp(prefix="r", dir=root))
+    (run / ".otk-run").touch()
+    return run
 
 
 def latest_run(root):
