@@ -241,7 +241,8 @@ def build(repo, head_sha, src, source_root, platform, run_dir, extension=None, f
     # коммит прошлой загрузки мог исчезнуть: пакеты controls и пустая база --all — вне веток, их собирает
     # git gc; другой клон, shallow. Тогда разницы не построить — полная загрузка
     files, modules, lost = plan_from_state(repo, src, source_root, state, head_sha, platform.ib, full, extension)
-    res = _load(platform, run_dir, Path(source_root) / src, files, extension, state, new_state, modules)
+    res = _load(platform, run_dir, Path(source_root) / src, files, extension, state, new_state, modules,
+                git_snapshot=Path(source_root).resolve() != Path(repo).resolve())
     if lost:
         res["action"] += f" (коммита прошлой загрузки {state['commit'][:10]} в репозитории нет)"
     return {**res, "created": True} if created else res
@@ -303,7 +304,7 @@ def _from_ib(platform, run_dir, source, files, modules):
     return target, sec
 
 
-def _check_lfs(dump, files):
+def _check_lfs(dump, files, *, git_snapshot=False):
     """InfraError, если в загружаемой выгрузке указатели Git LFS вместо содержимого: платформа на них падает
     с непонятной «Ошибка формата потока». files — частичная загрузка, None — всё дерево. Форма грузится описанием,
     поэтому проверяются и её содержимое с модулем — платформа читает их вместе с описанием."""
@@ -312,19 +313,23 @@ def _check_lfs(dump, files):
         files = files + contents + [layout.DESIGNER.form_module(c) for c in contents]
     found = workspace.lfs_pointers(dump, files)
     if found:
+        if git_snapshot:
+            raise InfraError(f"в снимке Git-редакции {dump} файлов-указателей Git LFS: {len(found)} (например "
+                             f"{found[0]}) — снимок содержит байты Git blob. Для загрузки проверьте выгрузку "
+                             "с полученными файлами LFS через --dir")
         raise InfraError(f"в выгрузке {dump} файлов-указателей Git LFS без содержимого: {len(found)} (например "
                          f"{found[0]}) — объекты LFS не получены: git lfs pull (для другой ветки — "
                          "git lfs fetch <remote> <ветка>)")
 
 
-def _load(platform, run_dir, dump, files, extension, state, new_state, modules=None):
+def _load(platform, run_dir, dump, files, extension, state, new_state, modules=None, *, git_snapshot=False):
     """Загрузка выгрузки dump в копию ИБ: files — частичная (пусто — нечего загружать), None — полная.
     modules — пути EDT, если изменены только модули (edt_modules): загрузка без экспорта, не вышло — экспорт."""
     if files is not None and not files:
         save_state(run_dir, {**(state or {}), **new_state}, platform.ib)
         return {"action": "up-to-date", "commit": new_state["commit"]}
     src_layout = layout.detect(dump)
-    _check_lfs(dump, files if src_layout is layout.DESIGNER else None)
+    _check_lfs(dump, files if src_layout is layout.DESIGNER else None, git_snapshot=git_snapshot)
     result = {"action": "full" if files is None else "partial", "files": len(files or [])}
     if files is None and not platform.ibcmd_usable():
         result["loadNote"] = "полная загрузка Конфигуратором: ibcmd нет, с ним втрое быстрее"

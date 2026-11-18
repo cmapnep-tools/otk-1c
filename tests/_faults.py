@@ -7,7 +7,6 @@
 import contextlib
 import errno
 import os
-import tarfile
 import tempfile
 from pathlib import Path
 from unittest import mock
@@ -19,7 +18,6 @@ FS_OPS = (
     (Path, "is_file"), (Path, "is_dir"), (Path, "exists"), (Path, "stat"), (Path, "open"),
     (os, "fdopen"), (os, "replace"), (os, "scandir"), (os, "mkdir"),
     (tempfile, "mkstemp"), (tempfile, "TemporaryFile"),
-    (tarfile, "bltn_open"),         # запись файла при извлечении архива: обрыв посреди дерева
 )
 
 

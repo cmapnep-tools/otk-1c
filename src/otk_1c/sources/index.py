@@ -336,7 +336,7 @@ def _extracted_fingerprint(root):
 
 
 def cached_revision(source_root, cache_dir):
-    """Индекс фактически извлечённых исходников: локальные атрибуты Git могут менять архив одной редакции."""
+    """Индекс точного снимка объектов Git; локальные атрибуты экспорта не меняют редакцию."""
     root = Path(source_root)
     key = _extracted_fingerprint(root) if cache_dir else None
     cache = Path(cache_dir) / f"index-extracted-{key}-v{INDEX_VERSION}.json" if cache_dir and key else None

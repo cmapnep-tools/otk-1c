@@ -51,7 +51,8 @@ class TestIndexCache(unittest.TestCase):
         self.assertEqual(names[0], names[1])                   # второй процесс нашёл запись первого
         self.assertEqual(len(names[0].split()), 1)
 
-    def test_extracted_cache_tracks_effect_of_local_git_attributes(self):
+    def test_extracted_cache_ignores_local_git_archive_attributes(self):
+        """Exact Git blobs ignore local archive attributes and reuse the same content cache key."""
         git = ["git", "-C", str(self.dump)]
         subprocess.run([*git, "init", "-q"], check=True)
         subprocess.run([*git, "add", "."], check=True)
@@ -65,8 +66,9 @@ class TestIndexCache(unittest.TestCase):
         write(self.dump, ".git/info/attributes", "CommonModules/**/Module.bsl export-ignore\n")
         second = workspace.materialize(self.dump, commit, ".", self.tmp / "two")
         current = index.cached_revision(second, self.cache)
-        self.assertFalse(current["commonModules"]["м"]["source"])
-        self.assertEqual(len(list(self.cache.glob("index-extracted-*.json"))), 2)
+        self.assertTrue(current["commonModules"]["м"]["source"])
+        self.assertEqual(current, prior)
+        self.assertEqual(len(list(self.cache.glob("index-extracted-*.json"))), 1)
 
     def test_cache_hit(self):
         self.exports(True)

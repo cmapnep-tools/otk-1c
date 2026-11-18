@@ -7,7 +7,8 @@
   stdout: {"queries": [{"id", "text", "rationale"}]} — запроса нет в ответе: не восстановлен.
 Восстановленный текст — `complete`, `assembled`, `resolver`, `rationale`: ошибка разбора — предупреждение
 (report.query_downgrades). Сбой команды — примечание, запросы остаются «не проверено». Ответы (и «не восстановлен»)
-кэшируются в каталоге прогона по восстановителю, модулю, строке и тексту. Без настройки ничего не вызывается.
+кэшируются в каталоге прогона по восстановителю, редакции, текстам модулей и запросу.
+Без настройки ничего не вызывается.
 """
 import hashlib
 import json
@@ -27,9 +28,9 @@ def configured(cfg):
     return list((cfg.get("queries") or {}).get("resolvers") or [])
 
 
-def _key(resolver, q):
-    raw = json.dumps([resolver.get("name"), resolver.get("command"), q["module"], q["line"], q["text"]],
-                     ensure_ascii=False)
+def _key(resolver, q, revision, texts_digest):
+    raw = json.dumps([resolver.get("name"), resolver.get("command"), q["module"], q["line"], q["text"],
+                      revision, texts_digest], ensure_ascii=False, sort_keys=True)
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:32]
 
 
@@ -65,7 +66,7 @@ def _call(resolver, payload):
     return out
 
 
-def resolve(plan, repo, read_head, cache_dir, cfg, log=print):
+def resolve(plan, repo, read_head, cache_dir, cfg, log=print, source_root=None):
     """Восстанавливает неполные запросы плана на месте; возвращает примечания сводки."""
     resolvers = configured(cfg)
     pending = [q for q in plan.get("queries", []) if not q["complete"]]
@@ -74,7 +75,8 @@ def resolve(plan, repo, read_head, cache_dir, cfg, log=print):
     cache_dir = Path(cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
     owners = {m["path"]: m.get("owner") for m in plan.get("modules", [])}
-    texts = {}
+    texts = {module: read_head(module) or "" for module in sorted({q["module"] for q in pending})}
+    texts_digest = hashlib.sha256(json.dumps(texts, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
     notes = []
     for n, resolver in enumerate(resolvers, 1):
         name = resolver.get("name") or f"resolver{n}"
@@ -83,15 +85,12 @@ def resolve(plan, repo, read_head, cache_dir, cfg, log=print):
             continue
         answers, ask = {}, []
         for q in pending:
-            cached = cache_dir / f"{_key(resolver, q)}.json"
+            cached = cache_dir / f"{_key(resolver, q, plan.get('headSha'), texts_digest)}.json"
             if cached.exists():
                 answers[q["id"]] = json.loads(cached.read_text(encoding="utf-8"))
             else:
                 ask.append(q)
         if ask:
-            for q in ask:
-                if q["module"] not in texts:
-                    texts[q["module"]] = read_head(q["module"]) or ""
             items = []
             for q in ask:
                 method = bsl.parse(texts[q["module"]]).method_at(q["line"])
@@ -99,7 +98,8 @@ def resolve(plan, repo, read_head, cache_dir, cfg, log=print):
                               "method": method.name if method else None, "line": q["line"], "text": q["text"],
                               "reason": q.get("reason")})
             payload = {"version": VERSION, "repo": str(Path(repo).resolve()),
-                       "source": plan.get("headDir") or str((Path(repo) / plan["source"]).resolve()),
+                       "source": str(source_root()) if source_root else (plan.get("headDir")
+                                  or str((Path(repo) / plan["source"]).resolve())),
                        "queries": items, "modules": {m: texts[m] for m in sorted({q["module"] for q in ask})}}
             try:
                 got = _call(resolver, payload)
@@ -110,8 +110,8 @@ def resolve(plan, repo, read_head, cache_dir, cfg, log=print):
                 for q in ask:
                     hit = got.get(q["id"])
                     value = {"text": hit[0], "rationale": hit[1]} if hit else None
-                    (cache_dir / f"{_key(resolver, q)}.json").write_text(json.dumps(value, ensure_ascii=False),
-                                                                        encoding="utf-8")
+                    cached = cache_dir / f"{_key(resolver, q, plan.get('headSha'), texts_digest)}.json"
+                    cached.write_text(json.dumps(value, ensure_ascii=False), encoding="utf-8")
                     answers[q["id"]] = value
         done = 0
         for q in pending:

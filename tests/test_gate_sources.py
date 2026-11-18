@@ -1,9 +1,11 @@
 """Источник проверки: выгрузка в корне репозитория, указатели Git LFS вместо содержимого, BSL LS из VS Code."""
 import contextlib
 import errno
+import hashlib
 import io
 import json
 import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path, PurePosixPath
@@ -13,9 +15,9 @@ import _faults
 from _fs import rmtree_force
 from otk_1c import config
 from otk_1c.errors import InfraError
-from otk_1c.gate import collect, pipeline
+from otk_1c.gate import collect, pipeline, report
 from otk_1c.probes import build, platform
-from otk_1c.sources import gitdiff, workspace
+from otk_1c.sources import gitdiff, revision, workspace
 from test_collect import BASE_MODULE, CONFIG, FLAGS, HEAD_MODULE, run, write
 from test_dirdiff import FakePlatform
 
@@ -69,6 +71,215 @@ class TestSources(unittest.TestCase):
                                       pipeline.checks.Gate(cfg), None, {}, logs.append)
         self.assertEqual([m["path"] for m in plan["modules"]], ["CommonModules/М/Ext/Module.bsl"])
         self.assertTrue(any("в корне репозитория" in m for m in logs))
+
+    def _assert_snapshot(self, repo, plan, run_dir, expected):
+        """Статика, корень сборки/проб и строки отчёта читают один снимок."""
+        rel = "CommonModules/М/Ext/Module.bsl"
+        cfg = config._merge(config.load(repo), {"checks": {"analyzers": "off", "platform-api": "off"}})
+        self.assertEqual(revision.read_head(repo, plan)(rel).splitlines(), expected.splitlines())
+        with mock.patch.object(pipeline.static, "run", wraps=pipeline.static.run) as check:
+            pipeline.static_step(repo, cfg, run_dir, run_dir / "otk.json")
+        self.assertEqual(check.call_args.args[3](rel).splitlines(), expected.splitlines())
+        tree = workspace.tree_root(repo, plan, run_dir)
+        self.assertNotEqual(tree, repo)
+        self.assertEqual((tree / rel).read_text(encoding="utf-8-sig").splitlines(), expected.splitlines())
+        reader = report.head_reader(lambda: workspace.tree_root(repo, plan, run_dir), plan)
+        self.assertEqual(reader(rel).splitlines(), expected.splitlines())
+        self.assertEqual(workspace.plan_root(repo, run_dir / "otk.json", cfg), tree)
+
+    def test_explicit_head_ignores_dirty_tree(self):
+        repo = self._repo()
+        run(repo, "commit", "-q", "-am", "head")
+        write(repo, "CommonModules/М/Ext/Module.bsl", BASE_MODULE)
+        run_dir = self.tmp / "explicit"
+        run_dir.mkdir()
+        plan = collect.collect(repo, "HEAD~1", "HEAD", ".", ["Server"])
+        (run_dir / "otk.json").write_text(json.dumps(plan), encoding="utf-8")
+        self.assertEqual(plan["modules"][0]["changedMethods"][0]["name"], "Изменяемая")
+        self._assert_snapshot(repo, plan, run_dir, HEAD_MODULE)
+
+    def test_head_snapshot_ignores_archive_attributes(self):
+        rel = "CommonModules/М/Ext/Module.bsl"
+        repo = self._repo()
+        for attr in ("export-ignore", "export-subst"):
+            with self.subTest(attr=attr):
+                expected = HEAD_MODULE.replace("Возврат П;", f'Возврат "$Format:%H$ {attr}";')
+                (repo / ".gitattributes").write_text(f"*.bsl -text {attr}\n", encoding="utf-8")
+                write(repo, rel, expected)
+                run(repo, "add", "-A")
+                run(repo, "commit", "-q", "-m", attr)
+                run_dir = self.tmp / attr
+                plan = collect.collect(repo, "HEAD~1", "HEAD", ".", ["Server"])
+                self.assertEqual([module["path"] for module in plan["modules"]], [rel])
+
+                # Снимок от старой версии мог пропустить модуль или изменить его при экспорте.
+                sha = plan["headSha"]
+                stale = run_dir / "trees" / sha[:workspace.TREE_SHA]
+                write(stale, "Configuration.xml", CONFIG)
+                if attr == "export-subst":
+                    write(stale, rel, expected.replace("$Format:%H$", sha))
+                old_key = hashlib.sha1(b".", usedforsecurity=False).hexdigest()
+                stale.with_name(f"{stale.name}-{old_key}.done").write_bytes(b".")
+
+                (run_dir / "otk.json").write_text(json.dumps(plan), encoding="utf-8")
+                self._assert_snapshot(repo, plan, run_dir, expected)
+                self.assertEqual((stale / rel).read_bytes(), (repo / rel).read_bytes())
+
+    @unittest.skipUnless(os.name == "nt", "Windows resolves Git paths without regard to case")
+    def test_snapshot_rejects_case_colliding_git_paths(self):
+        repo = self._repo()
+
+        def git_input(*args, data):
+            return subprocess.run(["git", "-C", str(repo), *args], input=data, capture_output=True,
+                                  check=True).stdout.strip()
+
+        blobs = {
+            "A.bsl": git_input("hash-object", "-w", "--stdin", data=b"first"),
+            "Configuration.xml": git_input("hash-object", "-w", "--stdin", data=CONFIG.encode("utf-8")),
+            "a.bsl": git_input("hash-object", "-w", "--stdin", data=b"second"),
+        }
+        entries = b"".join(b"100644 blob " + oid + b"\t" + name.encode("ascii") + b"\0"
+                           for name, oid in blobs.items())
+        tree = git_input("mktree", "-z", data=entries).decode("ascii")
+        sha = git_input("commit-tree", tree, "-p", "HEAD", data=b"case collision\n").decode("ascii")
+        for stale in (False, True):
+            with self.subTest(stale=stale):
+                trees = self.tmp / ("stale" if stale else "fresh")
+                target = trees / sha[:workspace.TREE_SHA]
+                if stale:
+                    write(target, "Configuration.xml", CONFIG)
+                    write(target, "A.bsl", "second")
+                    old_key = hashlib.sha1(b"git-blobs:.", usedforsecurity=False).hexdigest()
+                    target.with_name(f"{target.name}-{old_key}.done").write_text(".", encoding="utf-8")
+                with self.assertRaisesRegex(gitdiff.GitError, "пути Git совпадают на Windows"):
+                    workspace.materialize(repo, sha, ".", trees)
+                self.assertFalse(workspace.done_marker(target, ".").exists())
+
+    @unittest.skipUnless(os.name == "nt", "Windows resolves Git paths without regard to case")
+    def test_snapshot_rejects_collision_with_previously_extracted_source(self):
+        target = self.tmp / "trees"
+        (target / "A").mkdir(parents=True)
+        with self.assertRaisesRegex(gitdiff.GitError, "пути Git совпадают на Windows"):
+            workspace._reject_windows_path_collisions([("a", b"040000", b"tree", b"0" * 40)], target)
+
+    @unittest.skipUnless(os.name == "nt", "Windows path equality can merge distinct Git names")
+    def test_snapshot_checks_existing_names_in_distinct_windows_directories(self):
+        target = self.tmp / "trees"
+        (target / "K").mkdir(parents=True)
+        write(target, "K/EXISTING.bsl", "content")
+        entries = [(name, b"100644", b"blob", b"0" * 40) for name in ("K/new.bsl", "K/existing.bsl")]
+        with self.assertRaisesRegex(gitdiff.GitError, "K/existing.bsl и K/EXISTING.bsl"):
+            workspace._reject_windows_path_collisions(entries, target)
+
+    @unittest.skipUnless(os.name == "nt", "Windows resolves Git paths without regard to case")
+    def test_windows_path_comparison_preserves_distinct_unicode_names(self):
+        self.assertFalse(workspace._same_part("ß", "ss"))
+        self.assertTrue(workspace._same_part("A", "a"))
+        self.assertFalse(workspace._same_part("\U00010400", "\U00010428"))
+        target = self.tmp / "trees"
+        target.mkdir()
+        workspace._reject_windows_path_collisions([
+            ("ß.bsl", b"100644", b"blob", b"0" * 40),
+            ("ss.bsl", b"100644", b"blob", b"0" * 40),
+        ], target)
+
+    def test_snapshot_failure_does_not_fall_back_to_worktree(self):
+        repo = self._repo()
+        plan = {"headSha": gitdiff.rev(repo, "HEAD"), "source": "."}
+        with mock.patch.object(workspace, "materialize", side_effect=InfraError("snapshot unavailable")):
+            with self.assertRaisesRegex(InfraError, "snapshot unavailable"):
+                workspace.tree_root(repo, plan, self.tmp / "failed")
+
+    def test_head_moves_after_plan(self):
+        repo = self._repo()
+        run(repo, "commit", "-q", "-am", "head")
+        run_dir = self.tmp / "moving"
+        run_dir.mkdir()
+        plan = collect.collect(repo, "HEAD~1", "HEAD", ".", ["Server"])
+        (run_dir / "otk.json").write_text(json.dumps(plan), encoding="utf-8")
+        write(repo, "CommonModules/М/Ext/Module.bsl", BASE_MODULE)
+        run(repo, "commit", "-q", "-am", "later")
+        self._assert_snapshot(repo, plan, run_dir, HEAD_MODULE)
+
+    def test_worktree_snapshot_survives_later_edits(self):
+        repo = self._repo()
+        cfg = config._merge(config.load(repo), {"checks": {"bslls": "off", "platform-api": "off"}})
+        run_dir = self.tmp / "worktree"
+        run_dir.mkdir()
+        plan, _ = pipeline._plan_step(repo, cfg, run_dir, pipeline.GateOptions("HEAD", worktree=True),
+                                      pipeline.checks.Gate(cfg), None, {}, lambda _message: None)
+        self.assertTrue(plan["modules"])
+        write(repo, "CommonModules/М/Ext/Module.bsl", BASE_MODULE)
+        self._assert_snapshot(repo, plan, run_dir, HEAD_MODULE)
+
+    def test_resolver_source_follows_plan_revision(self):
+        repo = self._repo()
+        run(repo, "commit", "-q", "-am", "head")
+        plan = collect.collect(repo, "HEAD~1", "HEAD", ".", ["Server"])
+        rel = "CommonModules/М/Ext/Module.bsl"
+        plan["queries"] = [{"id": "q", "module": rel, "line": 2, "text": "ВЫБРАТЬ <?>", "complete": False}]
+        write(repo, rel, BASE_MODULE)
+        cfg = config._merge(config.load(repo), {"queries": {"resolvers": [{"command": ["fake"]}]}})
+
+        def resolve(_resolver, payload):
+            self.assertEqual((Path(payload["source"]) / rel).read_text(encoding="utf-8-sig").splitlines(),
+                             HEAD_MODULE.splitlines())
+            self.assertEqual(payload["modules"][rel].splitlines(), HEAD_MODULE.splitlines())
+            return {}
+
+        with mock.patch.object(pipeline.resolvers, "_call", side_effect=resolve) as call:
+            pipeline.resolve_queries(plan, repo, cfg, self.tmp / "resolver", log=lambda _: None)
+        call.assert_called_once()
+
+    def test_scenarios_follow_plan_revision(self):
+        repo = self._repo()
+        rel = "tests/cfe/Tests/CommonModules/Tests/Ext/Module.bsl"
+        registration = ('Процедура ИсполняемыеСценарии() Экспорт\n'
+                        'ЮТТесты.ДобавитьТест("Committed");\nКонецПроцедуры\n')
+        write(repo, "tests/cfe/Tests/Configuration.xml", "<Name>CommittedExtension</Name>")
+        write(repo, rel, registration)
+        run(repo, "add", "-A")
+        run(repo, "commit", "-q", "-m", "scenarios")
+        write(repo, rel, registration.replace("Committed", "Dirty"))
+        write(repo, "tests/cfe/Tests/Configuration.xml", "<Name>DirtyExtension</Name>")
+        paths = ("tests/cfe", str(repo / "tests" / "cfe"), str(Path("tests/cfe/../cfe")))
+        if os.name == "nt":
+            paths += ("TeStS/CfE",)
+        for n, path in enumerate(paths):
+            cfg = config._merge(config.load(repo), {"scenarios": {"path": path}})
+            for worktree, name, extension in ((False, "Committed", "CommittedExtension"),
+                                               (True, "Dirty", "DirtyExtension")):
+                with self.subTest(path=path, worktree=worktree):
+                    run_dir = self.tmp / f"scenarios-{n}-{worktree}"
+                    run_dir.mkdir()
+                    opts = pipeline.GateOptions("HEAD~1", head="HEAD", worktree=worktree, all_scenarios=True)
+                    plan, _ = pipeline._plan_step(repo, cfg, run_dir, opts, pipeline.checks.Gate(cfg), None, {},
+                                                  lambda _: None)
+                    self.assertEqual([s["name"] for s in plan["scenarios"]], [name])
+                    self.assertEqual(plan["scenarioExtensions"], [{"name": extension, "dir": "tests/cfe/Tests"}])
+
+    @unittest.skipUnless(os.name == "nt", "Windows resolves Git paths without regard to case")
+    def test_git_scenarios_path_rejects_case_colliding_directories(self):
+        repo = self._repo()
+        subtree = gitdiff.git(repo, "rev-parse", "HEAD^{tree}").strip()
+        entries = f"040000 tree {subtree}\tTests\n040000 tree {subtree}\ttests\n".encode("ascii")
+        tree = subprocess.run(["git", "-C", str(repo), "mktree"], input=entries, capture_output=True,
+                              check=True).stdout.decode("ascii").strip()
+
+        with self.assertRaisesRegex(gitdiff.GitError, "пути Git совпадают на Windows: Tests и tests"):
+            workspace._git_tree_path(repo, tree, "tests/cfe")
+
+    def test_git_scenarios_path_outside_repo_is_rejected(self):
+        repo = self._repo()
+        cfg = config._merge(config.load(repo), {"scenarios": {"path": "../outside"}})
+        run_dir = self.tmp / "outside-scenarios"
+        run_dir.mkdir()
+        opts = pipeline.GateOptions("HEAD", head="HEAD", all_scenarios=True)
+        with mock.patch.object(pipeline.scen_mod, "discover") as discover:
+            with self.assertRaisesRegex(InfraError, r"\[scenarios\] path.*внутри репозитория") as error:
+                pipeline._plan_step(repo, cfg, run_dir, opts, pipeline.checks.Gate(cfg), None, {}, lambda _: None)
+            self.assertEqual(error.exception.code, "config-invalid")
+            discover.assert_not_called()
 
     def test_gate_retry_starts_fresh(self):
         """Повтор после прерывания заново строит план и не переиспользует файлы шагов прошлого запуска."""
@@ -224,12 +435,28 @@ class TestSources(unittest.TestCase):
             build._load(fake, self.tmp, d, None, None, None, {"ib": str(ib)})
         self.assertEqual(calls, [])
 
-    def test_archive_error_reason(self):
+    def test_git_snapshot_preserves_lfs_pointer_and_stops_load(self):
+        repo = self._repo()
+        rel = "Templates/Т/Ext/Template.bin"
+        pointer(repo, rel)
+        run(repo, "add", rel)
+        run(repo, "commit", "-q", "-m", "pointer")
+        sha = gitdiff.rev(repo, "HEAD")
+        (repo / rel).write_bytes(b"hydrated in worktree")
+        snapshot = workspace.materialize(repo, sha, ".", self.tmp / "trees")
+        self.assertEqual((snapshot / rel).read_bytes(), POINTER.encode("ascii"))
+        ib = self.tmp / "ib"
+        ib.mkdir()
+        (ib / "1Cv8.1CD").write_bytes(b"x")
+        fake = mock.Mock(ib=ib, connection=None)
+        with self.assertRaisesRegex(InfraError, r"в снимке Git-редакции .+через --dir"):
+            build.build(repo, sha, ".", snapshot, fake, self.tmp / "run", full=True)
+        self.assertEqual(fake.mock_calls, [mock.call.lock()])
+
+    def test_git_tree_error_reason(self):
         r = self._repo()
-        with self.assertRaisesRegex(gitdiff.GitError, "git archive .+: .+"):
+        with self.assertRaisesRegex(gitdiff.GitError, "git ls-tree .+: .+"):
             workspace.materialize(r, "0" * 40, ".", self.tmp / "trees")
-        self.assertIn("git lfs fetch", workspace._lfs_hint("fatal: smudge filter lfs failed", "abc"))
-        self.assertEqual(workspace._lfs_hint("fatal: not a tree", "abc"), "")
 
     def test_tree_dir_short_sha(self):
         """Каталог редакции — начало sha: путь выгрузки ERP короче на 28 символов."""
@@ -260,7 +487,7 @@ class TestSources(unittest.TestCase):
         self.assertTrue((target / "ext/ТестыА/Configuration.xml").is_file())
         # неудачное извлечение одного src снимает только его маркер, ничего не удаляет
         workspace.done_marker(target, "ext/ТестыБ").unlink()
-        with mock.patch.object(workspace.tarfile.TarFile, "extractall", side_effect=OSError(errno.EIO, "I/O")):
+        with mock.patch.object(workspace, "_extract_blobs", side_effect=OSError(errno.EIO, "I/O")):
             with self.assertRaises(gitdiff.GitError):
                 workspace.materialize(r, sha, "ext/ТестыБ", trees)
         self.assertFalse(workspace.done_marker(target, "ext/ТестыБ").exists())
@@ -274,12 +501,12 @@ class TestSources(unittest.TestCase):
         workspace.materialize(r, sha, ".", trees)   # «.» пересекается со всеми — их маркеры сняты
         self.assertFalse(workspace.done_marker(target, "ext/ТестыА").exists())
         # расширение внутри извлечённого источника готово по его маркеру: без извлечения и снятия маркера
-        with mock.patch.object(workspace.tarfile.TarFile, "extractall", side_effect=AssertionError("извлечение")):
+        with mock.patch.object(workspace, "_extract_blobs", side_effect=AssertionError("извлечение")):
             self.assertEqual(workspace.materialize(r, sha, "ext/ТестыА", trees), target)
         self.assertTrue(workspace.done_marker(target, ".").is_file())
         # неполное расширение внутри «.» извлекается заново; сбой мог задеть дерево «.» — его маркер снят
         (target / "ext/ТестыБ/Configuration.xml").unlink()
-        with mock.patch.object(workspace.tarfile.TarFile, "extractall", side_effect=OSError(errno.EIO, "I/O")):
+        with mock.patch.object(workspace, "_extract_blobs", side_effect=OSError(errno.EIO, "I/O")):
             with self.assertRaises(gitdiff.GitError):
                 workspace.materialize(r, sha, "ext/ТестыБ", trees)
         self.assertFalse(workspace.done_marker(target, ".").exists())
@@ -290,7 +517,7 @@ class TestSources(unittest.TestCase):
         workspace.materialize(r, sha, "CommonModules", trees)
         self.assertFalse(workspace.done_marker(target, "ext/ТестыА").exists())
         if os.name == "nt":                         # пересечение источников на Windows — без учёта регистра
-            self.assertEqual(workspace._parts("Src/Objects"), workspace._parts("src/objects"))
+            self.assertTrue(workspace._same_prefix(workspace._parts("Src/Objects"), workspace._parts("src/objects")))
 
     def test_marker_must_match_name_and_content(self):
         """Испорченный маркер готовности (пустой, с чужим содержимым, с именем не от содержимого) — как
@@ -433,22 +660,152 @@ class TestSources(unittest.TestCase):
         sha = gitdiff.rev(r, "HEAD")
         long = str(self.tmp / ("д" * 300))
         failure = OSError(errno.ENAMETOOLONG, "File name too long", long)
-        with mock.patch.object(workspace.tarfile.TarFile, "extractall", side_effect=failure):
+        with mock.patch.object(workspace, "_extract_blobs", side_effect=failure):
             with self.assertRaisesRegex(gitdiff.GitError, r"извлечение редакции .+ символов: .+OTK_RUN_DIR"):
                 workspace.materialize(r, sha, ".", self.tmp / "trees")
         self.assertFalse(workspace.done_marker(self.tmp / "trees" / sha[:workspace.TREE_SHA], ".").exists())
         self.assertEqual(workspace._long_path_hint(OSError(errno.EACCES, "denied", "C:/x"), "C:/x"), "")
 
     def test_extract_rejected_not_marked_done(self):
-        """Фильтр tarfile отклонил запись при коде git 0 — сбой, маркер готовности не ставится."""
+        """Git-ссылка на путь за пределами снимка не извлекается, даже если ОС не умеет создавать ссылки."""
+        r = self._repo()
+        link = self.tmp / "link-content"
+        link.write_bytes(b"../../outside")
+        oid = gitdiff.git(r, "hash-object", "-w", str(link)).strip()
+        run(r, "update-index", "--add", "--cacheinfo", f"120000,{oid},external-link")
+        run(r, "commit", "-q", "-m", "external link")
+        sha = gitdiff.rev(r, "HEAD")
+        target = self.tmp / "trees" / sha[:workspace.TREE_SHA]
+        with self.assertRaisesRegex(gitdiff.GitError, "извлечение редакции .+ссылка за пределы дерева"):
+            workspace.materialize(r, sha, ".", self.tmp / "trees")
+        self.assertFalse(workspace.done_marker(target, ".").exists())
+
+    def test_extract_symlink_loop_error(self):
         r = self._repo()
         sha = gitdiff.rev(r, "HEAD")
         target = self.tmp / "trees" / sha[:workspace.TREE_SHA]
-        with mock.patch.object(workspace.tarfile.TarFile, "extractall",
-                               side_effect=workspace.tarfile.TarError("ссылка за пределы дерева")):
-            with self.assertRaisesRegex(gitdiff.GitError, "извлечение редакции .+ссылка за пределы"):
+        with mock.patch.object(workspace.Path, "resolve", side_effect=RuntimeError("Symlink loop")):
+            with self.assertRaisesRegex(gitdiff.GitError, "извлечение редакции .+цикл ссылок"):
                 workspace.materialize(r, sha, ".", self.tmp / "trees")
         self.assertFalse(workspace.done_marker(target, ".").exists())
+
+    def test_extract_directory_symlinks_after_their_targets(self):
+        r = self._repo()
+        (r / "z-dir").mkdir()
+        (r / "z-dir" / "content.txt").write_text("content", encoding="utf-8")
+        run(r, "add", "z-dir")
+        for name, value in [("a-link", "b-link"), ("b-link", "z-dir")]:
+            link = self.tmp / "link-content"
+            link.write_bytes(value.encode())
+            oid = gitdiff.git(r, "hash-object", "-w", str(link)).strip()
+            run(r, "update-index", "--add", "--cacheinfo", f"120000,{oid},{name}")
+        run(r, "commit", "-q", "-m", "directory links")
+        sha = gitdiff.rev(r, "HEAD")
+
+        created = []
+
+        def create(dest, link, *, target_is_directory):
+            # Stand in for a Windows directory symlink without requiring its privilege.
+            created.append((dest.name, link, target_is_directory))
+            dest.mkdir()
+
+        with mock.patch.object(workspace.Path, "symlink_to", autospec=True, side_effect=create):
+            workspace.materialize(r, sha, ".", self.tmp / "trees")
+        self.assertEqual(created, [("b-link", "z-dir", True), ("a-link", "b-link", True)])
+
+    @unittest.skipUnless(os.name == "nt", "Windows resolves symlink targets without regard to case")
+    def test_extract_directory_symlink_target_with_different_case(self):
+        r = self._repo()
+        write(r, "Data/content.txt", "content")
+        run(r, "add", "Data")
+        for name, value in [("A-link", "b-link"), ("B-link", "data")]:
+            link = self.tmp / "link-content"
+            link.write_bytes(value.encode())
+            oid = gitdiff.git(r, "hash-object", "-w", str(link)).strip()
+            run(r, "update-index", "--add", "--cacheinfo", f"120000,{oid},{name}")
+        run(r, "commit", "-q", "-m", "case-insensitive link targets")
+        created = []
+
+        def create(dest, link, *, target_is_directory):
+            created.append((dest.name, link, target_is_directory))
+            dest.mkdir()
+
+        with mock.patch.object(workspace.Path, "symlink_to", autospec=True, side_effect=create):
+            workspace.materialize(r, gitdiff.rev(r, "HEAD"), ".", self.tmp / "trees")
+        self.assertEqual(created, [("B-link", "data", True), ("A-link", "b-link", True)])
+
+    @unittest.skipUnless(os.name == "nt", "Windows path equality can merge distinct Git names")
+    def test_extract_symlinks_with_distinct_windows_names(self):
+        r = self._repo()
+        write(r, "TargetA/content.txt", "content")
+        write(r, "TargetB/content.txt", "content")
+        run(r, "add", "TargetA", "TargetB")
+        for name, value in [("K", "TargetA"), ("K", "TargetB")]:
+            link = self.tmp / "link-content"
+            link.write_bytes(value.encode())
+            oid = gitdiff.git(r, "hash-object", "-w", str(link)).strip()
+            run(r, "update-index", "--add", "--cacheinfo", f"120000,{oid},{name}")
+        run(r, "commit", "-q", "-m", "distinct Windows link names")
+        created = []
+
+        def create(dest, link, *, target_is_directory):
+            created.append((dest.name, link, target_is_directory))
+            dest.mkdir()
+
+        with mock.patch.object(workspace.Path, "symlink_to", autospec=True, side_effect=create):
+            target = workspace.materialize(r, gitdiff.rev(r, "HEAD"), ".", self.tmp / "trees")
+        self.assertCountEqual(created, [("K", "TargetA", True), ("K", "TargetB", True)])
+        self.assertTrue(workspace.done_marker(target, ".").is_file())
+
+    def test_extract_directory_symlink_before_sibling_source(self):
+        r = self._repo()
+        for src in ("src/first", "src/second"):
+            source = r / src
+            source.mkdir(parents=True)
+            (source / "Configuration.xml").write_text("<Configuration/>", encoding="utf-8")
+        run(r, "add", "src")
+        for name, value in [("src/first/link", "../second/alias"), ("src/second/alias", ".")]:
+            link = self.tmp / "link-content"
+            link.write_bytes(value.encode())
+            oid = gitdiff.git(r, "hash-object", "-w", str(link)).strip()
+            run(r, "update-index", "--add", "--cacheinfo", f"120000,{oid},{name}")
+        run(r, "commit", "-q", "-m", "link across sources")
+        sha = gitdiff.rev(r, "HEAD")
+        trees = self.tmp / "trees"
+
+        with mock.patch.object(workspace.Path, "symlink_to", autospec=True) as create:
+            target = workspace.materialize(r, sha, "src/first", trees)
+            self.assertFalse((target / "src/second").exists())
+            create.assert_called_once()
+            first_path, first_link = create.call_args.args
+            self.assertTrue(first_path.parent.samefile(target / "src/first"))
+            self.assertEqual(first_path.name, "link")
+            self.assertEqual(first_link, "../second/alias")
+            self.assertTrue(create.call_args.kwargs["target_is_directory"])
+
+            workspace.materialize(r, sha, "src/second", trees)
+            self.assertTrue((target / "src/second").is_dir())
+            second_path, second_link = create.call_args.args
+            self.assertTrue(second_path.parent.samefile(target / "src/second"))
+            self.assertEqual(second_path.name, "alias")
+            self.assertEqual(second_link, ".")
+            self.assertTrue(create.call_args.kwargs["target_is_directory"])
+
+    def test_extract_git_symlink_cycle_before_creating_links(self):
+        r = self._repo()
+        for name, value in [("a-link", "b-link"), ("b-link", "a-link")]:
+            link = self.tmp / "link-content"
+            link.write_bytes(value.encode())
+            oid = gitdiff.git(r, "hash-object", "-w", str(link)).strip()
+            run(r, "update-index", "--add", "--cacheinfo", f"120000,{oid},{name}")
+        run(r, "commit", "-q", "-m", "cyclic links")
+        sha = gitdiff.rev(r, "HEAD")
+        trees = self.tmp / "trees"
+        with mock.patch.object(workspace.Path, "symlink_to") as create:
+            with self.assertRaisesRegex(gitdiff.GitError, "цикл ссылок"):
+                workspace.materialize(r, sha, ".", trees)
+        create.assert_not_called()
+        self.assertFalse(workspace.done_marker(trees / sha[:workspace.TREE_SHA], ".").exists())
 
     def test_tree_dir_mkdir_error(self):
         """Не создался сам каталог редакции — GitError с подсказкой, а не трассировка."""
@@ -481,7 +838,7 @@ class TestSources(unittest.TestCase):
         keep.write_bytes(b"preserve")
         denied = PermissionError(13, "Access is denied", str(self.tmp / "trees" / "x.done"))
         with mock.patch.object(workspace.Path, "read_bytes", side_effect=denied), \
-                mock.patch.object(workspace.tarfile.TarFile, "extractall") as extract:
+                mock.patch.object(workspace, "_extract_blobs") as extract:
             with self.assertRaisesRegex(gitdiff.GitError, r"готовая редакция .+x\.done: .*Access is denied"):
                 workspace.materialize(r, sha, ".", self.tmp / "trees")
         extract.assert_not_called()
@@ -490,7 +847,7 @@ class TestSources(unittest.TestCase):
         none = FileNotFoundError(errno.ENOENT, "No usable temporary directory found")
         with mock.patch.object(workspace.tempfile, "TemporaryFile", side_effect=none), \
                 mock.patch.object(workspace.tempfile, "gettempdir", side_effect=none):
-            with self.assertRaisesRegex(gitdiff.GitError, "временный файл для git archive: .+No usable"):
+            with self.assertRaisesRegex(gitdiff.GitError, "извлечение редакции .+No usable"):
                 workspace.materialize(r, sha, ".", self.tmp / "trees")
 
     def test_run_dir_inside_worktree_warning(self):
