@@ -408,7 +408,10 @@ def verdict(plan, findings, static, run, infra_errors, designer=None, missing=()
     if any(f["severity"] == "error" for f in findings):
         return 1, "есть ошибки — не отправлять"
     if has_input and checked_count(static, run, designer) == 0:
-        return 2, "ничего не проверено"
+        text = "ничего не проверено"
+        if missing:
+            text += "; не покрыто обязательное: " + ", ".join(missing)
+        return 2, text
     if missing:
         return 2, "не покрыто обязательное: " + ", ".join(missing)
     if not has_input and not plan["removedModules"] and not plan["metadata"]:

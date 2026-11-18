@@ -1,4 +1,5 @@
 """Статические проверки на синтетической выгрузке: дефекты каталога ловятся, перекрытые имена — нет."""
+import copy
 import subprocess
 import tempfile
 import unittest
@@ -137,6 +138,19 @@ class TestStatic(unittest.TestCase):
 
         got = static.run(self.repo, self.plan, self.ix, self.read, Api(), metadata=False)
         self.assertEqual({f["check"] for f in got}, {"platform-api"})
+
+    def test_deleted_local_method_does_not_count_as_static_check(self):
+        """Удаление локального метода не даёт строк HEAD для правил статики."""
+        plan = copy.deepcopy(self.plan)
+        entry = next(m for m in plan["modules"] if m["kind"] == "CommonModule")
+        entry["changedMethods"] = []
+        entry["removedMethods"] = [{"name": "Локальная", "kind": "procedure", "export": False}]
+        plan["modules"] = [entry]
+        plan["removedModules"] = []
+        plan["metadata"] = []
+        checked = set()
+        static.run(self.repo, plan, self.ix, self.read, checked=checked)
+        self.assertNotIn(entry["path"], checked)
 
     def test_platform_names(self):
         """Стандартные формы — из словаря имён платформы: без ФормаСписка в нём — находка form-name."""

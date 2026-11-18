@@ -378,7 +378,7 @@ def run(repo, plan, index, read_head, api=None, read_parent=None, lay=layout.DES
                           api, read_parent, global_exports)
         for rule in rules:
             rule(m)
-        if checked is not None:
+        if checked is not None and m.lines:
             checked.add(entry["path"])
     for rule in PLAN_RULES if metadata else ():
         findings.extend(rule(plan, index, lay, checked=checked))
