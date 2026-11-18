@@ -610,6 +610,27 @@ class TestSources(unittest.TestCase):
             workspace.materialize(r, sha, ".", self.tmp / "trees")
         self.assertEqual(created, [("b-link", "z-dir", True), ("a-link", "b-link", True)])
 
+    @unittest.skipUnless(os.name == "nt", "Windows resolves symlink targets without regard to case")
+    def test_extract_directory_symlink_target_with_different_case(self):
+        r = self._repo()
+        write(r, "Data/content.txt", "content")
+        run(r, "add", "Data")
+        for name, value in [("A-link", "b-link"), ("B-link", "data")]:
+            link = self.tmp / "link-content"
+            link.write_bytes(value.encode())
+            oid = gitdiff.git(r, "hash-object", "-w", str(link)).strip()
+            run(r, "update-index", "--add", "--cacheinfo", f"120000,{oid},{name}")
+        run(r, "commit", "-q", "-m", "case-insensitive link targets")
+        created = []
+
+        def create(dest, link, *, target_is_directory):
+            created.append((dest.name, link, target_is_directory))
+            dest.mkdir()
+
+        with mock.patch.object(workspace.Path, "symlink_to", autospec=True, side_effect=create):
+            workspace.materialize(r, gitdiff.rev(r, "HEAD"), ".", self.tmp / "trees")
+        self.assertEqual(created, [("B-link", "data", True), ("A-link", "b-link", True)])
+
     def test_extract_directory_symlink_before_sibling_source(self):
         r = self._repo()
         for src in ("src/first", "src/second"):

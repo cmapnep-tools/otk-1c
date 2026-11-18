@@ -17,7 +17,7 @@ TREE_SHA = 12                   # каталог редакции — trees/<н�
 _warned_inside = set()
 
 if os.name == "nt":
-    _compare_string_ordinal = ctypes.windll.kernel32.CompareStringOrdinal
+    _compare_string_ordinal = vars(ctypes)["windll"].kernel32.CompareStringOrdinal
     _compare_string_ordinal.argtypes = [ctypes.c_wchar_p, ctypes.c_int, ctypes.c_wchar_p, ctypes.c_int, ctypes.c_int]
     _compare_string_ordinal.restype = ctypes.c_int
 
@@ -243,11 +243,28 @@ def _reserved_windows_name(name):
     return bool(re.search(r'[\x00-\x1f<>:"|?*]|[. ]$', name)) or Path(name).is_reserved()
 
 
+def _git_object_for_path(root, objects, folded_objects, path):
+    parts = path.relative_to(root).parts
+    obj = objects.get(PurePosixPath(*parts).as_posix())
+    if obj is not None:
+        return path, obj
+    if os.name == "nt":
+        for actual, obj in folded_objects.get(tuple(part.casefold() for part in parts), []):
+            if _same_prefix(parts, actual):
+                return root.joinpath(*actual), obj
+    return path, None
+
+
 def _write_symlinks(root: Path, links: dict[Path, str], cmd, entries) -> None:
     """Определяем тип по коммиту, включая ещё не извлечённые соседние источники."""
     resolved_root = root.resolve()
     pending = {resolved_root / dest.relative_to(root): link for dest, link in links.items()}
     objects = {name: (mode, kind, oid) for name, mode, kind, oid in entries}
+    folded_objects: dict[tuple[str, ...], list[tuple[tuple[str, ...], tuple[bytes, bytes, bytes]]]] = {}
+    if os.name == "nt":
+        for name, obj in objects.items():
+            parts = PurePosixPath(name).parts
+            folded_objects.setdefault(tuple(part.casefold() for part in parts), []).append((parts, obj))
     resolved: dict[Path, Path] = {}
     active: set[Path] = set()
 
@@ -263,7 +280,7 @@ def _write_symlinks(root: Path, links: dict[Path, str], cmd, entries) -> None:
             if not target.is_relative_to(resolved_root):
                 raise gitdiff.GitError(f"ссылка за пределы дерева редакции: {dest}")
             _resolve_link_target(target, resolved_root, dest)
-            obj = objects.get(target.relative_to(resolved_root).as_posix())
+            target, obj = _git_object_for_path(resolved_root, objects, folded_objects, target)
             if obj and obj[0] == b"120000":
                 target = follow(target, obj[2])
         active.remove(dest)
@@ -284,7 +301,7 @@ def _write_symlinks(root: Path, links: dict[Path, str], cmd, entries) -> None:
     def write(dest: Path) -> Path:
         link = pending[dest]
         target = resolve(dest, link)
-        obj = objects.get(target.relative_to(resolved_root).as_posix())
+        target, obj = _git_object_for_path(resolved_root, objects, folded_objects, target)
         is_directory = target == resolved_root or (obj is not None and obj[1] in (b"tree", b"commit"))
         if not (dest.is_symlink() and os.readlink(dest) == link):
             dest.symlink_to(link, target_is_directory=is_directory)
