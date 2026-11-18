@@ -83,7 +83,7 @@ class IsolatedRunsTest(unittest.TestCase):
         default = subprocess.run(args, capture_output=True, env=env, timeout=30)
         self.assertTrue(Path(json.loads(default.stdout)["runDir"]).samefile(workspace.latest_run(dirs[0].parent)))
 
-    def test_report_explicit_root_selects_latest_sequential_gate(self):
+    def test_report_explicit_root_selects_its_own_plan(self):
         directories = []
         for head in ("HEAD~1", "HEAD"):
             process = self.start(head)
@@ -92,10 +92,12 @@ class IsolatedRunsTest(unittest.TestCase):
             directories.append(Path(json.loads(stdout)["runDir"]))
         env = {**os.environ, "PYTHONPATH": str(Path(__file__).resolve().parent.parent / "src")}
         (directories[-1].parent / "otk.json").write_bytes((directories[0] / "otk.json").read_bytes())
-        for root in (self.tmp / "runs", directories[-1].parent):
+        for root, expected in ((self.tmp / "runs", directories[-1]),
+                               (directories[-1].parent, directories[-1].parent)):
             result = subprocess.run([sys.executable, "-m", "otk_1c", "report", "--repo", str(self.repo),
                                      "--json", "--run-dir", str(root)], capture_output=True, env=env, timeout=30)
-            self.assertTrue(Path(json.loads(result.stdout)["runDir"]).samefile(directories[-1]))
+            self.assertEqual(result.returncode, 0, result.stderr.decode())
+            self.assertTrue(Path(json.loads(result.stdout)["runDir"]).samefile(expected))
 
     def test_unfinished_run_does_not_replace_completed(self):
         root = workspace.run_dir(self.cfg, self.repo)
@@ -170,6 +172,14 @@ class IsolatedRunsTest(unittest.TestCase):
         self.assertEqual(run.call_args.args[1]["modules"], [])
         self.assertIsNotNone(run.call_args.kwargs["static"])
         self.assertEqual({p.name: p.read_bytes() for p in completed.iterdir() if p.is_file()}, before)
+        with mock.patch.dict(os.environ, {"OTK_RUN_DIR": str(self.tmp / "runs")}), \
+                contextlib.redirect_stdout(io.StringIO()) as output:
+            self.assertIn(cli.main(["report", *common, "--json"]), (0, 1, 2))
+        self.assertTrue(Path(json.loads(output.getvalue())["runDir"]).samefile(completed))
+        with mock.patch.dict(os.environ, {"OTK_RUN_DIR": str(self.tmp / "runs")}), \
+                contextlib.redirect_stdout(io.StringIO()) as output:
+            self.assertIn(cli.main(["report", *common, "--json", "--run-dir", str(root)]), (0, 1, 2))
+        self.assertTrue(Path(json.loads(output.getvalue())["runDir"]).samefile(root))
 
     def test_historical_gate_reuses_project_index(self):
         cfg = config._merge(config.load(self.repo), self.cfg)
@@ -184,6 +194,32 @@ class IsolatedRunsTest(unittest.TestCase):
         cache = workspace.run_dir(cfg, self.repo) / "cache" / "metadata"
         self.assertEqual(len(list(cache.glob("index-*.json"))), 1)
         self.assertFalse(any((directory / "cache").exists() for directory in (first, second)))
+
+    def test_head_gate_builds_index_from_commit_during_checkout_edit(self):
+        cfg = config._merge(config.load(self.repo), self.cfg)
+        cfg = config._merge(cfg, {"checks": {"analyzers": "off", "platform-api": "off"}})
+        first, second = (workspace.new_run(cfg, self.repo) for _ in range(2))
+        opts = pipeline.GateOptions(static_only=True)
+        module = "CommonModules/М/Ext/Module.bsl"
+        build = index.build
+
+        def build_during_edit(source_root, *args):
+            write(self.repo, module, BASE_MODULE)
+            try:
+                source = (source_root / module).read_text(encoding="utf-8-sig")
+                self.assertEqual(source, HEAD_MODULE)
+                return build(source_root, *args)
+            finally:
+                run(self.repo, "restore", "--", module)
+
+        with mock.patch.object(index, "build", side_effect=build_during_edit) as first_build:
+            result = pipeline.gate_run(self.repo, cfg, first, opts, log=lambda _: None)
+            self.assertIn(result["code"], (0, 1), result)
+            first_build.assert_called_once()
+        with mock.patch.object(index, "build", side_effect=AssertionError("кеш не сработал")) as second_build:
+            result = pipeline.gate_run(self.repo, cfg, second, opts, log=lambda _: None)
+            self.assertIn(result["code"], (0, 1), result)
+            second_build.assert_not_called()
 
 
 class BusyGateTest(unittest.TestCase):

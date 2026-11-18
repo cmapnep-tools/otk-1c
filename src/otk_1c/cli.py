@@ -387,8 +387,8 @@ def _report_data(a):
         # каталог прогона или, как у gate, корень прогонов: тогда в нём — каталог прогона проекта
         given = Path(a.run_dir)
         nested = given / run_dir.name
-        run_dir = workspace.latest_run(given if (given / "otk.json").is_file() else
-                                       (nested if nested.is_dir() else given))
+        run_dir = given if (given / "otk.json").is_file() else workspace.latest_run(
+            nested if nested.is_dir() else given)
     else:
         run_dir = workspace.latest_run(run_dir)
     if not (run_dir / "otk.json").exists():

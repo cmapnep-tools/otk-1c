@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -288,11 +289,27 @@ def _small_files(d, prefix):
                 continue
 
 
+def cleanup_trees(run_dir, log=print):
+    """Удалить только временные Git-деревья своего gate после формирования отчётов.
+
+    Отчёты, план и общий кеш индекса сохраняются. Последующий отдельный шаг при необходимости
+    заново извлечёт headSha; параллельные gate используют другие каталоги.
+    """
+    trees = Path(run_dir) / "trees"
+    try:
+        shutil.rmtree(trees)
+    except FileNotFoundError:
+        pass
+    except OSError as e:
+        log(f"не удалось удалить временные исходники {trees}: {e}")
+
+
 def tree_root(repo, plan, run_dir):
+    """Один снимок Git для статики, загрузки и строк отчёта; --dir читает заданную выгрузку."""
     if plan.get("headDir"):
         return Path(plan["headDir"])
     head_sha = plan.get("headSha")
-    if head_sha and head_sha != gitdiff.rev(repo, "HEAD"):
+    if head_sha:
         return materialize(repo, head_sha, plan["source"], run_dir / "trees")
     return repo
 

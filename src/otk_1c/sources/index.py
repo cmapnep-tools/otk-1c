@@ -3,8 +3,8 @@
 Объекты по типам (реквизиты, табличные части, формы, команды, значения перечислений,
 предопределённые элементы), экспортные методы общих модулей и модулей менеджеров с арностью,
 ссылки на обработчики (подписки, регламентные задания). Для расширения — объединение с индексом
-основной конфигурации (`parent`). Кеш — JSON по ключу: хеш дерева выгрузки в git, для каталогов вне
-git — отпечаток каталога (dir_fingerprint).
+основной конфигурации (`parent`). Кеш — JSON по содержимому извлечённых файлов или каталога.
+При построении из изменяемого каталога проверяется происхождение каждого чтения.
 """
 import hashlib
 import json
@@ -12,9 +12,10 @@ import os
 import re
 import tempfile
 import xml.etree.ElementTree as ET
+from contextvars import ContextVar
 from pathlib import Path
 
-from . import bsl, gitdiff, layout
+from . import bsl, layout
 
 # тег в Configuration.xml -> каталог выгрузки
 COLLECTIONS = {
@@ -31,7 +32,9 @@ COLLECTIONS = {
 }
 _FIELD_TAGS = {"Attribute", "Dimension", "Resource", "AddressingAttribute", "AccountingFlag",
                "ExtDimensionAccountingFlag"}
-INDEX_VERSION = 4
+INDEX_VERSION = 5
+# Context-local provenance keeps concurrent builders independent.
+_READ_PROVENANCE = ContextVar("index_read_provenance", default=None)
 
 
 def _local(tag):
@@ -100,7 +103,15 @@ def _split(text):
 
 def _read(root, rel):
     p = root / rel
-    return layout.read_text(p)
+    provenance = _READ_PROVENANCE.get()
+    if provenance is None:
+        return layout.read_text(p)
+    expected, valid = provenance
+    data = p.read_bytes() if p.is_file() else None
+    digest = hashlib.sha256(data).digest() if data is not None else None
+    if digest != expected.get(Path(rel).as_posix()):
+        valid[0] = False
+    return layout.decode(data) if data is not None else None
 
 
 def _object(root, collection, name, lay=layout.DESIGNER):
@@ -276,19 +287,7 @@ def merge(child, parent):
     return out
 
 
-def cache_key(repo, source_dir):
-    """Хеш дерева выгрузки в HEAD, если рабочее дерево по ней чистое; иначе None (без кеша)."""
-    try:
-        dirty = gitdiff.git(repo, "status", "--porcelain", "--", source_dir).strip()
-        if dirty:
-            return None
-        source = Path(source_dir).as_posix()
-        return gitdiff.git(repo, "rev-parse", f"HEAD:{'' if source == '.' else source}").strip()
-    except gitdiff.GitError:
-        return None
-
-
-def _cached(cache, source_root, lay=None):
+def _cached(cache, source_root, lay=None, *, cache_is_current=None):
     if cache is None:
         return build(source_root, lay)
     try:
@@ -297,6 +296,9 @@ def _cached(cache, source_root, lay=None):
         pass
 
     result = build(source_root, lay)
+    # Сборка читает изменяемые файлы. Публикуем лишь при подтверждённом происхождении прочитанных байтов.
+    if cache_is_current is not None and not cache_is_current():
+        return result
     cache.parent.mkdir(parents=True, exist_ok=True)
     stream = tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=cache.parent, delete=False)
     pending = Path(stream.name)
@@ -312,10 +314,6 @@ def _cached(cache, source_root, lay=None):
     finally:
         pending.unlink(missing_ok=True)
     return result
-
-
-def _tree_cache(cache_dir, key, prefix="index"):
-    return Path(cache_dir) / f"{prefix}-{key}-v{INDEX_VERSION}.json" if cache_dir and key else None
 
 
 def _extracted_fingerprint(root):
@@ -341,13 +339,17 @@ def cached_revision(source_root, cache_dir):
     """Индекс фактически извлечённых исходников: локальные атрибуты Git могут менять архив одной редакции."""
     root = Path(source_root)
     key = _extracted_fingerprint(root) if cache_dir else None
-    return _cached(_tree_cache(cache_dir, key, "index-extracted"), root)
+    cache = Path(cache_dir) / f"index-extracted-{key}-v{INDEX_VERSION}.json" if cache_dir and key else None
+    return _cached(cache, root)
 
 
 def load(repo, source_dir, cache_dir=None, parent=None):
-    """Индекс выгрузки репозитория (рабочее дерево), с кешем. parent — каталог основной конфигурации."""
-    repo = Path(repo)
-    index = _cached(_tree_cache(cache_dir, cache_key(repo, source_dir)), repo / source_dir)
+    """Индекс рабочего дерева и, при наличии, основной конфигурации.
+
+    Кеш используется только для основной конфигурации: файлы рабочего дерева
+    могут измениться и вернуться к исходному состоянию за время построения.
+    """
+    index = build(Path(repo) / source_dir)
     if parent:
         parent_index = build(Path(parent)) if not cache_dir else cached_dir(Path(parent), Path(cache_dir))
         index = merge(index, parent_index)
@@ -384,16 +386,50 @@ def dir_fingerprint(path, full, lay=layout.DESIGNER):
     return h.hexdigest()[:16]
 
 
+def _directory_manifest(root):
+    """Content hashes only: one streaming pass, no source-tree copy in memory or on disk."""
+    hashes = {}
+
+    def walk(directory):
+        with os.scandir(directory) as entries:
+            for entry in sorted(entries, key=lambda item: item.name):
+                if entry.name.startswith("."):
+                    continue
+                if entry.is_dir(follow_symlinks=False):
+                    walk(Path(entry.path))
+                elif entry.is_file():
+                    with open(entry.path, "rb") as stream:
+                        digest = hashlib.file_digest(stream, "sha256").digest()
+                    hashes[Path(entry.path).relative_to(root).as_posix()] = digest
+
+    walk(root)
+    fingerprint = hashlib.sha256()
+    for name, digest in sorted(hashes.items()):
+        fingerprint.update(os.fsencode(name) + b"\0" + digest)
+    return fingerprint.hexdigest(), hashes
+
+
 def cached_dir(path, cache_dir, full=False):
-    """Индекс каталога вне git с кешем: основная конфигурация (full=False) или проверяемая выгрузка без
-    git (full=True), см. dir_fingerprint. Ключ — стабильный хеш пути и отпечаток.
-    Записи других отпечатков сохраняются для параллельных прогонов."""
+    """Content-keyed index of a mutable directory, including a parent configuration.
+
+    full is retained for caller compatibility; markers and timestamps cannot prove
+    which bytes a builder read. Hash all files for lookup, then verify each actual
+    build read against that manifest before publication (including absent files).
+    Other fingerprints are retained for concurrent runs. This is not an atomic
+    filesystem snapshot: files can change after hashing or a cache lookup. A hit
+    corresponds to the observed manifest, not necessarily the tree at return time.
+    """
     path = Path(path)
-    lay = layout.detect(path)
+    fingerprint, hashes = _directory_manifest(path)
+    lay = layout.detect_read(lambda rel: "" if rel in hashes else None)
     if lay is None:
         raise FileNotFoundError(path / layout.DESIGNER.config_file)
     cache_dir = Path(cache_dir)
     key = hashlib.sha1(str(path.resolve()).lower().encode("utf-8"), usedforsecurity=False).hexdigest()[:12]
-    prefix = f"index-dir-{key}-"
-    cache = cache_dir / f"{prefix}{dir_fingerprint(path, full, lay)}-v{INDEX_VERSION}.json"
-    return _cached(cache, path, lay)
+    cache = cache_dir / f"index-dir-{key}-{fingerprint}-v{INDEX_VERSION}.json"
+    valid = [True]
+    token = _READ_PROVENANCE.set((hashes, valid))
+    try:
+        return _cached(cache, path, lay, cache_is_current=lambda: valid[0])
+    finally:
+        _READ_PROVENANCE.reset(token)

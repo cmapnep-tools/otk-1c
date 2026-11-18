@@ -77,13 +77,13 @@ def static_step(repo: Path, cfg: dict, run_dir: Path, plan_path: Path, parent_ar
     t0 = time.time()
     head_sha = plan.get("headSha")
     index_cache_dir = index_cache_dir or run_dir / "cache"
-    if plan.get("headDir") or (head_sha and head_sha != gitdiff.rev(repo, "HEAD")):
-        # выгрузка без git (gate --dir) или редакция плана, а не рабочее дерево
-        tree_root = Path(plan["headDir"]) if plan.get("headDir") else workspace.materialize(repo, head_sha, src,
-                                                                                            run_dir / "trees")
-        if plan.get("headDir"):
+    head_dir = plan.get("headDir")
+    if head_dir or head_sha:
+        if head_dir:
+            tree_root = Path(head_dir)
             ix = index_mod.cached_dir(tree_root / src, index_cache_dir, full=True)
         else:
+            tree_root = workspace.tree_root(repo, plan, run_dir)
             ix = index_mod.cached_revision(tree_root / src, index_cache_dir)
         if parent:
             ix = index_mod.merge(ix, index_mod.cached_dir(Path(parent), index_cache_dir))
@@ -276,6 +276,17 @@ class GateOptions:
 
 def gate_run(repo: Path, cfg: dict, run_dir: Path, opts: GateOptions, log: model.Log = print) -> dict[str, Any]:
     """Вся проверка: collect -> static -> build/run -> [designer] -> сводка. Возвращает сводку (code — код выхода)."""
+    try:
+        summary = _gate_run(repo, cfg, run_dir, opts, log)
+    finally:
+        # Отчёты хранят строки исходников; исходное дерево можно восстановить из headSha плана.
+        # Оно принадлежит только этому прогону, общий кеш индекса остаётся на месте.
+        workspace.cleanup_trees(run_dir, log)
+    (run_dir / ".completed").touch()
+    return summary
+
+
+def _gate_run(repo: Path, cfg: dict, run_dir: Path, opts: GateOptions, log: model.Log) -> dict[str, Any]:
     run_dir.mkdir(parents=True, exist_ok=True)
     vendor_prep = vendor_mod.prepare(cfg, run_dir, log=log) if opts.vendor else None
     if vendor_prep:
@@ -299,7 +310,6 @@ def gate_run(repo: Path, cfg: dict, run_dir: Path, opts: GateOptions, log: model
         vendor_mod.cleanup(run_dir)
     summary = report.from_files(run_dir, timings, lambda: workspace.tree_root(repo, plan, run_dir))
     output.write(summary, run_dir, Path(opts.head_dir) if opts.head_dir else repo)
-    (run_dir / ".completed").touch()
     return summary
 
 
