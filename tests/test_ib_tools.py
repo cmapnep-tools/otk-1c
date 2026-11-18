@@ -158,6 +158,15 @@ class TestAdoptedObjects(unittest.TestCase):
         self.assertEqual(source.read_text(encoding='utf-8-sig'), predefined)
         self.assertIsNone(ib_tools.adopted_object(self.root, 'Catalogs', 'Товары', fields=False)['predefined'])
 
+    def test_unreadable_predefined_data_is_infrastructure_error(self):
+        source = self.root / 'Catalogs/Товары/Ext/Predefined.xml'
+        ib_tools.write(source, '<PredefinedData/>')
+        with mock.patch.object(Path, 'read_text', side_effect=OSError('доступ запрещён')):
+            with self.assertRaises(InfraError) as error:
+                ib_tools._adopted_predefined(source, '2.16')
+        self.assertIn(str(source), str(error.exception))
+        self.assertIn('доступ запрещён', str(error.exception))
+
     def test_no_predefined_data(self):
         self.assertIsNone(ib_tools.adopted_object(self.root, 'Catalogs', 'Товары')['predefined'])
 
