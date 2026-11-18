@@ -262,7 +262,11 @@ def _adopted_predefined(path, fmt):
     имён (включая префиксы внутри xsi:type), свойства и вложенность исходного Predefined.xml.
     """
     # XML выгрузки проекта; minidom/expat не раскрывает внешние сущности (как ET, S314 в pyproject).
-    with minidom.parseString(path.read_text(encoding="utf-8-sig")) as doc:  # noqa: S318
+    try:
+        text = path.read_text(encoding="utf-8-sig")
+    except OSError as e:
+        raise InfraError(f"не читается {path}: {e}") from e
+    with minidom.parseString(text) as doc:  # noqa: S318
         doc.documentElement.setAttribute("version", fmt)
         for item in doc.getElementsByTagNameNS("*", "Item"):
             children = [c for c in item.childNodes if c.nodeType == c.ELEMENT_NODE]
