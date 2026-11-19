@@ -323,6 +323,25 @@ def _git_source(repo: Path, head_sha: str, project: dict, override: str | None) 
     return src, False
 
 
+def git_plan_source(repo: Path, head: str, project: dict, override: str | None) -> tuple[str, str, bool]:
+    """Фиксирует коммит до выбора источника для плана."""
+    head_sha = gitdiff.rev(repo, head)
+    source, detected = _git_source(repo, head_sha, project, override)
+    return head_sha, source, detected
+
+
+def detect_plan_extension(repo: Path, cfg: dict, plan: dict) -> None:
+    """Распознаёт расширение из источника, использованного при сборе плана."""
+    project = cfg["project"]
+    if project.get("extension"):
+        return
+    read_head = revision.read_head(repo, plan)
+    lay = layout.detect_read(read_head)
+    props = lay.properties(read_head(lay.config_file)) if lay else None
+    if props and props.extension and props.name:
+        project.update(extension=props.name, extensionDetected=True)
+
+
 def _plan_step(repo: Path, cfg: dict, run_dir: Path, opts: GateOptions, gate: checks.Gate,
                vendor_prep: dict | None, timings: dict[str, float], log: model.Log) -> tuple[dict, Path]:
     """Шаг collect: план с запросами, сценариями и формами дымового теста -> otk.json. Возвращает (план, путь)."""
@@ -342,20 +361,15 @@ def _plan_step(repo: Path, cfg: dict, run_dir: Path, opts: GateOptions, gate: ch
         if opts.worktree:
             stash = gitdiff.git(repo, "stash", "create").strip()  # коммит без изменения ветки и индекса
             head = stash or "HEAD"
-        head_sha = gitdiff.rev(repo, head)
-        src, source_detected = _git_source(repo, head_sha, project, opts.source)
+        head_sha, src, source_detected = git_plan_source(repo, head, project, opts.source)
         if source_detected:
             log(f"выгрузка — {src} (в корне репозитория; project.source не задан)")
         if opts.worktree:
             untracked = gitdiff.git(repo, "ls-files", "--others", "--exclude-standard", "--", src).split()
         plan = collect_mod.collect(repo, opts.base, head, src, env["contexts"], env["ordinaryApplication"],
                                    parent_root, env.get("requiredContexts", ()), head_sha=head_sha)
-    if not opts.vendor and not project.get("extension"):
-        read_head = revision.read_head(repo, plan)
-        lay = layout.detect_read(read_head)
-        props = lay.properties(read_head(lay.config_file)) if lay else None
-        if props and props.extension and props.name:
-            project.update(extension=props.name, extensionDetected=True)
+    if not opts.vendor:
+        detect_plan_extension(repo, cfg, plan)
     if project.get("extensionDetected"):
         log(f"расширение «{project['extension']}» — распознано по файлу конфигурации")
     notes = plan_notes(cfg, opts.parent, gate)

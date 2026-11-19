@@ -135,8 +135,10 @@ def cmd_scaffold(a):
 
 def cmd_collect(a):
     repo = _project(a)
-    cfg = config.load(repo)
-    source_dir = a.source or cfg["project"]["source"]
+    from_git = not (a.dir or a.worktree)
+    cfg = config.load(repo, defer_source=from_git)
+    project = cfg["project"]
+    source_dir = a.source or project["source"]
     env = cfg["environment"]
     head = gitdiff.WORKTREE if a.worktree else a.head
     try:
@@ -148,9 +150,12 @@ def cmd_collect(a):
         plan = collect_mod.collect_dirs(a.base_dir, a.dir, env["contexts"], env["ordinaryApplication"], parent,
                                         env.get("requiredContexts", ()))
     else:
+        head_sha = None
+        if from_git:
+            head_sha, source_dir, _ = pipeline.git_plan_source(repo, head, project, a.source)
         plan = collect_mod.collect(repo, a.base, head, source_dir, env["contexts"], env["ordinaryApplication"], parent,
-                                   env.get("requiredContexts", ()))
-    config.detect_extension(cfg, Path(a.dir) if a.dir else repo / source_dir)
+                                   env.get("requiredContexts", ()), head_sha=head_sha)
+    pipeline.detect_plan_extension(repo, cfg, plan)
     plan["notes"] = pipeline.plan_notes(cfg, getattr(a, "parent", None))      # как в gate
     plan["notes"] += pipeline.resolve_queries(plan, repo, cfg, workspace.run_dir(cfg, repo),
                                               log=lambda m: print(m, file=sys.stderr))
@@ -1010,7 +1015,8 @@ def cmd_help(a):
 
 def _normalize(a, ap):
     """Пути проектов EDT — к их src; сочетания ключей, которые argparse не выражает."""
-    if getattr(a, "source", None) and a.cmd != "gate":  # gate определяет EDT по выбранной редакции
+    from_git = a.cmd == "gate" or (a.cmd == "collect" and not (a.dir or a.worktree))
+    if getattr(a, "source", None) and not from_git:
         try:
             root = _project(a)
         except (gitdiff.GitError, OSError):

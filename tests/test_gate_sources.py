@@ -186,6 +186,36 @@ class TestSources(unittest.TestCase):
                 self.assertTrue(any(f["rule"] == "metadata-ref" and f["severity"] == "error"
                                     for f in json.loads(result.stdout)["findings"]), result.stdout)
 
+    def test_cli_collect_reads_source_and_extension_from_selected_revision(self):
+        repo = self._repo()
+        run(repo, "commit", "-q", "-am", "head")
+        base = gitdiff.rev(repo, "HEAD~1")
+        extension = CONFIG.replace(
+            "<Properties>",
+            "<Properties><Name>РабочееДерево</Name><ConfigurationExtensionPurpose>Customization"
+            "</ConfigurationExtensionPurpose>",
+        )
+        write(repo, "Configuration.xml", extension)
+        write(repo, "src/cf/Configuration.xml", extension)
+        dump = self.tmp / "collect-dump"
+        write(dump, "Configuration.xml", extension)
+        for mode, args, expected_source, no_parent in (
+            ("head", ["--base", base, "--head", "HEAD"], ".", False),
+            ("worktree", ["--base", base, "--worktree", "--source", "."], ".", True),
+            ("dir", ["--dir", str(dump)], ".", True),
+        ):
+            with self.subTest(mode=mode):
+                result = subprocess.run(
+                    [sys.executable, "-m", "otk_1c", "collect", "--repo", str(repo), "--out", "-", *args],
+                    capture_output=True, encoding="utf-8", timeout=45,
+                )
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                plan = json.loads(result.stdout)
+                if mode != "dir":
+                    self.assertEqual(plan["source"], expected_source)
+                    self.assertEqual([m["path"] for m in plan["modules"]], ["CommonModules/М/Ext/Module.bsl"])
+                self.assertEqual(config.NO_PARENT in plan["notes"], no_parent, plan["notes"])
+
     def _assert_snapshot(self, repo, plan, run_dir, expected):
         """Статика, корень сборки/проб и строки отчёта читают один снимок."""
         rel = "CommonModules/М/Ext/Module.bsl"
