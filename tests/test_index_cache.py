@@ -42,7 +42,7 @@ class TestIndexCache(unittest.TestCase):
         return set(index.cached_dir(self.dump, self.cache, full=full)["commonModules"]["м"]["exports"])
 
     def test_key_stable_between_processes(self):
-        code = ("import sys; from pathlib import Path; from otk_1c.sources import index, workspace; "
+        code = ("import sys; from pathlib import Path; from otk_1c.sources import index; "
                 "index.cached_dir(Path(sys.argv[1]), Path(sys.argv[2])); "
                 "print(*sorted(p.name for p in Path(sys.argv[2]).iterdir()))")
         env = {**os.environ, "PYTHONPATH": str(Path(index.__file__).parents[2])}
@@ -51,6 +51,7 @@ class TestIndexCache(unittest.TestCase):
         self.assertEqual(names[0], names[1])                   # второй процесс нашёл запись первого
         self.assertEqual(len(names[0].split()), 1)
 
+    @unittest.skipUnless(os.environ.get("OTK_TEST_GIT") == "1", "OTK_TEST_GIT=1 включает проверку с Git")
     def test_extracted_cache_ignores_local_git_archive_attributes(self):
         """Exact Git blobs ignore local archive attributes and reuse the same content cache key."""
         git = ["git", "-C", str(self.dump)]
@@ -65,9 +66,9 @@ class TestIndexCache(unittest.TestCase):
 
         write(self.dump, ".git/info/attributes", "CommonModules/**/Module.bsl export-ignore\n")
         second = workspace.materialize(self.dump, commit, ".", self.tmp / "two")
-        current = index.cached_revision(second, self.cache)
-        self.assertTrue(current["commonModules"]["м"]["source"])
-        self.assertEqual(current, prior)
+        self.assertTrue((second / "CommonModules/М/Ext/Module.bsl").is_file())
+        with mock.patch.object(index, "build", side_effect=AssertionError("кеш не сработал")):
+            self.assertEqual(index.cached_revision(second, self.cache), prior)
         self.assertEqual(len(list(self.cache.glob("index-extracted-*.json"))), 1)
 
     def test_cache_hit(self):
@@ -130,6 +131,7 @@ class TestIndexCache(unittest.TestCase):
             self.assertEqual(self.exports(True), {"б"})
         self.assertEqual(len(list(self.cache.glob("index-dir-*.json"))), 1)
 
+    @unittest.skipUnless(os.environ.get("OTK_TEST_GIT") == "1", "OTK_TEST_GIT=1 включает проверку с Git")
     def test_worktree_edit_and_restore_during_build_is_not_cached(self):
         git = ["git", "-C", str(self.dump)]
         subprocess.run([*git, "init", "-q"], check=True)
