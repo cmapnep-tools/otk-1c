@@ -50,7 +50,7 @@ def _project(a):
 
 def _cfg(a, repo):
     """Настройки прогона: otk.toml + otk.local.toml + аргументы командной строки."""
-    return config.apply_args(config.load(repo), a)
+    return config.apply_args(config.load(repo, defer_source=a.cmd == "gate"), a)
 
 def cmd_console(a):
     if getattr(a, "json", False):
@@ -462,8 +462,6 @@ def _gate_json(a):
 
 def _gate_run(a, repo, cfg):
     """Прогон gate по ключам: (сводка, каталог прогона); журнал — в stdout."""
-    if not a.vendor:
-        config.detect_extension(cfg, Path(a.dir) if a.dir else repo / (a.source or cfg["project"]["source"]))
     run_dir = workspace.new_run(cfg, repo)
     opts = pipeline.GateOptions(a.base, a.head, a.worktree, a.source, head_dir=a.dir, base_dir=a.base_dir,
                                 vendor=a.vendor, static_only=a.static_only, fast=a.fast,
@@ -1014,7 +1012,7 @@ def cmd_help(a):
 
 def _normalize(a, ap):
     """Пути проектов EDT — к их src; сочетания ключей, которые argparse не выражает."""
-    if getattr(a, "source", None):      # project.source — каталог проекта EDT: берём его src
+    if getattr(a, "source", None) and a.cmd != "gate":  # gate определяет EDT по выбранной редакции
         try:
             root = _project(a)
         except (gitdiff.GitError, OSError):

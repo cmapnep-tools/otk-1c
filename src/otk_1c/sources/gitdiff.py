@@ -128,7 +128,7 @@ class Blobs:
         self.proc.stdin.write(f"{ref}:{path}\n".encode("utf-8"))
         self.proc.stdin.flush()
         header = self.proc.stdout.readline().decode("utf-8", "replace").split()
-        if len(header) != 3:                      # «<имя> missing» / «ambiguous»
+        if len(header) != 3 or not header[2].isdigit():  # «<имя> missing» / «ambiguous»
             return None
         data = self.proc.stdout.read(int(header[2]))
         self.proc.stdout.read(1)                  # перевод строки после содержимого

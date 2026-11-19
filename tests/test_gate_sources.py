@@ -6,8 +6,10 @@ import io
 import json
 import os
 import subprocess
+import sys
 import tempfile
 import unittest
+from argparse import Namespace
 from pathlib import Path, PurePosixPath
 from unittest import mock
 
@@ -71,6 +73,118 @@ class TestSources(unittest.TestCase):
                                       pipeline.checks.Gate(cfg), None, {}, logs.append)
         self.assertEqual([m["path"] for m in plan["modules"]], ["CommonModules/М/Ext/Module.bsl"])
         self.assertTrue(any("в корне репозитория" in m for m in logs))
+
+    def test_gate_detects_extension_from_planned_revision(self):
+        repo = self._repo()
+        extension = CONFIG.replace(
+            "<Properties>",
+            "<Properties><Name>Снимок</Name><ConfigurationExtensionPurpose>Customization"
+            "</ConfigurationExtensionPurpose>",
+        )
+        write(repo, "Configuration.xml", extension)
+        run(repo, "commit", "-q", "-am", "extension")
+        write(repo, "Configuration.xml", extension.replace("Снимок", "РабочееДерево"))
+        dump = self.tmp / "dump"
+        write(dump, "Configuration.xml", extension.replace("Снимок", "Каталог"))
+        for label, opts, configured, expected in (
+            ("head", pipeline.GateOptions("HEAD", head="HEAD"), None, "Снимок"),
+            ("worktree", pipeline.GateOptions("HEAD", worktree=True), None, "РабочееДерево"),
+            ("dir", pipeline.GateOptions(head_dir=str(dump)), None, "Каталог"),
+            ("explicit", pipeline.GateOptions("HEAD"), "Настройка", "Настройка"),
+        ):
+            with self.subTest(label=label):
+                cfg = config.load(repo)
+                if configured:
+                    cfg["project"]["extension"] = configured
+                logs = []
+                run_dir = self.tmp / label
+                run_dir.mkdir()
+                plan, _ = pipeline._plan_step(repo, cfg, run_dir, opts, pipeline.checks.Gate(cfg), None, {},
+                                              logs.append)
+                self.assertEqual(cfg["project"]["extension"], expected)
+                self.assertIn(config.NO_PARENT, plan["notes"])
+                self.assertEqual(any(f"расширение «{expected}»" in m for m in logs), configured is None)
+        cfg = config.load(repo)
+        with self.assertRaises(gitdiff.GitError):
+            pipeline._plan_step(repo, cfg, self.tmp / "invalid", pipeline.GateOptions("HEAD", head="missing"),
+                                pipeline.checks.Gate(cfg), None, {}, lambda _: None)
+        self.assertFalse(cfg["project"].get("extension"))
+
+    def test_gate_finds_source_in_planned_revision(self):
+        repo = self._repo()
+        run(repo, "commit", "-q", "-am", "head")
+        head_sha = gitdiff.rev(repo, "HEAD")
+        base_sha = gitdiff.rev(repo, "HEAD~1")
+        write(repo, "src/cf/Configuration.xml", CONFIG)
+        cfg = config.load(repo, defer_source=True)
+        run_dir = self.tmp / "source"
+        run_dir.mkdir()
+        git_source = pipeline._git_source
+
+        def move_head(*args):
+            source = git_source(*args)
+            run(repo, "reset", "--hard", "HEAD~1")
+            return source
+
+        with mock.patch.object(pipeline, "_git_source", side_effect=move_head):
+            plan, _ = pipeline._plan_step(repo, cfg, run_dir, pipeline.GateOptions(base_sha, head="HEAD"),
+                                          pipeline.checks.Gate(cfg), None, {}, lambda _: None)
+        self.assertEqual((plan["source"], plan["head"], plan["headSha"]), (".", "HEAD", head_sha))
+        self.assertEqual([m["path"] for m in plan["modules"]], ["CommonModules/М/Ext/Module.bsl"])
+
+    def test_gate_finds_edt_src_and_keeps_explicit_source(self):
+        repo = self._repo()
+        write(repo, "editor/src/Configuration/Configuration.mdo", CONFIG)
+        run(repo, "add", "-A")
+        run(repo, "commit", "-q", "-m", "edt")
+        run(repo, "rm", "-q", "-r", "editor")
+        write(repo, "manual/src/Configuration/Configuration.mdo", CONFIG)
+        for label, configured, override, assignment, source in (
+            ("toml", "editor", None, None, "editor/src"),
+            ("override", "missing", "editor", None, "editor/src"),
+            ("missing", "manual with spaces", None, None, "manual with spaces"),
+            ("set", None, None, 'project.source="editor"', "editor/src"),
+        ):
+            with self.subTest(label=label):
+                settings = f'[project]\nsource = "{configured}"\n' if configured else ""
+                (repo / "otk.toml").write_text(settings, encoding="utf-8")
+                cfg = config.load(repo, defer_source=True)
+                if assignment:
+                    cfg = config.apply_args(cfg, Namespace(set=[assignment]))
+                run_dir = self.tmp / label
+                run_dir.mkdir()
+                opts = pipeline.GateOptions("HEAD", source=override)
+                plan, _ = pipeline._plan_step(repo, cfg, run_dir, opts, pipeline.checks.Gate(cfg), None, {},
+                                              lambda _: None)
+                self.assertEqual(plan["source"], source)
+
+    def test_cli_gate_checks_committed_metadata_despite_dirty_layout_and_type(self):
+        repo = self._repo()
+        write(repo, "CommonModules/М/Ext/Module.bsl",
+              "Процедура П()\n    Х = Справочники.НеизвестныйСправочник.ПустаяСсылка();\nКонецПроцедуры\n")
+        run(repo, "commit", "-q", "-am", "broken metadata reference")
+        base = gitdiff.rev(repo, "HEAD~1")
+        extension = CONFIG.replace(
+            "<Properties>",
+            "<Properties><Name>РабочееДерево</Name><ConfigurationExtensionPurpose>Customization"
+            "</ConfigurationExtensionPurpose>",
+        )
+        for label in ("dirty-extension", "untracked-source"):
+            with self.subTest(label=label):
+                if label == "dirty-extension":
+                    write(repo, "Configuration.xml", extension)
+                else:
+                    write(repo, "Configuration.xml", CONFIG)
+                    write(repo, "src/cf/Configuration.xml", CONFIG)
+                result = subprocess.run(
+                    [sys.executable, "-m", "otk_1c", "gate", "--repo", str(repo), "--base", base,
+                     "--head", "HEAD", "--static-only", "--json", "--run-dir", str(self.tmp / label),
+                     "--set", 'checks.analyzers="off"', "--set", 'checks.platform-api="off"'],
+                    capture_output=True, encoding="utf-8", timeout=45,
+                )
+                self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+                self.assertTrue(any(f["rule"] == "metadata-ref" and f["severity"] == "error"
+                                    for f in json.loads(result.stdout)["findings"]), result.stdout)
 
     def _assert_snapshot(self, repo, plan, run_dir, expected):
         """Статика, корень сборки/проб и строки отчёта читают один снимок."""

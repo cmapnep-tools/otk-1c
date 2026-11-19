@@ -143,7 +143,7 @@ def main(a):
 
     log = lambda m: print(m, flush=True)   # noqa: E731
     repo = Path(gitdiff.git(a.repo or checkout_dir(), "rev-parse", "--show-toplevel").strip())
-    cfg = config.load(repo)
+    cfg = config.load(repo, defer_source=a.action == "gate")
     log(f"из переменных OTK_*: {', '.join(sorted(config.env_values())) or 'ничего'}")
     run_dir = workspace.run_dir(cfg, repo)
     dest = getattr(a, "artifacts", None)
