@@ -37,6 +37,7 @@ NAME = "extcheck"
 EXT = "otk_check"
 # пометка находки, чью новизну сравнением с «было» не доказать: режим не подтверждён канарейкой «было»
 UNCOMPARED = " — ошибка в текущей редакции, сравнение с «было» недоступно"
+COUNT_COMPARED = " — новая ошибка по кратности сообщений; позиция в исходнике неизвестна"
 
 
 class Failed(Exception):
@@ -514,16 +515,12 @@ def compare(by_rel, head, base, after, before, covered=None):
         if rel is None:                   # ошибка без модуля (вид объекта не из словаря) — не «чисто»
             results.append(result(NAME, "extcheck", None, "Designer", "skipped", f"ошибка без модуля: {msg}"))
             continue
-        if line is None:
-            ident = re.search(r'"([^"]+)"', msg)
-            text = head[rel][2] if rel in head else ""
-            if ident:
-                for i, ln in enumerate(text.split("\n"), 1):
-                    if ident.group(1) in ln:
-                        line = i
-                        break
         shown = sorted(m for m in modes if m)
         text = msg + (f" ({', '.join(shown)})" if shown else "")
+        # Кратность доказывает новую ошибку, но не конкретное вхождение идентификатора: оно могло
+        # остаться от старого кода или встречаться только в комментарии. Строку даёт только платформа.
+        if line is None and rel in base and not unproven:
+            text += COUNT_COMPARED
         results.append(result(NAME, "extcheck", entry, "Designer", "compile-error",
                               text + (UNCOMPARED if unproven else ""), line))
     for rel in sorted(set(after["masked"]) | set(before["masked"])):

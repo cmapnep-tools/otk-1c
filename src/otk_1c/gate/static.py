@@ -350,7 +350,8 @@ def module_locals(entry, parsed, index, read_head, lay):
     return names
 
 
-def run(repo, plan, index, read_head, api=None, read_parent=None, lay=layout.DESIGNER, metadata=True, names=None):
+def run(repo, plan, index, read_head, api=None, read_parent=None, lay=layout.DESIGNER, metadata=True,
+        names=None, checked=None):
     """Статические проверки плана: правила RULES по каждому модулю, затем PLAN_RULES. read_head(rel) — текст
     файла выгрузки в проверяемой редакции; api — apicheck.ApiChecker (методы и типы платформы) или None;
     names — словарь имён платформы, когда api нет (иначе — api.names);
@@ -377,12 +378,14 @@ def run(repo, plan, index, read_head, api=None, read_parent=None, lay=layout.DES
                           api, read_parent, global_exports)
         for rule in rules:
             rule(m)
+        if checked is not None and m.lines:
+            checked.add(entry["path"])
     for rule in PLAN_RULES if metadata else ():
-        findings.extend(rule(plan, index, lay))
+        findings.extend(rule(plan, index, lay, checked=checked))
     return findings
 
 
-def check_handler_refs(plan, index, lay=layout.DESIGNER):
+def check_handler_refs(plan, index, lay=layout.DESIGNER, checked=None):
     """Подписки и регламентные задания, ссылающиеся на удалённые/неэкспортные методы общих модулей."""
     findings = []
     touched = {m["owner"].split(".", 1)[1].lower() for m in plan["modules"] if m["kind"] == "CommonModule"}
@@ -399,6 +402,10 @@ def check_handler_refs(plan, index, lay=layout.DESIGNER):
         cm = index["commonModules"].get(module)
         if cm is not None and not cm.get("source", True):
             continue                    # модуль без исходного текста (Module.bin): экспорт не проверить
+        if checked is not None:
+            checked.update(x["path"] for x in plan["metadata"] if x["path"].lower() == xml_path.lower())
+            checked.update(x["path"] for x in plan["removedModules"]
+                           if x["kind"] == "CommonModule" and x["owner"].split(".", 1)[1].lower() == module)
         if cm is None or method not in cm["exports"]:
             findings.append({"check": "handler", "severity": "error", "module": xml_path,
                              "line": 1, "message": f"Обработчик {h['ref']} не найден среди экспортных методов"})
@@ -408,7 +415,7 @@ def check_handler_refs(plan, index, lay=layout.DESIGNER):
 PLAN_RULES = (check_handler_refs,)
 
 
-def dependents(repo_source, plan, index):
+def dependents(repo_source, plan, index, checked=None):
     """Модули, вызывающие удалённые экспорты или экспорты со сменённой сигнатурой.
     Возвращает ({путь: [строки вызовов]}, находки по удалённым методам)."""
     targets = {}
@@ -457,4 +464,15 @@ def dependents(repo_source, plan, index):
                     findings.append({"check": "dependent", "severity": "error", "module": rel, "line": line,
                                      "message": f"Вызов {mod_name}.{exp[0]} с {args} параметрами, "
                                                 f"после изменения — от {exp[1]} до {exp[2]}"})
+    if checked is not None:
+        checked.update(m["path"] for m in plan["modules"]
+                       if m["kind"] == "CommonModule"
+                       and not m.get("renamedFrom")
+                       and m.get("probe", {}).get("strategy") != "none"
+                       and not m.get("flags", {}).get("Global", True)
+                       and not m.get("baseFlags", {}).get("Global", True)
+                       and any(x["export"] for x in m["removedMethods"]))
+        checked.update(m["path"] for m in plan["removedModules"]
+                       if m["kind"] == "CommonModule" and not m.get("flags", {}).get("Global", True)
+                       and m["exports"])
     return {k: v for k, v in found.items() if k not in changed}, findings

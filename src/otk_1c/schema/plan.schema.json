@@ -25,7 +25,8 @@
     "removedModules": {
       "type": "array",
       "items": {"type": "object", "required": ["path", "kind", "owner", "exports"],
-                "properties": {"exports": {"type": "array", "items": {"type": "string"}}}}
+                 "properties": {"exports": {"type": "array", "items": {"type": "string"}},
+                                "flags": {"type": "object", "description": "флаги удалённого модуля из базовой редакции"}}}
     },
     "metadata": {
       "type": "array",
@@ -82,6 +83,7 @@
         "needsPlainServerProbe": {"type": "boolean", "description": "изменения в ветке «НЕ ВнешнееСоединение»: COM-пробы недостаточно"},
         "changedMethods": {"type": "array"},
         "removedMethods": {"type": "array"},
+        "baseFlags": {"type": "object", "description": "флаги общего модуля в базовой редакции при удалении метода"},
         "probe": {
           "type": "object", "required": ["strategy"],
           "properties": {"strategy": {"enum": ["missing-method", "create-object", "get-form", "session-start", "none"]}}
