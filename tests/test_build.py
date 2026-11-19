@@ -111,7 +111,7 @@ class EnsureIbTest(unittest.TestCase):
         loads = []
         with mock.patch("otk_1c.probes.build.tree_hash", return_value="t1"), \
                 mock.patch("otk_1c.probes.build._load", lambda p, r, d, files,
-                           *a: loads.append(files) or {"action": "full"}):
+                           *a, **kw: loads.append(files) or {"action": "full"}):
             res = build.build(self.tmp, "new", "src/cf", self.tmp, self.platform, run)
         self.assertEqual(loads, [None])
         self.assertTrue(res["created"])
@@ -126,7 +126,7 @@ class EnsureIbTest(unittest.TestCase):
                 mock.patch("otk_1c.probes.build._commit_exists", return_value=False), \
                 mock.patch("otk_1c.probes.build._git_changes", side_effect=AssertionError("не строить разницу")), \
                 mock.patch("otk_1c.probes.build._load", lambda p, r, d, files,
-                           *a: loads.append(files) or {"action": "full"}):
+                           *a, **kw: loads.append(files) or {"action": "full"}):
             res = build.build(self.tmp, "new", "src/cf", self.tmp, self.platform, self.tmp / "run")
         self.assertEqual(loads, [None])
         self.assertIn("2b937af287 в репозитории нет", res["action"])

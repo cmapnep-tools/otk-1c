@@ -18,5 +18,5 @@ def read_head(repo, plan):
     if plan.get("headDir"):
         return lambda rel: dirdiff.read(plan["headDir"], rel)
     prefix = gitdiff.source_prefix(plan["source"])
-    ref = gitdiff.WORKTREE if plan["head"] == "WORKTREE" else plan["headSha"]
+    ref = plan.get("headSha") or gitdiff.WORKTREE
     return lambda rel: gitdiff.show(Path(repo), ref, prefix + rel)

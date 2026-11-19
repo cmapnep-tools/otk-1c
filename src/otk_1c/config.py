@@ -118,7 +118,7 @@ def check_contexts(env: Mapping[str, Any]) -> None:
             raise InfraError(f"environment.{key}: {err}", code="config-invalid")
 
 
-def load(repo: str | Path, environ: Mapping[str, str] | None = None) -> Config:
+def load(repo: str | Path, environ: Mapping[str, str] | None = None, *, defer_source: bool = False) -> Config:
     """Настройки проекта: DEFAULTS, otk.toml, otk.local.toml, поверх — переменные OTK_* (environ — для тестов)."""
     cfg, explicit = DEFAULTS, False
     for name in ("otk.toml", "otk.local.toml"):
@@ -131,10 +131,15 @@ def load(repo: str | Path, environ: Mapping[str, str] | None = None) -> Config:
                     raise ValueError(f"{p}: ошибка синтаксиса TOML: {e}") from e
             explicit = explicit or "source" in data.get("project", {})
             cfg = _merge(cfg, data)
-    project = {**cfg["project"], "source": source_rel(repo, cfg["project"]["source"])}
-    root = None if explicit else root_source(repo, project["source"])
-    if root:
-        project.update(source=root, sourceDetected=True)
+    project = dict(cfg["project"])
+    if defer_source:
+        if not explicit:
+            project["sourceDetected"] = None  # поиск выгрузки по умолчанию отложен до выбора Git-редакции
+    else:
+        project["source"] = source_rel(repo, project["source"])
+        root = None if explicit else root_source(repo, project["source"])
+        if root:
+            project.update(source=root, sourceDetected=True)
     env = {**cfg["environment"], **env_values(environ)}
     check_contexts(env)
     return {**cfg, "project": project, "environment": env}
@@ -182,6 +187,8 @@ def _set(cfg: Config, assignment: str) -> None:
         if not isinstance(node, dict):
             raise ValueError(f"--set {assignment}: {p} — не раздел")
     node[parts[-1]] = value
+    if parts == ["project", "source"]:
+        node.pop("sourceDetected", None)
 
 
 def apply_args(cfg: Config, a: Namespace) -> Config:

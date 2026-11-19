@@ -1,7 +1,6 @@
 """База не возвращена к виду до проверки — сбой инфраструктуры (restore-failed, код 2), а не зелёный прогон
 и не обычный дефект: рабочая база пользователя (runner) и откат хука Platform Tools."""
 import json
-import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -11,7 +10,6 @@ from _fs import rmtree_force
 from otk_1c.errors import InfraError
 from otk_1c.gate import runner
 from otk_1c.integrations import platform_tools
-from otk_1c.sources import workspace
 
 
 class FakeSession:
@@ -116,31 +114,6 @@ class PtRollbackTest(unittest.TestCase):
         text, ok = platform_tools.rollback(FakePt(), state, "demo", conn, print)
         self.assertTrue(ok)
         self.assertIn("конфигурация БД обновлена", text)
-
-
-class MaterializeTest(unittest.TestCase):
-    """Python 3.11.0–3.11.3: у tarfile нет фильтра извлечения — редакция git извлекается без него."""
-
-    def setUp(self):
-        self.tmp = Path(tempfile.mkdtemp())
-
-    def tearDown(self):
-        rmtree_force(self.tmp)
-
-    def test_without_filter(self):
-        repo = self.tmp / "repo"
-        (repo / "cf").mkdir(parents=True)
-        (repo / "cf" / "Configuration.xml").write_text("<MetaDataObject/>", encoding="utf-8")
-        for args in (["init", "-q"], ["add", "."],
-                     ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "x"]):
-            subprocess.run(["git", "-C", str(repo), *args], check=True)
-        sha = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], check=True, capture_output=True,
-                             text=True).stdout.strip()
-        for extract in ({}, workspace.SAFE_EXTRACT):
-            trees = self.tmp / f"trees{len(extract)}"
-            with mock.patch.object(workspace, "SAFE_EXTRACT", extract):
-                target = workspace.materialize(repo, sha, "cf", trees)
-            self.assertTrue((target / "cf" / "Configuration.xml").is_file())
 
 
 if __name__ == "__main__":

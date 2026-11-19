@@ -76,10 +76,9 @@ def static_step(repo: Path, cfg: dict, run_dir: Path, plan_path: Path, parent_ar
     parent = str(parent_path) if parent_path else None
     t0 = time.time()
     head_sha = plan.get("headSha")
-    if plan.get("headDir") or (head_sha and head_sha != gitdiff.rev(repo, "HEAD")):
+    if plan.get("headDir") or head_sha:
         # выгрузка без git (gate --dir) или редакция плана, а не рабочее дерево
-        tree_root = Path(plan["headDir"]) if plan.get("headDir") else workspace.materialize(repo, head_sha, src,
-                                                                                            run_dir / "trees")
+        tree_root = workspace.tree_root(repo, plan, run_dir)
         # без git — кеш по отпечатку каталога; редакция git (trees/<sha>) не меняется — достаточно маркеров
         ix = index_mod.cached_dir(tree_root / src, run_dir / "cache", full=bool(plan.get("headDir")))
         if parent:
@@ -248,7 +247,7 @@ def resolve_queries(plan: dict, repo: Path, cfg: dict, run_dir: Path, gate: chec
     if static_only:
         return ["внешние восстановители запросов не вызывались: --static-only"]
     return resolvers.resolve(plan, repo, revision.read_head(repo, plan), Path(run_dir) / "cache" / "resolvers",
-                             cfg, log)
+                             cfg, log, source_root=lambda: workspace.tree_root(repo, plan, run_dir) / plan["source"])
 
 
 @dataclasses.dataclass(frozen=True)
@@ -279,6 +278,7 @@ def gate_run(repo: Path, cfg: dict, run_dir: Path, opts: GateOptions, log: model
     vendor_prep = vendor_mod.prepare(cfg, run_dir, log=log) if opts.vendor else None
     if vendor_prep:
         opts = dataclasses.replace(opts, head_dir=str(vendor_prep["head"]), base_dir=str(vendor_prep["base"]))
+    cfg = {**cfg, "project": dict(cfg["project"])}
     gate = checks.Gate(cfg)
     timings: dict[str, float] = {}
     plan, plan_path = _plan_step(repo, cfg, run_dir, opts, gate, vendor_prep, timings, log)
@@ -301,37 +301,82 @@ def gate_run(repo: Path, cfg: dict, run_dir: Path, opts: GateOptions, log: model
     return summary
 
 
+def _git_source(repo: Path, head_sha: str, project: dict, override: str | None) -> tuple[str, bool]:
+    """Каталог выгрузки и признак автоматического выбора в корне репозитория."""
+    src = override or project["source"]
+    with gitdiff.Blobs(repo) as blobs:
+        def read(source: str, rel: str) -> str | None:
+            return blobs.show(head_sha, gitdiff.source_prefix(source) + rel)
+
+        prefix = gitdiff.source_prefix(src)
+        if read(src, "src/" + layout.EDT.config_file) is not None:
+            return prefix + "src", False
+        if override or project.get("sourceDetected", False) is not None:
+            return src, bool(not override and project.get("sourceDetected"))
+        if layout.detect_read(lambda rel: read(src, rel)):
+            return src, False
+        if read(".", "src/" + layout.EDT.config_file) is not None:
+            return "src", True
+        if layout.detect_read(lambda rel: read(".", rel)):
+            return ".", True
+    return src, False
+
+
+def git_plan_source(repo: Path, head: str, project: dict, override: str | None) -> tuple[str, str, bool]:
+    """Фиксирует коммит до выбора источника для плана."""
+    head_sha = gitdiff.rev(repo, head)
+    source, detected = _git_source(repo, head_sha, project, override)
+    return head_sha, source, detected
+
+
+def detect_plan_extension(repo: Path, cfg: dict, plan: dict) -> None:
+    """Распознаёт расширение из источника, использованного при сборе плана."""
+    project = cfg["project"]
+    if project.get("extension"):
+        return
+    read_head = revision.read_head(repo, plan)
+    lay = layout.detect_read(read_head)
+    props = lay.properties(read_head(lay.config_file)) if lay else None
+    if props and props.extension and props.name:
+        project.update(extension=props.name, extensionDetected=True)
+
+
 def _plan_step(repo: Path, cfg: dict, run_dir: Path, opts: GateOptions, gate: checks.Gate,
                vendor_prep: dict | None, timings: dict[str, float], log: model.Log) -> tuple[dict, Path]:
     """Шаг collect: план с запросами, сценариями и формами дымового теста -> otk.json. Возвращает (план, путь)."""
     if opts.base is None and opts.head_dir is None:
         opts = dataclasses.replace(opts, base=gitdiff.empty_commit(repo))
     env = cfg["environment"]
-    src = "." if opts.head_dir else opts.source or cfg["project"]["source"]
     # нет выгрузки основной конфигурации — сразу и понятно, а не в индексе
     parent_root = config.parent_dir(repo, cfg, opts.parent)
-    notes = plan_notes(cfg, opts.parent, gate)
     project = cfg["project"]
-    if project.get("extensionDetected"):
-        log(f"расширение «{project['extension']}» — распознано по файлу конфигурации")
-    if project.get("sourceDetected") and not opts.source and not opts.head_dir:
-        log(f"выгрузка — {src} (в корне репозитория; project.source не задан)")
     head = opts.head
-    if opts.worktree:
-        stash = gitdiff.git(repo, "stash", "create").strip()   # коммит с рабочим деревом; ветку и индекс не трогает
-        head = stash or "HEAD"
-        untracked = gitdiff.git(repo, "ls-files", "--others", "--exclude-standard", "--", src).split()
-        if untracked:
-            notes.append(f"неотслеживаемые файлы не проверяются (git add): {', '.join(untracked[:5])}"
-                         + (" …" if len(untracked) > 5 else ""))
+    untracked: list[str] = []
     t = time.time()
     if opts.head_dir:
         plan = collect_mod.collect_dirs(opts.base_dir, opts.head_dir, env["contexts"], env["ordinaryApplication"],
                                         parent_root, env.get("requiredContexts", ()))
     else:
+        if opts.worktree:
+            stash = gitdiff.git(repo, "stash", "create").strip()  # коммит без изменения ветки и индекса
+            head = stash or "HEAD"
+        head_sha, src, source_detected = git_plan_source(repo, head, project, opts.source)
+        if source_detected:
+            log(f"выгрузка — {src} (в корне репозитория; project.source не задан)")
+        if opts.worktree:
+            untracked = gitdiff.git(repo, "ls-files", "--others", "--exclude-standard", "--", src).split()
         plan = collect_mod.collect(repo, opts.base, head, src, env["contexts"], env["ordinaryApplication"],
-                                   parent_root, env.get("requiredContexts", ()))
-        outside = None if plan["modules"] or plan["metadata"] else changes_outside(repo, plan, src)
+                                   parent_root, env.get("requiredContexts", ()), head_sha=head_sha)
+    if not opts.vendor:
+        detect_plan_extension(repo, cfg, plan)
+    if project.get("extensionDetected"):
+        log(f"расширение «{project['extension']}» — распознано по файлу конфигурации")
+    notes = plan_notes(cfg, opts.parent, gate)
+    if untracked:
+        notes.append(f"неотслеживаемые файлы не проверяются (git add): {', '.join(untracked[:5])}"
+                     + (" …" if len(untracked) > 5 else ""))
+    if not opts.head_dir:
+        outside = None if plan["modules"] or plan["metadata"] else changes_outside(repo, plan, plan["source"])
         if outside:
             notes.append(outside)
             log(outside)
@@ -341,7 +386,23 @@ def _plan_step(repo: Path, cfg: dict, run_dir: Path, opts: GateOptions, gate: ch
     notes += resolve_queries(plan, repo, cfg, run_dir, gate, opts.static_only, log)
     plan_path = run_dir / "otk.json"
     sc_cfg = cfg.get("scenarios", {})
-    exts = scen_mod.discover(repo, sc_cfg.get("path", scen_mod.DEFAULT_PATH))
+    scenario_path = sc_cfg.get("path", scen_mod.DEFAULT_PATH)
+    exts = []
+    if plan.get("headSha"):
+        # Сохраняем '..': его положение определяет цель ссылки в Git-редакции.
+        repo_dir = repo.absolute()
+        scenario_dir = repo_dir / scenario_path
+        if (not scenario_dir.is_relative_to(repo_dir)
+                or scenario_dir.relative_to(repo_dir).parts[:1] == ('..',)):
+            raise InfraError(f"[scenarios] path должен указывать на каталог внутри репозитория: {scenario_path}",
+                             code="config-invalid")
+        # Расширения могут лежать вне project.source; наличие проверяем в той же редакции.
+        git_path = workspace.git_tree_path(repo, plan["headSha"], scenario_dir.relative_to(repo_dir).as_posix())
+        if git_path is not None:
+            scenario_root = workspace.materialize(repo, plan["headSha"], git_path, run_dir / "trees")
+            exts = scen_mod.discover(scenario_root, git_path)
+    else:
+        exts = scen_mod.discover(repo, scenario_path)
     plan["scenarioExtensions"] = [{"name": e["name"], "dir": e["dir"]} for e in exts]
     plan["scenarios"] = scen_mod.select(plan, exts, opts.all_scenarios)
     plan["allScenarios"] = opts.all_scenarios

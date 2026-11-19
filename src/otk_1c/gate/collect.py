@@ -102,19 +102,22 @@ def _module_entry(info, change, base_text, head_text, available, lexicon_body):
 
 
 def collect(repo, base, head, source_dir, contexts_available, ordinary_application=False, parent=None,
-            required_contexts=()):
+            required_contexts=(), *, head_sha=None):
     """План по git: base..head (head = gitdiff.WORKTREE — рабочее дерево). parent — каталог основной конфигурации
-    (флаги заимствованных общих модулей расширения); required_contexts — контексты, покрытие которых обязательно."""
+    (флаги заимствованных общих модулей расширения); required_contexts — контексты, покрытие которых обязательно.
+    Если вызывающий уже разрешил head в head_sha для выбора источника, используем тот же коммит."""
     repo = Path(repo)
     prefix = gitdiff.source_prefix(source_dir)
     base_sha = gitdiff.rev(repo, base)
-    head_sha = gitdiff.rev(repo, head) if head is not gitdiff.WORKTREE else None
+    if head_sha is None and head is not gitdiff.WORKTREE:
+        head_sha = gitdiff.rev(repo, head)
+    ref = head_sha or head
     with gitdiff.Blobs(repo) as blobs:
-        changes = sorted(gitdiff.changes(repo, base_sha, head, prefix), key=lambda c: c.path)
+        changes = sorted(gitdiff.changes(repo, base_sha, ref, prefix), key=lambda c: c.path)
         everything = gitdiff.is_empty_tree(repo, base_sha)     # gate --all: diff не нужен, все строки новые
         if not everything:
             modules = [c for c in changes if c.status != "D" and module_kinds.is_module(c.path[len(prefix):])]
-            gitdiff.fill_lines_batch(repo, base_sha, head, modules,
+            gitdiff.fill_lines_batch(repo, base_sha, ref, modules,
                                      prefix)
         for ch in changes:                                     # дальше пути — от корня выгрузки
             ch.path = ch.path[len(prefix):]
@@ -122,7 +125,7 @@ def collect(repo, base, head, source_dir, contexts_available, ordinary_applicati
         header = {"base": base, "baseSha": base_sha,
                   "head": head if head is not gitdiff.WORKTREE else "WORKTREE", "headSha": head_sha}
         return _collect(header, source_dir, changes, everything, lambda rel: blobs.show(base_sha, prefix + rel),
-                        lambda rel: blobs.show(head, prefix + rel), contexts_available, ordinary_application, parent,
+                        lambda rel: blobs.show(ref, prefix + rel), contexts_available, ordinary_application, parent,
                         required_contexts)
 
 

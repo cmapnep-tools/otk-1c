@@ -64,6 +64,24 @@ class TestResolvers(unittest.TestCase):
     def resolve(self, p, cfg):
         return resolvers.resolve(p, self.tmp, self.read, self.tmp / "cache", cfg, log=lambda m: None)
 
+    def test_cache_tracks_revision_and_module_text(self):
+        cfg = self.cfg("ok")
+        self.resolve(plan(), cfg)
+        changed = plan()
+        changed["headSha"] = "other"
+        self.resolve(changed, cfg)
+        self.read = lambda rel: MODULE + "// changed helper\n"
+        self.resolve(plan(), cfg)
+        self.assertEqual(len(self.calls()), 3)
+        self.resolve(plan(), cfg)
+        self.assertEqual(len(self.calls()), 3)  # тот же текст переиспользует кеш
+
+    def test_source_root_is_snapshot(self):
+        snapshot = self.tmp / "snapshot"
+        resolvers.resolve(plan(), self.tmp, self.read, self.tmp / "cache", self.cfg("ok"),
+                          log=lambda _: None, source_root=lambda: snapshot)
+        self.assertEqual(self.calls()[0]["source"], str(snapshot))
+
     def test_command_without_shell(self):
         """Строка команды — аргументы, не текст для оболочки: подстановка оболочки не выполняется."""
         with mock.patch.object(resolvers.os, "name", "posix"):
