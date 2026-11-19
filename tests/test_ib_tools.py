@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
+from xml.dom import minidom
 
 from _fs import rmtree_force
 from otk_1c.errors import InfraError
@@ -123,6 +124,60 @@ class TestAdoptedObjects(unittest.TestCase):
 
     def tearDown(self):
         rmtree_force(self.root)
+
+    def test_predefined_data_in_extension(self):
+        predefined = ('<PredefinedData xmlns="http://v8.1c.ru/8.3/xcf/predef" '
+                      'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
+                      'xsi:type="CatalogPredefinedItems" version="2.20">'
+                      '<Item id="group-id"><Name>Group</Name><IsFolder>true</IsFolder>'
+                      '<ExtensionState>Native</ExtensionState><ChildItems>'
+                      '<Item id="standard-id"><Name>Standard</Name><Code>001</Code>'
+                      '<Description>Standard item</Description><IsFolder>false</IsFolder></Item>'
+                      '</ChildItems></Item></PredefinedData>')
+        source = self.root / 'Catalogs/Товары/Ext/Predefined.xml'
+        ib_tools.write(source, predefined)
+        objects = extended_check.objects_for(self.root, [], ['А = Справочники.товары.Standard;'], fmt='2.16')
+        target = self.root / 'extension'
+        ib_tools.generate_test_extension(target, {'language': 'ru', 'languageUuid': 'lang',
+                                                'languageCode': 'ru', 'interface': 'Taxi', 'format': '2.16'},
+                                         modules={}, objects=objects)
+        result = (target / 'Catalogs/Товары/Ext/Predefined.xml').read_text(encoding='utf-8')
+        with minidom.parseString(result) as doc:
+            self.assertEqual(doc.documentElement.getAttribute('version'), '2.16')
+            self.assertEqual(doc.documentElement.getAttribute('xsi:type'), 'CatalogPredefinedItems')
+            items = doc.getElementsByTagName('Item')
+            self.assertEqual([i.getAttribute('id') for i in items], ['group-id', 'standard-id'])
+            self.assertEqual([i.firstChild.firstChild.data for i in items], ['Group', 'Standard'])
+            self.assertEqual(items[1].parentNode.tagName, 'ChildItems')
+            for item in items:
+                states = [c for c in item.childNodes if getattr(c, 'localName', None) == 'ExtensionState']
+                self.assertEqual(len(states), 1)
+                self.assertEqual(states[0].firstChild.data, 'AdoptedCheck')
+            self.assertIn('<Code>001</Code>', result)
+            self.assertIn('<Description>Standard item</Description>', result)
+        self.assertEqual(source.read_text(encoding='utf-8-sig'), predefined)
+        self.assertIsNone(ib_tools.adopted_object(self.root, 'Catalogs', 'Товары', fields=False)['predefined'])
+
+    def test_unreadable_predefined_data_is_infrastructure_error(self):
+        source = self.root / 'Catalogs/Товары/Ext/Predefined.xml'
+        ib_tools.write(source, '<PredefinedData/>')
+        with mock.patch.object(Path, 'read_text', side_effect=OSError('доступ запрещён')):
+            with self.assertRaises(InfraError) as error:
+                ib_tools._adopted_predefined(source, '2.16')
+        self.assertIn(str(source), str(error.exception))
+        self.assertIn('доступ запрещён', str(error.exception))
+
+    def test_invalid_utf8_predefined_data_is_infrastructure_error(self):
+        source = self.root / 'Catalogs/Товары/Ext/Predefined.xml'
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_bytes(b'<PredefinedData>\xff</PredefinedData>')
+        with self.assertRaises(InfraError) as error:
+            ib_tools._adopted_predefined(source, '2.16')
+        self.assertIn(str(source), str(error.exception))
+        self.assertIn('utf-8', str(error.exception))
+
+    def test_no_predefined_data(self):
+        self.assertIsNone(ib_tools.adopted_object(self.root, 'Catalogs', 'Товары')['predefined'])
 
     def test_referenced_objects_both_languages(self):
         refs = ib_tools.referenced_objects(["А = Справочники.Товары.ПустаяСсылка();", "B = Enums.Пол.Мужской;",

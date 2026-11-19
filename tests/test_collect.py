@@ -122,6 +122,7 @@ class TestCollectSynthetic(unittest.TestCase):
         self.assertTrue(names["Изменяемая"]["signatureChanged"])
         self.assertTrue(names["Добавленная"]["new"])
         self.assertEqual([x["name"] for x in m["removedMethods"]], ["Удаляемая"])
+        self.assertFalse(m["baseFlags"]["Global"])
         self.assertEqual(m["contexts"], ["Server", "ExternalConnection"])
 
     def test_preprocessor(self):
@@ -141,6 +142,7 @@ class TestCollectSynthetic(unittest.TestCase):
 
     def test_removed_module(self):
         self.assertEqual(self.plan["removedModules"][0]["exports"], ["Э"])
+        self.assertFalse(self.plan["removedModules"][0]["flags"]["Global"])
         self.assertIn({"path": "CommonModules/Удалённый.xml", "status": "D"}, self.plan["metadata"])
 
     def test_queries(self):
