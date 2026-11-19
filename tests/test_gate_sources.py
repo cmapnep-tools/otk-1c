@@ -411,7 +411,7 @@ class TestSources(unittest.TestCase):
                               check=True).stdout.decode("ascii").strip()
 
         with self.assertRaisesRegex(gitdiff.GitError, "пути Git совпадают на Windows: Tests и tests"):
-            workspace._git_tree_path(repo, tree, "tests/cfe")
+            workspace.git_tree_path(repo, tree, "tests/cfe")
 
     def test_git_scenarios_path_outside_repo_is_rejected(self):
         repo = self._repo()
