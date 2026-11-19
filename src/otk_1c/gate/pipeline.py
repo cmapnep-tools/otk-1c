@@ -2,7 +2,6 @@
 import dataclasses
 import fnmatch
 import json
-import os
 import re
 import time
 from pathlib import Path
@@ -388,20 +387,22 @@ def _plan_step(repo: Path, cfg: dict, run_dir: Path, opts: GateOptions, gate: ch
     plan_path = run_dir / "otk.json"
     sc_cfg = cfg.get("scenarios", {})
     scenario_path = sc_cfg.get("path", scen_mod.DEFAULT_PATH)
-    scenario_root = repo
+    exts = []
     if plan.get("headSha"):
-        # Нормализуем путь лексически: ссылки рабочего дерева не определяют пути Git-редакции.
-        scenario_dir = Path(os.path.abspath(repo / scenario_path))
-        repo_dir = Path(os.path.abspath(repo))
-        if not scenario_dir.is_relative_to(repo_dir):
+        # Сохраняем '..': его положение определяет цель ссылки в Git-редакции.
+        repo_dir = repo.absolute()
+        scenario_dir = repo_dir / scenario_path
+        if (not scenario_dir.is_relative_to(repo_dir)
+                or scenario_dir.relative_to(repo_dir).parts[:1] == ('..',)):
             raise InfraError(f"[scenarios] path должен указывать на каталог внутри репозитория: {scenario_path}",
                              code="config-invalid")
-        scenario_path = scenario_dir.relative_to(repo_dir).as_posix()
         # Расширения могут лежать вне project.source; наличие проверяем в той же редакции.
-        scenario_root = run_dir / "trees" / plan["headSha"][:workspace.TREE_SHA]
-        if gitdiff.git(repo, "ls-tree", "--name-only", plan["headSha"], "--", scenario_path).strip():
-            scenario_root = workspace.materialize(repo, plan["headSha"], scenario_path, run_dir / "trees")
-    exts = scen_mod.discover(scenario_root, scenario_path)
+        git_path = workspace.git_tree_path(repo, plan["headSha"], scenario_dir.relative_to(repo_dir).as_posix())
+        if git_path is not None:
+            scenario_root = workspace.materialize(repo, plan["headSha"], git_path, run_dir / "trees")
+            exts = scen_mod.discover(scenario_root, git_path)
+    else:
+        exts = scen_mod.discover(repo, scenario_path)
     plan["scenarioExtensions"] = [{"name": e["name"], "dir": e["dir"]} for e in exts]
     plan["scenarios"] = scen_mod.select(plan, exts, opts.all_scenarios)
     plan["allScenarios"] = opts.all_scenarios

@@ -107,9 +107,10 @@ def materialize(repo, sha, src, trees_dir):
     return target
 
 
-def _tree_entries(cmd, sha, paths):
+def _tree_entries(cmd, sha, paths, *, recursive=True):
+    options = ["-r", "-t", "-z"] if recursive else ["-z"]
     listing = subprocess.run(
-        [*cmd, "--literal-pathspecs", "ls-tree", "-r", "-t", "-z", sha, "--", *paths],
+        [*cmd, "--literal-pathspecs", "ls-tree", *options, sha, "--", *paths],
         capture_output=True, stdin=subprocess.DEVNULL,
     )
     if listing.returncode:
@@ -121,6 +122,62 @@ def _tree_entries(cmd, sha, paths):
         mode, kind, oid = metadata.split(b" ")
         entries.append((os.fsdecode(name), mode, kind, oid))
     return entries
+
+
+def git_tree_path(repo: Path, sha: str, path: str) -> str | None:
+    """Находит точный путь каталога по Git-дереву, включая ссылки в пути."""
+    cmd = ["git", "-C", str(repo)]
+    listings: dict[bytes, list[tuple[str, bytes, bytes, bytes]]] = {}
+    active: set[tuple[str, ...]] = set()
+
+    def walk(parts: tuple[str, ...], parents: list[tuple[str, bytes]], link_name: str = "") -> bool:
+        for part in parts:
+            if part == "..":
+                if len(parents) == 1:
+                    if link_name:
+                        raise gitdiff.GitError(f"ссылка за пределы дерева редакции: {link_name}")
+                    raise gitdiff.GitError(f"путь за пределы дерева редакции: {path}")
+                parents.pop()
+                continue
+            tree = parents[-1][1]
+            if tree not in listings:
+                listings[tree] = _tree_entries(cmd, tree.decode("ascii"), [], recursive=False)
+            matches = [entry for entry in listings[tree] if _same_part(entry[0], part)]
+            if not matches:
+                return False
+            if len(matches) > 1:
+                prefix = [name for name, _ in parents[1:]]
+                first, second = ("/".join([*prefix, name]) for name, *_ in matches[:2])
+                raise gitdiff.GitError(f"пути Git совпадают на Windows: {first} и {second}")
+            name, mode, kind, oid = matches[0]
+            if kind == b"tree":
+                parents.append((name, oid))
+                continue
+            if mode != b"120000":
+                return False
+            key = (*[parent for parent, _ in parents[1:]], name)
+            dest = "/".join(key)
+            if key in active:
+                raise gitdiff.GitError(f"цикл ссылок в пути редакции: {dest}")
+            value = _read_git_link(cmd, oid, dest)
+            if not value:
+                return False
+            link = Path(value)
+            if link.anchor:
+                raise gitdiff.GitError(f"ссылка за пределы дерева редакции: {dest}")
+            active.add(key)
+            if not walk(link.parts, parents, dest):
+                return False
+            active.remove(key)
+        return True
+
+    parents = [("", sha.encode("ascii"))]
+    try:
+        if walk(PurePosixPath(path).parts, parents):
+            return PurePosixPath(*(name for name, _ in parents[1:])).as_posix()
+    except RecursionError as e:
+        raise gitdiff.GitError("слишком длинная цепочка ссылок в редакции") from e
+    return None
 
 
 def _extract_blobs(repo, sha, src, extra, target):
@@ -254,6 +311,14 @@ def _git_object_for_path(root, objects, folded_objects, path):
     return path, None
 
 
+def _read_git_link(cmd, oid: bytes, name: Path | str) -> str:
+    result = subprocess.run([*cmd, "cat-file", "blob", oid.decode("ascii")],
+                            capture_output=True, stdin=subprocess.DEVNULL)
+    if result.returncode:
+        raise gitdiff.GitError(f"не удалось прочитать Git blob ссылки: {name}")
+    return os.fsdecode(result.stdout)
+
+
 def _write_symlinks(root: Path, links: dict[str, str], cmd, entries) -> None:
     """Определяем тип по коммиту, включая ещё не извлечённые соседние источники."""
     resolved_root = root.resolve()
@@ -293,11 +358,7 @@ def _write_symlinks(root: Path, links: dict[str, str], cmd, entries) -> None:
             return resolved[name]
         if name in pending:
             return write(name)
-        result = subprocess.run([*cmd, "cat-file", "blob", oid.decode("ascii")],
-                                capture_output=True, stdin=subprocess.DEVNULL)
-        if result.returncode:
-            raise gitdiff.GitError(f"не удалось прочитать Git blob ссылки: {resolved_root / name}")
-        return resolve(name, os.fsdecode(result.stdout))
+        return resolve(name, _read_git_link(cmd, oid, resolved_root / name))
 
     def write(name: str) -> Path:
         dest = resolved_root / name
