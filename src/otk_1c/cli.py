@@ -48,9 +48,10 @@ def _project(a):
     return Path(a.repo).resolve()
 
 
-def _cfg(a, repo):
+def _cfg(a, repo, *, defer_source=False):
     """Настройки прогона: otk.toml + otk.local.toml + аргументы командной строки."""
-    return config.apply_args(config.load(repo, defer_source=a.cmd == "gate"), a)
+    return config.apply_args(config.load(repo, defer_source=defer_source), a)
+
 
 def cmd_console(a):
     if getattr(a, "json", False):
@@ -455,7 +456,7 @@ def _gate_json(a):
     if a.designer and a.static_only:
         raise InfraError(DESIGNER_STATIC, code="config-invalid")
     repo = _project(a)
-    cfg = _cfg(a, repo)
+    cfg = _cfg(a, repo, defer_source=True)
     kind = _open_kind(a, cfg)                 # неверный report.open — до прогона, а не после
     summary, run_dir = _gate_run(a, repo, cfg)
     if kind:
@@ -474,7 +475,7 @@ def _gate_run(a, repo, cfg):
 
 def _gate_text(a):
     repo = _project(a)
-    cfg = _cfg(a, repo)
+    cfg = _cfg(a, repo, defer_source=True)
     kind = _open_kind(a, cfg)
     summary, run_dir = _gate_run(a, repo, cfg)
     md = report.console(summary, a.full)
