@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from _fs import rmtree_force
 from otk_1c import cli
@@ -134,6 +135,22 @@ class HookTest(unittest.TestCase):
             self.assertTrue(calls[0][2]["static_only"])
         finally:
             report.markdown = orig
+
+    def test_run_directory_error_uses_infra_policy(self):
+        """Ошибка создания каталога прогона подчиняется infraFail хука."""
+        for setting, expected in (("error", 2), ("warn", 0)):
+            with self.subTest(setting=setting):
+                (self.repo / "otk.local.toml").write_text(
+                    f'[hook]\ninfraFail = "{setting}"\n', encoding="utf-8")
+                prev = git(self.repo, "rev-parse", "HEAD")
+                head = commit(self.repo, "b.txt", setting)
+                messages = []
+                with mock.patch.object(hook.workspace, "new_run", side_effect=OSError("нет места")):
+                    code = hook.run(self.repo,
+                                    [f"refs/heads/master {head} refs/heads/master {prev}"],
+                                    log=messages.append)
+                self.assertEqual(code, expected)
+                self.assertTrue(any("нет места" in message for message in messages), messages)
 
     def test_missing_parent(self):
         """Нет выгрузки основной конфигурации (git worktree адаптера) — понятная причина, не трассировка."""

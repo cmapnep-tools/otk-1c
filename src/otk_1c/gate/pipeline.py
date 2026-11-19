@@ -3,6 +3,7 @@ import dataclasses
 import fnmatch
 import json
 import re
+import tempfile
 import time
 from pathlib import Path
 from typing import Any
@@ -65,7 +66,7 @@ UNRESOLVED_WITHOUT_PARENT = ("metadata-ref", "common-method", "form-name")
 
 
 def static_step(repo: Path, cfg: dict, run_dir: Path, plan_path: Path, parent_arg: str | None = None,
-                gate: checks.Gate | None = None) -> dict[str, Any]:
+                gate: checks.Gate | None = None, *, index_cache_dir: Path | None = None) -> dict[str, Any]:
     """Статика по плану: static.json (schema/static.schema.json) рядом с планом; план не меняется — зависимые
     модули в `dependents`, решения реестра проверок шага — в `notChecked`/`infra`. Возвращает результат.
     gate (checks.Gate) — решения по проверкам bslls и platform-api; без него — по [checks] настроек."""
@@ -76,16 +77,20 @@ def static_step(repo: Path, cfg: dict, run_dir: Path, plan_path: Path, parent_ar
     parent = str(parent_path) if parent_path else None
     t0 = time.time()
     head_sha = plan.get("headSha")
-    if plan.get("headDir") or head_sha:
-        # выгрузка без git (gate --dir) или редакция плана, а не рабочее дерево
-        tree_root = workspace.tree_root(repo, plan, run_dir)
-        # без git — кеш по отпечатку каталога; редакция git (trees/<sha>) не меняется — достаточно маркеров
-        ix = index_mod.cached_dir(tree_root / src, run_dir / "cache", full=bool(plan.get("headDir")))
+    index_cache_dir = index_cache_dir or run_dir / "cache"
+    head_dir = plan.get("headDir")
+    if head_dir or head_sha:
+        if head_dir:
+            tree_root = Path(head_dir)
+            ix = index_mod.cached_dir(tree_root / src, index_cache_dir, full=True)
+        else:
+            tree_root = workspace.tree_root(repo, plan, run_dir)
+            ix = index_mod.cached_revision(tree_root / src, index_cache_dir)
         if parent:
-            ix = index_mod.merge(ix, index_mod.cached_dir(Path(parent), run_dir / "cache"))
+            ix = index_mod.merge(ix, index_mod.cached_dir(Path(parent), index_cache_dir))
     else:
         tree_root = repo
-        ix = index_mod.load(repo, src, run_dir / "cache", parent)
+        ix = index_mod.load(repo, src, index_cache_dir, parent)
     t1 = time.time()
 
     def read_head(rel: str) -> str | None:
@@ -143,7 +148,14 @@ def static_step(repo: Path, cfg: dict, run_dir: Path, plan_path: Path, parent_ar
               "dependents": dependents, "checked": sorted(checked),
               **gate.take(), "plan": model.plan_id(plan)}
     out = plan_path.with_name("static.json")
-    out.write_text(json.dumps(result, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    stream = tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=out.parent, delete=False)
+    pending = Path(stream.name)
+    try:
+        with stream:
+            stream.write(json.dumps(result, ensure_ascii=False, indent=1) + "\n")
+        pending.replace(out)
+    finally:
+        pending.unlink(missing_ok=True)
     return result
 
 
@@ -274,6 +286,17 @@ class GateOptions:
 
 def gate_run(repo: Path, cfg: dict, run_dir: Path, opts: GateOptions, log: model.Log = print) -> dict[str, Any]:
     """Вся проверка: collect -> static -> build/run -> [designer] -> сводка. Возвращает сводку (code — код выхода)."""
+    try:
+        summary = _gate_run(repo, cfg, run_dir, opts, log)
+    finally:
+        # Отчёты хранят строки исходников; исходное дерево можно восстановить из headSha плана.
+        # Оно принадлежит только этому прогону, общий кеш индекса остаётся на месте.
+        workspace.cleanup_trees(run_dir, log)
+    (run_dir / ".completed").touch()
+    return summary
+
+
+def _gate_run(repo: Path, cfg: dict, run_dir: Path, opts: GateOptions, log: model.Log) -> dict[str, Any]:
     run_dir.mkdir(parents=True, exist_ok=True)
     vendor_prep = vendor_mod.prepare(cfg, run_dir, log=log) if opts.vendor else None
     if vendor_prep:
@@ -425,7 +448,8 @@ def _probe_step(repo: Path, cfg: dict, run_dir: Path, opts: GateOptions, plan: d
     Возвращает (редакция загружена в копию ИБ, почему проверку Конфигуратором не выполнять или None)."""
     env = cfg["environment"]
     t = time.time()
-    static_res = static_step(repo, cfg, run_dir, plan_path, opts.parent, gate)
+    static_res = static_step(repo, cfg, run_dir, plan_path, opts.parent, gate,
+                             index_cache_dir=workspace.run_dir(cfg, repo) / "cache" / "metadata")
     timings["static"] = round(time.time() - t, 1)
     static_fail = any(f["severity"] == "error" for f in static_res["findings"])
     log(f"статика: ошибок {sum(1 for f in static_res['findings'] if f['severity'] == 'error')} "

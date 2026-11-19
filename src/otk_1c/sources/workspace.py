@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -31,6 +32,37 @@ def run_dir(cfg, repo):
     key = hashlib.sha1(str(path).lower().encode("utf-8"), usedforsecurity=False).hexdigest()[:6]
     _warn_inside(base, path)
     return base / f"{path.name}-{key}"
+
+
+def new_run(cfg, repo):
+    """Атомарно выделить короткий каталог gate; незавершённые прогоны тоже сохраняются."""
+    root = run_dir(cfg, repo)
+    root.mkdir(parents=True, exist_ok=True)
+    run = Path(tempfile.mkdtemp(prefix="r", dir=root))
+    (run / ".otk-run").touch()
+    return run
+
+
+def latest_run(root):
+    """Последний завершённый gate; старый collect остаётся запасным вариантом."""
+    root = Path(root)
+    completed = list(root.glob("r*/.completed"))
+    return max(completed, key=lambda p: (p.stat().st_mtime_ns, p.parent.name)).parent if completed else root
+
+
+def latest_plan(root):
+    """План последнего завершённого gate или более свежего отдельного collect."""
+    root = Path(root)
+    collected = root / "otk.json"
+    completed = latest_run(root)
+    if completed == root:
+        return collected
+    try:
+        if collected.stat().st_mtime_ns > (completed / ".completed").stat().st_mtime_ns:
+            return collected
+    except FileNotFoundError:
+        pass
+    return completed / "otk.json"
 
 
 def _warn_inside(base, repo):
@@ -520,7 +552,23 @@ def _small_files(d, prefix):
                 continue
 
 
+def cleanup_trees(run_dir, log=print):
+    """Удалить только временные Git-деревья своего gate после формирования отчётов.
+
+    Отчёты, план и общий кеш индекса сохраняются. Последующий отдельный шаг при необходимости
+    заново извлечёт headSha; параллельные gate используют другие каталоги.
+    """
+    trees = Path(run_dir) / "trees"
+    try:
+        shutil.rmtree(trees)
+    except FileNotFoundError:
+        pass
+    except OSError as e:
+        log(f"не удалось удалить временные исходники {trees}: {e}")
+
+
 def tree_root(repo, plan, run_dir):
+    """Один снимок Git для статики, загрузки и строк отчёта; --dir читает заданную выгрузку."""
     if plan.get("headDir"):
         return Path(plan["headDir"])
     head_sha = plan.get("headSha")

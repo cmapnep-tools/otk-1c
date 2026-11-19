@@ -42,7 +42,7 @@ pipeline {
     post {
         always {
             archiveArtifacts artifacts: 'otk-artifacts/**', allowEmptyArchive: true
-            junit testResults: 'otk-artifacts/junit*.xml', allowEmptyResults: true
+            junit testResults: 'otk-artifacts/**/junit*.xml', allowEmptyResults: true
         }
         cleanup {
             dir('otk-artifacts') { deleteDir() }   // рабочий каталог живёт между сборками

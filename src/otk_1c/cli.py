@@ -183,9 +183,9 @@ def cmd_collect(a):
     return 0
 
 
-def _plan_path(a, run_dir):
-    """План шага static или run: --plan или otk.json каталога прогона; нет — сбой одной строкой (no_plan)."""
-    plan_path = Path(a.plan) if a.plan else run_dir / "otk.json"
+def _plan_path(a, cfg, repo):
+    """План шага static или run: --plan, последний завершённый gate или отдельный collect."""
+    plan_path = Path(a.plan) if a.plan else workspace.latest_plan(workspace.run_dir(cfg, repo))
     if not plan_path.is_file():
         raise InfraError(f"нет плана {plan_path}: сначала otk collect или gate", code="no-plan")
     return plan_path
@@ -194,12 +194,11 @@ def _plan_path(a, run_dir):
 def cmd_static(a):
     repo = _project(a)
     cfg = _cfg(a, repo)
-    run_dir = workspace.run_dir(cfg, repo)
-    plan_path = _plan_path(a, run_dir)
+    plan_path = _plan_path(a, cfg, repo)
     config.detect_extension(cfg, workspace.plan_root(repo, plan_path, cfg))
     if cfg["project"].get("extension") and not cfg["project"].get("parent"):
         print(config.NO_PARENT, file=sys.stderr)
-    result = pipeline.static_step(repo, cfg, run_dir, plan_path)
+    result = pipeline.static_step(repo, cfg, plan_path.parent, plan_path)
     findings, an_info, deps = result["findings"], result["analyzerInfo"], result["dependents"]
     src = json.loads(plan_path.read_text(encoding="utf-8"))["source"]
     out = plan_path.with_name("static.json")
@@ -342,8 +341,8 @@ def _build_data(a):
 def cmd_run(a):
     repo = _project(a)
     cfg = _cfg(a, repo)
-    run_dir = workspace.run_dir(cfg, repo)
-    plan_path = _plan_path(a, run_dir)
+    plan_path = _plan_path(a, cfg, repo)
+    run_dir = plan_path.parent
     config.detect_extension(cfg, workspace.plan_root(repo, plan_path, cfg))
     plan = json.loads(plan_path.read_text(encoding="utf-8"))
     if stale := report.plan_version_note(plan):
@@ -394,7 +393,10 @@ def _report_data(a):
         # каталог прогона или, как у gate, корень прогонов: тогда в нём — каталог прогона проекта
         given = Path(a.run_dir)
         nested = given / run_dir.name
-        run_dir = nested if not (given / "otk.json").exists() and (nested / "otk.json").exists() else given
+        run_dir = given if (given / "otk.json").is_file() else workspace.latest_run(
+            nested if nested.is_dir() else given)
+    else:
+        run_dir = workspace.latest_run(run_dir)
     if not (run_dir / "otk.json").exists():
         return None, run_dir, repo
     plan = json.loads((run_dir / "otk.json").read_text(encoding="utf-8"))
@@ -466,7 +468,7 @@ def _gate_json(a):
 
 def _gate_run(a, repo, cfg):
     """Прогон gate по ключам: (сводка, каталог прогона); журнал — в stdout."""
-    run_dir = workspace.run_dir(cfg, repo)
+    run_dir = workspace.new_run(cfg, repo)
     opts = pipeline.GateOptions(a.base, a.head, a.worktree, a.source, head_dir=a.dir, base_dir=a.base_dir,
                                 vendor=a.vendor, static_only=a.static_only, fast=a.fast,
                                 all_scenarios=a.all_scenarios, designer=a.designer)
@@ -755,7 +757,7 @@ def _add_static(sub):
     s = sub.add_parser("static", help="статические проверки плана без базы")
     s.set_defaults(func=cmd_static)
     s.add_argument("--repo", default=".")
-    s.add_argument("--plan", help="файл плана (по умолчанию otk.json в каталоге прогона)")
+    s.add_argument("--plan", help="файл плана (по умолчанию самый свежий план collect или завершённого gate)")
     _env_args(s)
 
 
@@ -776,7 +778,7 @@ def _add_run(sub):
     r = sub.add_parser("run", help="пробы в копии ИБ по плану")
     r.set_defaults(func=cmd_run)
     r.add_argument("--repo", default=".")
-    r.add_argument("--plan")
+    r.add_argument("--plan", help="файл плана (по умолчанию самый свежий план collect или завершённого gate)")
     _env_args(r)
 
 

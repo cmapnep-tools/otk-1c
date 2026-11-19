@@ -18,6 +18,7 @@ node действия JavaScript недоступны.
 """
 import os
 import shutil
+import time
 from pathlib import Path
 
 from .. import config
@@ -69,10 +70,37 @@ def collect_artifacts(files, dest, run_dir):
     return n
 
 
+def _unlink_legacy_artifact(path):
+    # Windows can deny deletion while another publisher's unlink is still pending.
+    for attempt in range(10):
+        try:
+            path.unlink(missing_ok=True)
+            return
+        except PermissionError as exc:
+            if getattr(exc, "winerror", None) not in (5, 32) or attempt == 9:
+                raise
+            time.sleep(0.01)
+
+
 def _publish(name, run_dir, names, log, dest=None):
     files = [Path(run_dir) / n for n in names]
     try:
         if dest:
+            if name == "otk-gate":
+                root, source = Path(dest).resolve(), Path(run_dir).resolve()
+                dest = root / Path(run_dir).name
+                target = dest.resolve()
+                # Проверяем корень очистки и каталог копирования (он может быть ссылкой).
+                runs = {source} | {p.resolve() for p in source.parent.glob("r*")
+                                   if p.is_dir() and any((p / marker).is_file()
+                                                         for marker in (".otk-run", "otk.json", ".completed"))}
+                for previous in runs:
+                    if any(path == previous or path in previous.parents or previous in path.parents
+                           for path in (root, target)):
+                        raise ValueError(f"каталог --artifacts {root} пересекается с каталогом прогона {previous}")
+                # Удаляем файлы плоской публикации gate до копирования нового комплекта.
+                for artifact in PRIVATE_ARTIFACTS | set(GATE_ARTIFACTS):
+                    _unlink_legacy_artifact(root / artifact)
             log(f"артефакты: {collect_artifacts(files, dest, run_dir)} файлов в {dest}")
         else:
             forgejo_artifacts.upload(name, files, log=log)
@@ -120,6 +148,7 @@ def main(a):
     run_dir = workspace.run_dir(cfg, repo)
     dest = getattr(a, "artifacts", None)
     if a.action == "gate":
+        run_dir = workspace.new_run(cfg, repo)
         base = a.base
         if not base and (target := pr_target()):
             base = ensure_base(repo, target, log)

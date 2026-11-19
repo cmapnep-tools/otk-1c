@@ -387,6 +387,8 @@ class TestSources(unittest.TestCase):
         write(repo, rel, registration.replace("Committed", "Dirty"))
         write(repo, "tests/cfe/Tests/Configuration.xml", "<Name>DirtyExtension</Name>")
         paths = ("tests/cfe", str(repo / "tests" / "cfe"), str(Path("tests/cfe/../cfe")))
+        if os.name == "nt":
+            paths += ("TeStS/CfE",)
         for n, path in enumerate(paths):
             cfg = config._merge(config.load(repo), {"scenarios": {"path": path}})
             for worktree, name, extension in ((False, "Committed", "CommittedExtension"),
@@ -399,6 +401,17 @@ class TestSources(unittest.TestCase):
                                                   lambda _: None)
                     self.assertEqual([s["name"] for s in plan["scenarios"]], [name])
                     self.assertEqual(plan["scenarioExtensions"], [{"name": extension, "dir": "tests/cfe/Tests"}])
+
+    @unittest.skipUnless(os.name == "nt", "Windows resolves Git paths without regard to case")
+    def test_git_scenarios_path_rejects_case_colliding_directories(self):
+        repo = self._repo()
+        subtree = gitdiff.git(repo, "rev-parse", "HEAD^{tree}").strip()
+        entries = f"040000 tree {subtree}\tTests\n040000 tree {subtree}\ttests\n".encode("ascii")
+        tree = subprocess.run(["git", "-C", str(repo), "mktree"], input=entries, capture_output=True,
+                              check=True).stdout.decode("ascii").strip()
+
+        with self.assertRaisesRegex(gitdiff.GitError, "пути Git совпадают на Windows: Tests и tests"):
+            workspace.git_tree_path(repo, tree, "tests/cfe")
 
     def test_git_scenarios_path_outside_repo_is_rejected(self):
         repo = self._repo()
@@ -435,6 +448,87 @@ class TestSources(unittest.TestCase):
         self.assertEqual(collect.call_count, 2)
         self.assertEqual(observations, [[False, False, False], [False, False, False]])
         self.assertTrue((run_dir / "otk.json").is_file())
+
+    def test_dirty_head_gate_uses_one_snapshot_and_discards_trees(self):
+        """HEAD, пробы, designer и строки отчёта согласованы при грязном рабочем дереве.
+
+        Два запуска сохраняют планы/отчёты и общий индекс, но не полные копии выгрузки.
+        """
+        repo = self._repo()
+        run(repo, "commit", "-q", "-am", "head")
+        rel = "CommonModules/М/Ext/Module.bsl"
+        write(repo, rel, "Процедура Грязная()\nКонецПроцедуры\n")
+        cfg = config._merge(config.load(repo), {
+            "checks": {"analyzers": "off", "platform-api": "off"},
+            "environment": {"runDir": str(self.tmp / "runs"), "ib": str(self.tmp / "fake-ib")}})
+        observed = []
+        original_report = pipeline.report.from_files
+
+        def assert_snapshot(tree):
+            text = pipeline.layout.read_text(Path(tree) / rel)
+            self.assertEqual(text.replace("\r\n", "\n"), HEAD_MODULE)
+            self.assertNotEqual(Path(tree), repo)
+            observed.append(Path(tree))
+
+        def run_probe(_repo, plan, _cfg, run_dir, tree, **kwargs):
+            assert_snapshot(tree)
+            return pipeline.runner.write(run_dir, {"timings": {}, "results": []}, kwargs["gate"], plan)
+
+        def designer(_repo, _cfg, run_dir, plan, _built, **_kwargs):
+            assert_snapshot(workspace.tree_root(_repo, plan, run_dir))
+            finding = {"file": f"{plan['source']}/{rel}", "line": 7, "col": 1,
+                       "object": "ОбщийМодуль.М.Модуль", "message": "Тестовая ошибка компиляции"}
+            return pipeline._designer_write(run_dir, {"findings": [finding], "infra": []}, plan)
+
+        def report(run_dir, timings, tree):
+            root = tree()
+            assert_snapshot(root)
+            return original_report(run_dir, timings, root)
+
+        cleanup_trees = workspace.cleanup_trees
+
+        def cleanup_before_publication(run_dir, log):
+            self.assertFalse((run_dir / ".completed").exists())
+            cleanup_trees(run_dir, log)
+
+        with mock.patch.object(pipeline.runner, "run", side_effect=run_probe), \
+                mock.patch.object(pipeline, "designer_step", side_effect=designer), \
+                mock.patch.object(pipeline.report, "from_files", side_effect=report), \
+                mock.patch.object(workspace, "cleanup_trees", side_effect=cleanup_before_publication):
+            for _ in range(2):
+                run_dir = workspace.new_run(cfg, repo)
+                summary = pipeline.gate_run(repo, cfg, run_dir,
+                                            pipeline.GateOptions("HEAD~1", designer=True), log=lambda _m: None)
+                self.assertFalse((run_dir / "trees").exists())
+                self.assertTrue((run_dir / ".completed").is_file())
+                self.assertTrue((run_dir / "otk.json").is_file())
+                # Контекст находки встроен в сводку до удаления временного дерева.
+                self.assertNotIn("Грязная", json.dumps(summary, ensure_ascii=False))
+                findings = [f for f in summary["findings"] if f["step"] == "designer"]
+                self.assertEqual(len(findings), 1)
+                self.assertEqual(findings[0]["method"], "Изменяемая")
+                self.assertEqual(findings[0]["text"], "Возврат П;")
+        self.assertEqual(len(observed), 6)
+        self.assertEqual(observed[0], observed[1])
+        self.assertEqual(observed[1], observed[2])
+        self.assertNotEqual(observed[0], observed[3])
+        root = workspace.run_dir(cfg, repo)
+        self.assertTrue(list((root / "cache" / "metadata").rglob("*.json")))
+        self.assertFalse(list(root.glob("r*/trees")))
+
+    def test_gate_failure_discards_only_own_trees(self):
+        repo = self._repo()
+        cfg = config.load(repo)
+        run_dir = self.tmp / "failed"
+        sibling = self.tmp / "other" / "trees" / "keep"
+        sibling.mkdir(parents=True)
+        run_dir.mkdir()
+        workspace.tree_root(repo, {"headSha": gitdiff.rev(repo, "HEAD"), "source": "."}, run_dir)
+        with mock.patch.object(pipeline, "_plan_step", side_effect=RuntimeError("test failure")):
+            with self.assertRaisesRegex(RuntimeError, "test failure"):
+                pipeline.gate_run(repo, cfg, run_dir, pipeline.GateOptions(), log=lambda _m: None)
+        self.assertFalse((run_dir / "trees").exists())
+        self.assertTrue(sibling.is_dir())
 
     def test_changes_outside_source_hint(self):
         r = self._repo()
