@@ -298,6 +298,31 @@ class TestReport(unittest.TestCase):
         s = report.build(PLAN, None, {"results": [], "notes": []}, {})
         self.assertEqual((s["code"], s["verdict"]), (2, "ничего не проверено"))
 
+    def test_actual_work_matrix(self):
+        empty = {**PLAN, "modules": [], "queries": [], "metadata": [], "removedModules": [],
+                 "scenarios": [], "smoke": []}
+        skipped = {"results": [{"outcome": "skipped"}]}
+        for key in ("modules", "queries", "metadata", "removedModules", "scenarios", "smoke"):
+            plan = {**empty, key: [{"path": "input"}]}
+            for st in (None, {}, {"checked": []}, {"checks": 1, "analyzers": 1},
+                       {"analyzerInfo": {"bslls": {"modules": 1, "skipped": "off"}}},
+                       {"analyzerInfo": {"bsl-analyzer": {"modules": 1, "error": "failed"}}}):
+                with self.subTest(input=key, static=st):
+                    self.assertEqual(report.verdict(plan, [], st, skipped, []), (2, "ничего не проверено"))
+            for st in ({"checked": ["input"]}, {"analyzerInfo": {"bslls": {"modules": 1}}},
+                       {"analyzerInfo": {"bsl-analyzer": {"modules": 1}}}):
+                with self.subTest(input=key, checked=st):
+                    self.assertEqual(report.verdict(plan, [], st, None, [])[0], 0)
+            self.assertEqual(report.verdict(plan, [{"severity": "error"}], {}, None, [])[0], 1)
+            self.assertEqual(report.verdict(plan, [{"severity": "error"}], {}, None, ["infra"]),
+                             (2, "сбой инфраструктуры"))
+        for ext in ({}, {"modules": [], "contexts": ["Server"]},
+                    {"modules": ["input"], "contexts": []},
+                    {"modules": ["input"], "contexts": ["Server"], "coverage": []}):
+            with self.subTest(extCheck=ext):
+                self.assertEqual(report.verdict(PLAN, [], {}, {"extCheck": ext}, [])[0], 2)
+        self.assertEqual(report.verdict(empty, [], {}, skipped, []), (0, "нечего проверять"))
+
     def test_nothing_to_check_and_infra(self):
         empty = {**PLAN, "modules": [], "queries": []}
         self.assertEqual(report.build(empty, None, None, {})["code"], 0)
@@ -638,7 +663,7 @@ class TestRequiredContexts(unittest.TestCase):
 
     def test_missing_required_is_code_2(self):
         plan = {**self.plan(), "requiredContexts": ["OrdinaryClient"]}
-        s = report.build(plan, {"findings": []}, {"results": [self.unc()], "notes": []}, {})
+        s = report.build(plan, {"findings": [], "checked": [self.MOD]}, {"results": [self.unc()], "notes": []}, {})
         self.assertEqual((s["code"], s["verdict"]), (2, "не покрыто обязательное: OrdinaryClient"))
         self.assertEqual([i["context"] for i in s["uncovered"]], ["OrdinaryClient"])   # запись остаётся
 
@@ -835,7 +860,7 @@ class TestRequiredContexts(unittest.TestCase):
 
     def test_no_module_in_context_is_ok(self):
         plan = {**self.plan(contexts=["Server"]), "requiredContexts": ["OrdinaryClient"]}
-        s = report.build(plan, {"findings": []}, {"results": [], "notes": []}, {})
+        s = report.build(plan, {"findings": [], "checked": [self.MOD]}, {"results": [], "notes": []}, {})
         self.assertEqual(s["code"], 0)
 
     def test_covered_by_done_check_not_by_silence(self):
@@ -844,9 +869,9 @@ class TestRequiredContexts(unittest.TestCase):
         plan = {**self.plan(), "requiredContexts": ["OrdinaryClient"]}
         run = {"results": [], "extCheck": {"modules": [self.MOD], "contexts": ["Server", "OrdinaryClient"]},
                "notes": []}
-        s = report.build(plan, {"findings": []}, run, {})
+        s = report.build(plan, {"findings": [], "checked": [self.MOD]}, run, {})
         self.assertEqual((s["code"], s["verdict"]), (0, "можно отправлять"))
-        s = report.build(plan, {"findings": []}, {"results": [], "notes": []}, {})
+        s = report.build(plan, {"findings": [], "checked": [self.MOD]}, {"results": [], "notes": []}, {})
         self.assertEqual((s["code"], s["verdict"]), (2, "не покрыто обязательное: OrdinaryClient"))
 
     def test_probe_result_covers_context(self):

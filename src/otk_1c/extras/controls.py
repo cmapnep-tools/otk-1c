@@ -430,9 +430,18 @@ def _newer_api_defects(t):
                                severity), code)
 
 
+def _output_argument_defect(t):
+    # Выходной аргумент не объявляется неявно: статика не заменяет компиляцию платформой.
+    t.append_server(Defect("undeclared-output-arg", "необъявленный выходной аргумент Структура.Свойство",
+                           ["run:com", "run:extcheck"], "ОТКВыходнойНеОбъявлен"),
+                    '\r\nПроцедура ОТККонтрольВыходнойАргумент() Экспорт'
+                    '\r\n\tДанные = Новый Структура("Флаг", Истина);'
+                    '\r\n\tДанные.Свойство("Флаг", ОТКВыходнойНеОбъявлен);\r\nКонецПроцедуры\r\n')
+
+
 # шаги основного набора: каждый занимает свои цели, порядок задаёт и раскладку по пакетам
 BUILDERS = (_server_defects, _removed_export, _client_defects, _object_defect, _form_defects,
-            _object_extcheck_defect, _form_open_defects, _newer_api_defects)
+            _object_extcheck_defect, _form_open_defects, _newer_api_defects, _output_argument_defect)
 
 
 def _session_defect(t):

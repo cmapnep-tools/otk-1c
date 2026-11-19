@@ -1,4 +1,5 @@
 """Статические проверки на синтетической выгрузке: дефекты каталога ловятся, перекрытые имена — нет."""
+import copy
 import subprocess
 import tempfile
 import unittest
@@ -137,6 +138,91 @@ class TestStatic(unittest.TestCase):
 
         got = static.run(self.repo, self.plan, self.ix, self.read, Api(), metadata=False)
         self.assertEqual({f["check"] for f in got}, {"platform-api"})
+
+    def test_deleted_local_method_does_not_count_as_static_check(self):
+        """Удаление локального метода не даёт строк HEAD для правил статики."""
+        plan = copy.deepcopy(self.plan)
+        entry = next(m for m in plan["modules"] if m["kind"] == "CommonModule")
+        entry["changedMethods"] = []
+        entry["removedMethods"] = [{"name": "Локальная", "kind": "procedure", "export": False}]
+        plan["modules"] = [entry]
+        plan["removedModules"] = []
+        plan["metadata"] = []
+        checked = set()
+        static.run(self.repo, plan, self.ix, self.read, checked=checked)
+        static.dependents(self.repo / "src/cf", plan, self.ix, checked=checked)
+        self.assertNotIn(entry["path"], checked)
+
+    def test_deleted_exported_method_counts_after_dependent_scan(self):
+        """Поиск зависимых вызовов покрывает удалённый экспорт даже без строк HEAD."""
+        plan = copy.deepcopy(self.plan)
+        entry = next(m for m in plan["modules"] if m["kind"] == "CommonModule")
+        entry["changedMethods"] = []
+        entry["removedMethods"] = [{"name": "Старая", "kind": "function", "export": True}]
+        entry["baseFlags"] = {"Global": False}
+        plan["modules"] = [entry]
+        plan["removedModules"] = []
+        plan["metadata"] = []
+        checked = set()
+        static.run(self.repo, plan, self.ix, self.read, checked=checked)
+        self.assertNotIn(entry["path"], checked)
+        _, findings = static.dependents(self.repo / "src/cf", plan, self.ix, checked=checked)
+        self.assertIn(entry["path"], checked)
+        self.assertTrue(any("Общий.Старая" in f["message"] for f in findings))
+
+    def test_global_export_is_not_covered_by_qualified_dependent_scan(self):
+        """Глобальный экспорт допускает вызов Старая() без имени модуля."""
+        plan = copy.deepcopy(self.plan)
+        entry = next(m for m in plan["modules"] if m["kind"] == "CommonModule")
+        entry["removedMethods"] = [{"name": "Старая", "kind": "function", "export": True}]
+        entry["flags"]["Global"] = True
+        entry["baseFlags"] = {"Global": False}
+        plan["modules"] = [entry]
+        plan["removedModules"] = []
+        checked = set()
+        static.dependents(self.repo / "src/cf", plan, self.ix, checked=checked)
+        self.assertNotIn(entry["path"], checked)
+
+        removed = {"path": entry["path"], "kind": "CommonModule", "owner": entry["owner"],
+                   "exports": ["Старая"], "flags": {"Global": True}}
+        plan["modules"] = []
+        plan["removedModules"] = [removed]
+        static.dependents(self.repo / "src/cf", plan, self.ix, checked=checked)
+        self.assertNotIn(removed["path"], checked)
+
+    def test_global_base_export_is_not_covered_after_flag_change(self):
+        plan = copy.deepcopy(self.plan)
+        entry = next(m for m in plan["modules"] if m["kind"] == "CommonModule")
+        entry["removedMethods"] = [{"name": "Старая", "kind": "function", "export": True}]
+        entry["flags"]["Global"] = False
+        entry["baseFlags"] = {"Global": True}
+        plan["modules"] = [entry]
+        checked = set()
+        static.dependents(self.repo / "src/cf", plan, self.ix, checked=checked)
+        self.assertNotIn(entry["path"], checked)
+
+    def test_unknown_common_module_flags_are_not_covered(self):
+        plan = copy.deepcopy(self.plan)
+        entry = next(m for m in plan["modules"] if m["kind"] == "CommonModule")
+        entry["removedMethods"] = [{"name": "Старая", "kind": "function", "export": True}]
+        entry["probe"] = {"strategy": "none"}
+        entry["flags"]["Global"] = False
+        entry["baseFlags"] = {"Global": False}
+        plan["modules"] = [entry]
+        checked = set()
+        static.dependents(self.repo / "src/cf", plan, self.ix, checked=checked)
+        self.assertNotIn(entry["path"], checked)
+
+    def test_renamed_common_module_export_is_not_covered(self):
+        plan = copy.deepcopy(self.plan)
+        entry = next(m for m in plan["modules"] if m["kind"] == "CommonModule")
+        entry["removedMethods"] = [{"name": "Старая", "kind": "function", "export": True}]
+        entry["baseFlags"] = {"Global": False}
+        entry["renamedFrom"] = "CommonModules/Прежний/Ext/Module.bsl"
+        plan["modules"] = [entry]
+        checked = set()
+        static.dependents(self.repo / "src/cf", plan, self.ix, checked=checked)
+        self.assertNotIn(entry["path"], checked)
 
     def test_platform_names(self):
         """Стандартные формы — из словаря имён платформы: без ФормаСписка в нём — находка form-name."""

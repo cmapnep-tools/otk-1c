@@ -191,8 +191,10 @@ def _collect(header, source_dir, changes, everything, read_base, read_head, cont
         if ch.status == "D":
             info = module_kinds.describe(rel, read_base, variant, ordinary_application, lay, read_parent, parent_lay)
             base_mod = bsl.parse(read_base(rel) or "")
+            known_flags = info.flags if info.probe["strategy"] != "none" else None
             removed_modules.append({"path": rel, "kind": info.kind, "owner": info.owner,
-                                    "exports": [m.name for m in base_mod.methods if m.export]})
+                                    "exports": [m.name for m in base_mod.methods if m.export],
+                                    **({"flags": known_flags} if known_flags else {})})
             continue
         info = module_kinds.describe(rel, read_head, variant, ordinary_application, lay, read_parent, parent_lay)
         base_text = read_base(ch.old_path or rel) if ch.status != "A" else None
@@ -201,6 +203,11 @@ def _collect(header, source_dir, changes, everything, read_base, read_head, cont
             ch.added_lines.update(range(1, len((head_text or "").splitlines()) + 1))
         entry, found = _module_entry(info, ch, base_text, head_text, contexts_available,
                                      words["words"]["bodyPseudoMethod"])
+        if entry["kind"] == "CommonModule" and base_text is not None and entry["removedMethods"]:
+            base_info = module_kinds.describe(ch.old_path or rel, read_base, variant,
+                                              ordinary_application, lay, read_parent, parent_lay)
+            if base_info.flags and base_info.probe["strategy"] != "none":
+                entry["baseFlags"] = base_info.flags
         if not entry["changedMethods"] and not entry["removedMethods"]:
             entry["note"] = "изменения только в комментариях или пустых строках"
         modules.append(entry)
