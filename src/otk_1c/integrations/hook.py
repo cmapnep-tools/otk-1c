@@ -118,7 +118,7 @@ def run(repo, lines, log=print, gate=None):
     """Тело хука. Возвращает код выхода (0 — push разрешён)."""
 
     gate = gate or pipeline.gate_run
-    cfg = config.load(repo)
+    cfg = config.load(repo, defer_source=True)
     hs = settings(cfg)
     code = 0
     try:

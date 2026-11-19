@@ -102,13 +102,15 @@ def _module_entry(info, change, base_text, head_text, available, lexicon_body):
 
 
 def collect(repo, base, head, source_dir, contexts_available, ordinary_application=False, parent=None,
-            required_contexts=()):
+            required_contexts=(), *, head_sha=None):
     """План по git: base..head (head = gitdiff.WORKTREE — рабочее дерево). parent — каталог основной конфигурации
-    (флаги заимствованных общих модулей расширения); required_contexts — контексты, покрытие которых обязательно."""
+    (флаги заимствованных общих модулей расширения); required_contexts — контексты, покрытие которых обязательно.
+    Если вызывающий уже разрешил head в head_sha для выбора источника, используем тот же коммит."""
     repo = Path(repo)
     prefix = gitdiff.source_prefix(source_dir)
     base_sha = gitdiff.rev(repo, base)
-    head_sha = gitdiff.rev(repo, head) if head is not gitdiff.WORKTREE else None
+    if head_sha is None and head is not gitdiff.WORKTREE:
+        head_sha = gitdiff.rev(repo, head)
     ref = head_sha or head
     with gitdiff.Blobs(repo) as blobs:
         changes = sorted(gitdiff.changes(repo, base_sha, ref, prefix), key=lambda c: c.path)
