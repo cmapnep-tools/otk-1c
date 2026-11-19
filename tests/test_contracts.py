@@ -129,6 +129,46 @@ class TestStepFiles(unittest.TestCase):
         self.assertEqual((static["findings"], static["dependents"]), ([], []))
         self.assertIn("выключено настройкой: metadata, analyzers, platform-api", checks.Gate(cfg).notes())
 
+    def test_metadata_and_removed_only(self):
+        for kind in ("metadata", "handler", "removed"):
+            for enabled in (True, False):
+                with self.subTest(kind=kind, enabled=enabled):
+                    root = self.tmp / f"coverage-{kind}-{enabled}"
+                    base, head = root / "base", root / "head"
+                    fill(base, BASE_MODULE)
+                    fill(head, BASE_MODULE)
+                    if kind == "metadata":
+                        write(head, "CommonModules/М.xml", FLAGS.replace("<Server>true", "<Server>false"))
+                    elif kind == "handler":
+                        subscription = ('<MetaDataObject><EventSubscription><Properties><Name>Подписка</Name>'
+                                        '<Handler>CommonModule.М.Неизменная</Handler>'
+                                        '</Properties></EventSubscription></MetaDataObject>')
+                        cfg_xml = (CONFIG.replace('</Configuration>', '<ChildObjects>'
+                                   '<CommonModule>М</CommonModule><CommonModule>Вызов</CommonModule>'
+                                   '<EventSubscription>Подписка</EventSubscription>'
+                                   '</ChildObjects></Configuration>'))
+                        write(base, "Configuration.xml", cfg_xml)
+                        write(head, "Configuration.xml", cfg_xml)
+                        write(base, "EventSubscriptions/Подписка.xml", subscription)
+                        write(head, "EventSubscriptions/Подписка.xml",
+                              subscription.replace(".Неизменная", ".Изменяемая"))
+                    else:
+                        (head / "CommonModules/М/Ext/Module.bsl").unlink()
+                    cfg = config._merge(self.cfg, {"checks": {"metadata": "auto" if enabled else "off"}})
+                    run_dir = root / "run"
+                    summary = pipeline.gate_run(self.project, cfg, run_dir,
+                                                pipeline.GateOptions(head_dir=head, base_dir=base, static_only=True),
+                                                log=lambda _: None)
+                    plan, st = read(run_dir / "otk.json"), read(run_dir / "static.json")
+                    self.assertFalse(plan["modules"])
+                    expected_paths = {"handler": ["EventSubscriptions/Подписка.xml"],
+                                      "removed": ["CommonModules/М/Ext/Module.bsl"]}
+                    self.assertEqual(st["checked"], expected_paths.get(kind, []) if enabled else [])
+                    expected = (1 if kind == "removed" else 0) if enabled and kind != "metadata" else 2
+                    self.assertEqual(summary["code"], expected)
+                    if not enabled or kind == "metadata":
+                        self.assertEqual(summary["verdict"], "ничего не проверено")
+
     def test_report_command(self):
         with contextlib.redirect_stdout(io.StringIO()):
             code = cli.main(["report", "--repo", str(self.project), "--run-dir", str(self.run_dir)])

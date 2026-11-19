@@ -26,7 +26,7 @@
                               "reasonCode": {"anyOf": [{"enum": ["ib-busy", "ib-auth", "ib-invalid", "no-ib", "no-platform", "no-ibcmd",
                                                        "no-license", "no-yaxunit", "no-com", "no-display", "no-analyzer",
                                                        "no-edtcli", "no-help", "no-availability", "no-git", "no-python",
-                                                       "no-source", "no-parent", "no-plan", "timeout", "platform-failed", "restore-failed",
+                                                       "no-source", "no-parent", "no-plan", "plan-version", "timeout", "platform-failed", "restore-failed",
                                                        "edt-failed", "config-invalid", "probe-failed", "query-incomplete",
                                                        "format-unsupported", "internal", "other"]}, {"type": "string"}],
                                               "description": "стабильный код причины: список — docs/agents.md; незнакомый читать как other"},

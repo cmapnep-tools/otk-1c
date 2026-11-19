@@ -26,6 +26,7 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 
 from .. import __version__, lang, model
+from ..errors import InfraError
 from ..probes.platform import CHECK_MODES
 from ..public import public_summary as public_summary
 from ..sources import bsl, contexts, layout
@@ -388,17 +389,30 @@ def uncovered(plan, run):
 
 def checked_count(static, run, designer=None):
     probes = sum(1 for r in (run or {}).get("results", []) if r["outcome"] not in ("skipped",))
-    return probes + (1 if static is not None else 0) + (1 if (designer or {}).get("ran") else 0)
+    st = static or {}
+    analyzer_checks = sum(
+        info.get("modules", 0) for name, info in st.get("analyzerInfo", {}).items()
+        if name in ("bslls", "bsl-analyzer") and isinstance(info, dict)
+        and not any(info.get(key) for key in ("skipped", "off", "error")))
+    ext = (run or {}).get("extCheck") or {}
+    coverage = ext.get("coverage")
+    ext_checks = (sum(bool(i.get("module") and i.get("contexts")) for i in coverage)
+                  if coverage is not None else len(ext.get("modules") or ()) * bool(ext.get("contexts")))
+    return probes + len(st.get("checked", [])) + analyzer_checks + ext_checks + int(bool((designer or {}).get("ran")))
 
 
 def verdict(plan, findings, static, run, infra_errors, designer=None, missing=()):
-    has_input = bool(plan["modules"] or plan["queries"] or plan.get("smoke"))
+    has_input = any(plan.get(key) for key in ("modules", "queries", "scenarios", "smoke",
+                                             "removedModules", "metadata"))
     if infra_errors:
         return 2, "сбой инфраструктуры"
     if any(f["severity"] == "error" for f in findings):
         return 1, "есть ошибки — не отправлять"
     if has_input and checked_count(static, run, designer) == 0:
-        return 2, "ничего не проверено"
+        text = "ничего не проверено"
+        if missing:
+            text += "; не покрыто обязательное: " + ", ".join(missing)
+        return 2, text
     if missing:
         return 2, "не покрыто обязательное: " + ", ".join(missing)
     if not has_input and not plan["removedModules"] and not plan["metadata"]:
@@ -580,13 +594,23 @@ def from_files(run_dir, timings=None, tree=None):
     проверенной редакции (workspace.tree_root): метод и строка кода находок."""
     run_dir = Path(run_dir)
     plan = json.loads((run_dir / "otk.json").read_text(encoding="utf-8"))
+    require_plan_schema(plan)
     (static, stale_static), (run, stale_run), (designer, stale_designer) = (
         step_for(plan, run_dir / name) for name in ("static.json", "run.json", "designer.json"))
     if timings is None:
         timings = {f"run.{k}": v for k, v in (run or {}).get("timings", {}).items()}
     summary = build(plan, static, run, timings, read=head_reader(tree, plan), designer=designer)
-    summary["notes"] += [n for n in (stale_static, stale_run, stale_designer, plan_version_note(plan)) if n]
+    summary["notes"] += [n for n in (stale_static, stale_run, stale_designer) if n]
     return summary
+
+
+def require_plan_schema(plan):
+    """Не строить сводку по плану другого формата: поля и их смысл могли измениться."""
+    if not isinstance(plan, dict):
+        raise InfraError(f"otk.json должен быть объектом формата {model.PLAN_SCHEMA}: "
+                         "перезапустите collect или gate", code="plan-version")
+    if note := plan_version_note(plan):
+        raise InfraError(note, code="plan-version")
 
 
 def plan_version_note(plan):

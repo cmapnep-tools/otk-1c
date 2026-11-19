@@ -392,6 +392,7 @@ def _report_data(a):
     if not (run_dir / "otk.json").exists():
         return None, run_dir, repo
     plan = json.loads((run_dir / "otk.json").read_text(encoding="utf-8"))
+    report.require_plan_schema(plan)
     summary = report.from_files(run_dir, tree=lambda: workspace.tree_root(repo, plan, run_dir))
     head_dir = plan.get("headDir")
     output.write(summary, run_dir, Path(head_dir) if head_dir else repo)
